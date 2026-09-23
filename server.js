@@ -1462,6 +1462,7 @@ const handleCheckOutLogic = (req, res) => {
       today <= (l.endDate || l.startDate)
     );
     const isAmHalf = record.halfDaySlot === 'AM' || userLeaves.some(l => l.timeSlot === 'AM' || l.leaveType === 'HALF_AM');
+    const isPmHalf = record.halfDaySlot === 'PM' || userLeaves.some(l => l.timeSlot === 'PM' || l.leaveType === 'HALF_PM');
     const policy = getCompanyPolicy(db);
     let expectedCheckOut = '18:00:00';
     if (isPmHalf) {
