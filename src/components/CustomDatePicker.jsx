@@ -1,0 +1,297 @@
+import React, { useState, useEffect, useRef } from 'react';
+
+export default function CustomDatePicker({ 
+  value, 
+  onChange, 
+  requestDates = [],
+  placeholder = '전체 날짜',
+  width = '180px',
+  height = '42px',
+  style = {},
+  align = 'left',
+  clearable = true
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const initialDate = value ? new Date(value) : new Date();
+  const [viewDate, setViewDate] = useState(initialDate);
+  const containerRef = useRef(null);
+
+  // Update viewDate if value changes externally
+  useEffect(() => {
+    if (value) {
+      setViewDate(new Date(value));
+    }
+  }, [value]);
+
+  // Click outside to close
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  const prevMonth = (e) => {
+    e.stopPropagation();
+    setViewDate(new Date(year, month - 1, 1));
+  };
+  
+  const nextMonth = (e) => {
+    e.stopPropagation();
+    setViewDate(new Date(year, month + 1, 1));
+  };
+
+  const getTodayStr = () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+  const todayStr = getTodayStr();
+
+  // Generate calendar days
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const lastDate = new Date(year, month + 1, 0).getDate();
+  const prevLastDate = new Date(year, month, 0).getDate();
+
+  const days = [];
+  // Trailing days from previous month
+  for (let i = firstDayIndex - 1; i >= 0; i--) {
+    const d = prevLastDate - i;
+    const prevM = month === 0 ? 12 : month;
+    const prevY = month === 0 ? year - 1 : year;
+    const dateStr = `${prevY}-${String(prevM).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    days.push({ day: d, isCurrentMonth: false, dateStr });
+  }
+  // Current month days
+  for (let i = 1; i <= lastDate; i++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+    days.push({ day: i, isCurrentMonth: true, dateStr });
+  }
+  // Leading days from next month
+  const totalSlots = days.length <= 35 ? 35 : 42;
+  const remaining = totalSlots - days.length;
+  for (let i = 1; i <= remaining; i++) {
+    const nextM = month === 11 ? 1 : month + 2;
+    const nextY = month === 11 ? year + 1 : year;
+    const dateStr = `${nextY}-${String(nextM).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+    days.push({ day: i, isCurrentMonth: false, dateStr });
+  }
+
+  const handleSelectDate = (dateStr) => {
+    onChange(dateStr);
+    setIsOpen(false);
+  };
+
+  const handleClear = (e) => {
+    e.stopPropagation();
+    onChange('');
+    setIsOpen(false);
+  };
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative', width, ...style }}>
+      {/* Trigger: Form Control Styled Button (No Calendar Icon, Same Tone as Placeholder) */}
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="form-control"
+        style={{
+          height,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          userSelect: 'none',
+          padding: '0 0.85rem',
+          backgroundColor: 'var(--bg-input)',
+          borderColor: isOpen ? 'var(--border-focus)' : 'var(--border-color)',
+          color: value ? 'var(--text-primary)' : 'var(--text-muted)'
+        }}
+      >
+        <span style={{ fontSize: '15px' }}>
+          {value || placeholder}
+        </span>
+        {value && clearable && (
+          <span 
+            onClick={handleClear}
+            title="날짜 초기화"
+            style={{ 
+              fontSize: '18px', 
+              color: 'var(--text-muted)', 
+              marginLeft: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            ×
+          </span>
+        )}
+      </div>
+
+      {/* Spacious Custom Date Picker Overlay */}
+      {isOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 8px)',
+            ...(align === 'right' ? { right: 0 } : { left: 0 }),
+            width: '340px',
+            backgroundColor: 'var(--bg-card)',
+            border: '1px solid var(--border-focus)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '1.25rem',
+            boxShadow: '0 12px 32px rgba(0, 0, 0, 0.28)',
+            zIndex: 9999
+          }}
+        >
+          {/* Header: Arrow Navigation and YYYY. MM format */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={prevMonth}
+              aria-label="이전 달"
+              style={{ width: '36px', height: '36px', padding: 0, fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              ‹
+            </button>
+            <div style={{ fontSize: '18px', color: 'var(--text-primary)', letterSpacing: '0.04em', fontWeight: 600 }}>
+              {year}. {String(month + 1).padStart(2, '0')}
+            </div>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={nextMonth}
+              aria-label="다음 달"
+              style={{ width: '36px', height: '36px', padding: 0, fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              ›
+            </button>
+          </div>
+
+          {/* Weekday Names */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            textAlign: 'center',
+            marginBottom: '0.65rem',
+            fontSize: '15px',
+            fontWeight: 600,
+            color: 'var(--text-muted)'
+          }}>
+            <div>일</div>
+            <div>월</div>
+            <div>화</div>
+            <div>수</div>
+            <div>목</div>
+            <div>금</div>
+            <div>토</div>
+          </div>
+
+          {/* Days Grid - Spacious Cells with Request Day Indicator */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            gap: '4px'
+          }}>
+            {days.map((item, idx) => {
+              const isSelected = value === item.dateStr;
+              const isToday = todayStr === item.dateStr;
+              const hasRequest = requestDates && requestDates.includes(item.dateStr);
+
+              const textColor = item.isCurrentMonth ? 'var(--text-primary)' : 'var(--text-muted)';
+
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSelectDate(item.dateStr)}
+                  style={{
+                    height: '42px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    border: isSelected 
+                      ? '1px solid var(--primary)' 
+                      : (isToday ? '1px solid var(--border-color)' : '1px solid transparent'),
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: isSelected 
+                      ? 'var(--primary)' 
+                      : 'transparent',
+                    color: isSelected 
+                      ? 'var(--bg-main)' 
+                      : textColor,
+                    opacity: item.isCurrentMonth ? 1 : 0.35,
+                    fontSize: '16px',
+                    fontWeight: isSelected || isToday ? 600 : 400,
+                    cursor: 'pointer',
+                    transition: 'var(--transition)'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = 'var(--primary-light)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
+                >
+                  <span style={{ lineHeight: 1 }}>{item.day}</span>
+                  {hasRequest && (
+                    <span 
+                      style={{
+                        width: '4px',
+                        height: '4px',
+                        borderRadius: '50%',
+                        backgroundColor: isSelected ? 'var(--bg-main)' : 'var(--text-primary)',
+                        marginTop: '3px'
+                      }} 
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Footer: Compact Today button */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: '0.85rem',
+            paddingTop: '0.65rem',
+            borderTop: '1px solid var(--border-color)'
+          }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => handleSelectDate(todayStr)}
+              style={{
+                padding: '0.3rem 1.2rem',
+                fontSize: '15px',
+                height: 'auto',
+                lineHeight: 1.4
+              }}
+            >
+              오늘
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
