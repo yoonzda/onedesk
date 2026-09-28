@@ -2141,17 +2141,10 @@ export default function CompanyCalendar({
                   borderBottom: '1px solid var(--border-color)',
                   gap: '1.5rem'
                 }}>
-                  <div style={{ width: '100px', display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0, paddingTop: '4px' }}>
+                  <div style={{ width: '100px', flexShrink: 0, paddingTop: '4px' }}>
                     <span style={{ fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 600 }}>
                       일시
                     </span>
-                    <CustomCheckbox
-                      checked={form.allDay}
-                      onChange={(checked) => setForm({ ...form, allDay: checked })}
-                      label="종일"
-                      size={17}
-                      style={{ fontSize: '14px' }}
-                    />
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', flex: 1 }}>
@@ -2168,23 +2161,21 @@ export default function CompanyCalendar({
                         clearable={false}
                         width="160px"
                       />
-                      {!form.allDay && (
-                        <input
-                          type="time"
-                          value={form.startTime}
-                          onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-                          style={{
-                            background: 'var(--bg-input, transparent)',
-                            border: '1px solid var(--border-color)',
-                            color: 'var(--text-primary)',
-                            padding: '8px 10px',
-                            fontSize: '15px',
-                            borderRadius: '6px',
-                            outline: 'none',
-                            colorScheme: 'dark'
-                          }}
-                        />
-                      )}
+                      <input
+                        type="time"
+                        value={form.startTime}
+                        onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+                        style={{
+                          background: 'var(--bg-input, transparent)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-primary)',
+                          padding: '8px 10px',
+                          fontSize: '15px',
+                          borderRadius: '6px',
+                          outline: 'none',
+                          colorScheme: 'dark'
+                        }}
+                      />
                     </div>
 
                     {/* 종료 일시 */}
@@ -2197,24 +2188,22 @@ export default function CompanyCalendar({
                         clearable={false}
                         width="160px"
                       />
-                      {!form.allDay && (
-                        <input
-                          type="time"
-                          value={form.endTime}
-                          onChange={(e) => setForm({ ...form, endTime: e.target.value })}
-                          style={{
-                            background: 'var(--bg-input, transparent)',
-                            border: '1px solid var(--border-color)',
-                            color: 'var(--text-primary)',
-                            padding: '8px 10px',
-                            fontSize: '15px',
+                      <input
+                        type="time"
+                        value={form.endTime}
+                        onChange={(e) => setForm({ ...form, endTime: e.target.value })}
+                        style={{
+                          background: 'var(--bg-input, transparent)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-primary)',
+                          padding: '8px 10px',
+                          fontSize: '15px',
                             borderRadius: '6px',
                             outline: 'none',
                             colorScheme: 'dark'
                           }}
                         />
-                      )}
-                    </div>
+                      </div>
                   </div>
                 </div>
 

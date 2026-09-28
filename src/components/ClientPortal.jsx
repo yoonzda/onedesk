@@ -53,6 +53,14 @@ export default function ClientPortal({
   });
   const [savingEdit, setSavingEdit] = useState(false);
 
+  const getTodayStr = () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
   const handleOpenDrawer = (req) => {
     setIsDrawerClosing(false);
     setSelectedReq(req);
@@ -178,8 +186,8 @@ export default function ClientPortal({
 
   // Client Confirm Completed Request (안내 창 확인 후 완료 확정 처리, 해제 불가)
   const handleConfirmRequest = async (reqId, e) => {
-    if (e) e.stopPropagation();
-    if (!window.confirm('작업 내역을 확인 완료 처리하시겠습니까?')) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!window.confirm('작업 내역을 확인 완료 처리하시겠습니까?\n확인 완료 후에는 완료가 확정되어 다시 되돌릴 수 없습니다.')) {
       return;
     }
     try {
@@ -193,16 +201,55 @@ export default function ClientPortal({
       });
       const data = await res.json();
       if (data.success) {
+        alert('작업 내역이 확인 완료되었습니다.\n[작업 완료] 탭으로 이동되었습니다.');
         loadRequests();
-        if (selectedReq && selectedReq.id === reqId) {
-          setSelectedReq(data.request);
-          loadComments(reqId);
-        }
+        setIsDrawerClosing(true);
+        setTimeout(() => {
+          setSelectedReq(null);
+          setIsDrawerClosing(false);
+          setActiveTab('DONE');
+        }, 200);
       } else {
         alert(data.message || '처리 실패');
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  // Client Reopen Request (보완 / 재요청 사유 입력 후 진행 중 탭으로 복귀)
+  const handleReopenRequest = async (reqId) => {
+    const reason = window.prompt(
+      '보완 또는 재요청 사유를 입력해주세요:\n(입력하신 사유가 사내 담당자에게 전달되어 다시 작업이 진행됩니다)'
+    );
+    if (reason === null) return; // 취소 클릭
+    const trimmedReason = reason.trim() || '추가 보완 및 수정 요청';
+
+    try {
+      const res = await fetch(`/api/client-requests/${reqId}/reopen`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reason: trimmedReason,
+          requestedBy: user?.managerName || user?.name || '고객사'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('보완 재요청이 정상 접수되었습니다.\n[진행 중] 탭으로 이동되었습니다.');
+        loadRequests();
+        setIsDrawerClosing(true);
+        setTimeout(() => {
+          setSelectedReq(null);
+          setIsDrawerClosing(false);
+          setActiveTab('IN_PROGRESS');
+        }, 200);
+      } else {
+        alert(data.message || '재요청 처리 실패');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('재요청 처리 중 오류가 발생했습니다.');
     }
   };
 
@@ -473,6 +520,7 @@ export default function ClientPortal({
       case 'REQUESTED': return '요청';
       case 'RECEIVED': return '접수 완료';
       case 'IN_PROGRESS': return '진행 중';
+      case 'REOPENED': return '재요청';
       case 'DONE': return '작업 완료';
       default: return status || '';
     }
@@ -737,7 +785,7 @@ export default function ClientPortal({
                       </span>
                     )}
 
-                    {/* 5. 확인 액션 (확인 요청 탭 전용: 단독 깔끔한 체크 아이콘) */}
+                    {/* 5. 확인 액션 (확인 요청 탭 전용: 전사 표준 CustomCheckbox 사각 체크박스) */}
                     {activeTab === 'REVIEW' && (
                       <div 
                         style={{
@@ -749,32 +797,11 @@ export default function ClientPortal({
                         }}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleConfirmRequest(req.id, e);
-                          }}
-                          title="확인 완료"
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            padding: '4px',
-                            cursor: 'pointer',
-                            color: '#3b82f6',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            outline: 'none',
-                            transition: 'transform 0.15s ease'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
-                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
-                        >
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        </button>
+                        <CustomCheckbox
+                          checked={false}
+                          onChange={(e) => handleConfirmRequest(req.id, e)}
+                          size={18}
+                        />
                       </div>
                     )}
 
@@ -931,52 +958,38 @@ export default function ClientPortal({
                       />
                     </div>
 
-                    {/* 2. 긴급 (한 줄 독립 배치) */}
+                    {/* 2. 우선 요청 (한 줄 독립 배치) */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
                       <label style={{ width: '120px', flexShrink: 0, fontSize: '17px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        긴급
+                        우선 요청
                       </label>
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
                         <CustomCheckbox
                           checked={editForm.priority === 'HIGH'}
                           onChange={(checked) => setEditForm({ ...editForm, priority: checked ? 'HIGH' : 'NORMAL' })}
-                          label={editForm.priority === 'HIGH' ? '긴급 요청 (우선 처리 대상)' : '긴급 여부 체크 (체크 시 긴급 요청으로 접수됩니다)'}
                           size={20}
-                          labelStyle={{
-                            fontSize: '16px',
-                            fontWeight: editForm.priority === 'HIGH' ? 600 : 400,
-                            color: editForm.priority === 'HIGH' ? '#f87171' : 'var(--text-primary)'
-                          }}
                         />
                       </div>
                     </div>
 
-                    {/* 3. 희망 완료일 (한 줄 독립 배치) */}
+                    {/* 3. 희망일 (한 줄 독립 배치) */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                      <label style={{ width: '120px', flexShrink: 0, fontSize: '17px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        희망 완료일
+                      <label style={{ width: '120px', flexShrink: 0, fontSize: '17px', fontWeight: 400, color: 'var(--text-primary)' }}>
+                        희망일
                       </label>
-                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
                         <CustomDatePicker
                           value={editForm.desiredDate}
                           onChange={(val) => setEditForm({ ...editForm, desiredDate: val })}
-                          placeholder="희망 완료일 선택 (선택 사항)"
+                          placeholder="희망 완료일 선택"
+                          minDate={getTodayStr()}
                         />
-                        {editForm.desiredDate ? (
-                          <span style={{ fontSize: '15px', color: 'var(--text-secondary)' }}>
-                            선택된 날짜: <strong style={{ color: 'var(--text-primary)' }}>{editForm.desiredDate}</strong>
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-                            (미지정 시 일반 일정으로 협의 진행)
-                          </span>
-                        )}
                       </div>
                     </div>
 
                     {/* 4. 요청 상세 (한 줄 라벨 + 아래 에디터) */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      <label style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      <label style={{ fontSize: '17px', fontWeight: 400, color: 'var(--text-primary)' }}>
                         요청 상세
                       </label>
                       <HtmlEditor
@@ -1026,10 +1039,10 @@ export default function ClientPortal({
                     marginBottom: '1.5rem'
                   }}>
                     {/* 상태 (작업 완료 상태 시 '작업 완료'로 통일 표기) */}
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '16px', fontWeight: 500 }}>상태</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '16px', fontWeight: 400 }}>상태</span>
                     <span style={{
                       fontSize: '16px',
-                      fontWeight: 600,
+                      fontWeight: 400,
                       color: selectedReq.status === 'IN_PROGRESS'
                         ? '#3b82f6'
                         : 'var(--text-primary)'
@@ -1037,85 +1050,28 @@ export default function ClientPortal({
                       {selectedReq.status === 'DONE' ? '작업 완료' : getStatusLabel(selectedReq)}
                     </span>
 
-                    {/* 확인 (작업 완료 건일 때 체크 아이콘 표시) */}
-                    {selectedReq.status === 'DONE' && (
-                      <>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '16px', fontWeight: 500 }}>확인</span>
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          {selectedReq.clientConfirmed ? (
-                            <span
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                color: '#3b82f6',
-                                cursor: 'default'
-                              }}
-                              title="확인 완료"
-                            >
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={(e) => handleConfirmRequest(selectedReq.id, e)}
-                              title="작업 내역 확인 완료"
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                padding: '4px',
-                                cursor: 'pointer',
-                                color: '#3b82f6',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                outline: 'none',
-                                transition: 'transform 0.15s ease'
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
-                              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
-                            >
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            </button>
-                          )}
-                        </div>
-                      </>
-                    )}
-
                     {/* 우선순위 */}
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '16px', fontWeight: 500 }}>우선순위</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '16px', fontWeight: 400 }}>우선순위</span>
                     <span style={{
                       fontSize: '16px',
-                      fontWeight: selectedReq.priority === 'HIGH' ? 600 : 400,
+                      fontWeight: 400,
                       color: selectedReq.priority === 'HIGH' ? '#f87171' : 'var(--text-primary)'
                     }}>
-                      {selectedReq.priority === 'HIGH' ? '긴급' : '일반'}
+                      {selectedReq.priority === 'HIGH' ? '우선 요청' : '일반'}
                     </span>
 
                     {/* 등록일 */}
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '16px', fontWeight: 500 }}>등록일</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '16px', fontWeight: 400 }}>등록일</span>
                     <span style={{ color: 'var(--text-primary)', fontSize: '16px' }}>
                       {selectedReq.createdAt?.slice(0, 10)}
                     </span>
 
-                    {/* 희망 완료일 */}
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '16px', fontWeight: 500 }}>희망 완료일</span>
-                    <span style={{
-                      color: selectedReq.desiredDate ? 'var(--text-primary)' : 'var(--text-muted)',
-                      fontSize: '16px'
-                    }}>
-                      {selectedReq.desiredDate || '미지정'}
-                    </span>
-
-                    {/* 완료일 (완료 시) */}
-                    {selectedReq.completedAt && (
+                    {/* 희망 완료일 (미지정 시 행 자체를 노출하지 않음) */}
+                    {selectedReq.desiredDate && (
                       <>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '16px', fontWeight: 500 }}>완료일</span>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '16px', fontWeight: 400 }}>희망 완료일</span>
                         <span style={{ color: 'var(--text-primary)', fontSize: '16px' }}>
-                          {selectedReq.completedAt?.slice(0, 10)}
+                          {selectedReq.desiredDate}
                         </span>
                       </>
                     )}
@@ -1123,7 +1079,7 @@ export default function ClientPortal({
                     {/* 첨부파일 */}
                     {selectedReq.attachments && selectedReq.attachments.length > 0 && (
                       <>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '16px', fontWeight: 500 }}>첨부파일</span>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '16px', fontWeight: 400 }}>첨부파일</span>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                           {selectedReq.attachments.map(att => (
                             <a
@@ -1141,7 +1097,7 @@ export default function ClientPortal({
                               }}
                             >
                               <span>📎 {formatFileName(att.name)}</span>
-                              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>[다운로드]</span>
+                              <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>[다운로드]</span>
                             </a>
                           ))}
                         </div>
@@ -1154,7 +1110,7 @@ export default function ClientPortal({
               {/* 2. 요청 내용 (수정 모드가 아닐 때 노출) */}
               {!isEditingReq && (
                 <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.85rem' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: 400, color: 'var(--text-primary)', marginBottom: '0.85rem' }}>
                     요청 내용
                   </h3>
                   <div
@@ -1174,10 +1130,10 @@ export default function ClientPortal({
                 </div>
               )}
 
-              {/* 3. 조치 내용 및 투입 공수 (완료 및 확인 요청 건 전용 상세 섹션) */}
-              {!isEditingReq && (selectedReq.completionSummary || selectedReq.spentHours > 0) && (
+              {/* 3. 조치 내용 (작업 완료일, 조치 내용 본문, 투입 공수를 하나의 단일 박스로 통합) */}
+              {!isEditingReq && (selectedReq.completionSummary || selectedReq.spentHours > 0 || selectedReq.completedAt) && (
                 <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.85rem' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: 400, color: 'var(--text-primary)', marginBottom: '0.85rem' }}>
                     조치 내용
                   </h3>
                   <div style={{
@@ -1189,220 +1145,94 @@ export default function ClientPortal({
                     border: '1px solid #2e2e34',
                     padding: '1.5rem',
                     letterSpacing: '-0.01em',
-                    marginBottom: '1rem'
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1rem'
                   }}>
-                    {selectedReq.completionSummary || '조치 완료되었습니다.'}
-                  </div>
-
-                  {selectedReq.spentHours > 0 && (
-                    <div style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>
-                      투입 공수: <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>총 {selectedReq.spentHours}시간</strong>
-                      {selectedReq.spentHoursBreakdown && (
-                        <span style={{ marginLeft: '0.5rem', color: 'var(--text-secondary)' }}>
-                          ({[
-                            selectedReq.spentHoursBreakdown.design > 0 ? `디자인 ${selectedReq.spentHoursBreakdown.design}h` : null,
-                            selectedReq.spentHoursBreakdown.publish > 0 ? `퍼블 ${selectedReq.spentHoursBreakdown.publish}h` : null,
-                            selectedReq.spentHoursBreakdown.dev > 0 ? `개발 ${selectedReq.spentHoursBreakdown.dev}h` : null,
-                            selectedReq.spentHoursBreakdown.etc > 0 ? `기타 ${selectedReq.spentHoursBreakdown.etc}h` : null
-                          ].filter(Boolean).join(' · ') || '개발 100%'})
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* 3. 답글 */}
-              <div>
-                <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.85rem' }}>
-                  답글
-                </h3>
-
-                {/* Comments List (실제 대화 답글만 표시) */}
-                {(() => {
-                  const humanComments = comments.filter(c => !c.content?.startsWith('['));
-                  if (humanComments.length === 0) return null;
-
-                  return (
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.85rem',
-                      maxHeight: '400px',
-                      overflowY: 'auto',
-                      marginBottom: '1.25rem',
-                      paddingRight: '0.35rem'
-                    }}>
-                      {humanComments.map(c => {
-                        const isClient = c.authorRole === 'CLIENT';
-                        return (
-                          <div
-                            key={c.id}
-                            style={{
-                              padding: '1.15rem 1.35rem',
-                              background: isClient ? 'var(--bg-card-hover)' : 'var(--bg-input)',
-                              border: '1px solid var(--border-color)',
-                              borderRadius: 0,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '0.5rem'
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px' }}>
-                              <span style={{ fontWeight: 600, color: isClient ? 'var(--text-primary)' : '#3b82f6' }}>
-                                {isClient ? c.authorName : 'OneDesk 지원팀'}
-                              </span>
-                              <span style={{ color: 'var(--text-muted)' }}>{c.createdAt?.slice(0, 19)}</span>
-                            </div>
-                            <div style={{ fontSize: '15px', lineHeight: 1.6, color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>
-                              {c.content}
-                            </div>
-
-                            {c.attachments && c.attachments.length > 0 && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                {c.attachments.map(att => {
-                                  const isImage = att.mimeType?.startsWith('image/') || /\.(png|jpe?g|gif|webp)$/i.test(att.name || '');
-                                  return (
-                                    <div key={att.id || att.url} style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                                      {isImage && (
-                                        <a href={att.url} target="_blank" rel="noreferrer" style={{ display: 'inline-block' }}>
-                                          <img
-                                            src={att.url}
-                                            alt={att.name || '첨부 이미지'}
-                                            style={{
-                                              maxWidth: '100%',
-                                              maxHeight: '260px',
-                                              objectFit: 'contain',
-                                              border: '1px solid var(--border-color)',
-                                              background: '#09090b',
-                                              display: 'block'
-                                            }}
-                                          />
-                                        </a>
-                                      )}
-                                      <a
-                                        href={att.url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        style={{
-                                          fontSize: '14px',
-                                          color: '#3b82f6',
-                                          textDecoration: 'none',
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '0.35rem'
-                                        }}
-                                      >
-                                        <span>📎 {formatFileName(att.name)}</span>
-                                        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>[다운로드]</span>
-                                      </a>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-
-                {/* Comment Input */}
-                <form onSubmit={handleSendComment}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                    <textarea
-                      className="form-control"
-                      rows={3}
-                      placeholder=""
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      onPaste={handleCommentPaste}
-                      style={{ borderRadius: 0, fontSize: '15px' }}
-                    />
-
-                    {/* Attached / Pasted previews before submitting */}
-                    {commentAttachments.length > 0 && (
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '0.5rem',
-                        padding: '0.6rem 0.75rem',
-                        background: 'var(--bg-card-hover)',
-                        border: '1px solid var(--border-color)'
-                      }}>
-                        {commentAttachments.map((att, idx) => (
-                          <div
-                            key={att.id || idx}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.4rem',
-                              fontSize: '13px',
-                              color: 'var(--text-primary)',
-                              background: 'var(--bg-card)',
-                              padding: '0.25rem 0.6rem',
-                              border: '1px solid var(--border-color)'
-                            }}
-                          >
-                            <span>📎 {formatFileName(att.name)}</span>
-                            <button
-                              type="button"
-                              onClick={() => setCommentAttachments(prev => prev.filter((_, i) => i !== idx))}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                color: 'var(--text-muted)',
-                                fontSize: '14px',
-                                padding: '0 2px'
-                              }}
-                              title="삭제"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))}
+                    {selectedReq.completedAt && (
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', fontSize: '15px', color: 'var(--text-secondary)' }}>
+                        <span>작업 완료일</span>
+                        <span style={{ color: 'var(--text-primary)' }}>{selectedReq.completedAt.slice(0, 10)}</span>
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label
-                        className="btn btn-secondary btn-sm"
-                        style={{ borderRadius: 0, cursor: 'pointer', fontSize: '14px' }}
-                      >
-                        파일 첨부
-                        <input
-                          type="file"
-                          style={{ display: 'none' }}
-                          onChange={(e) => handleFileUpload(e, true)}
-                        />
-                      </label>
-
-                      {/* 중간 색 버튼: 눈이 편안한 미디엄 차콜 */}
-                      <button
-                        type="submit"
-                        disabled={uploading}
-                        style={{
-                          borderRadius: 0,
-                          padding: '0.55rem 1.4rem',
-                          fontSize: '15px',
-                          fontWeight: 600,
-                          background: '#27272a',
-                          color: '#f4f4f5',
-                          border: '1px solid #3f3f46',
-                          cursor: 'pointer',
-                          transition: 'var(--transition)'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = '#3f3f46'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = '#27272a'}
-                      >
-                        {uploading ? '업로드 중...' : '답글 등록'}
-                      </button>
+                    <div style={{ color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+                      {selectedReq.completionSummary || '조치 완료되었습니다.'}
                     </div>
+
+                    {selectedReq.spentHours > 0 && (
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'baseline',
+                        gap: '0.5rem',
+                        fontSize: '15px',
+                        color: 'var(--text-secondary)',
+                        paddingTop: '0.85rem',
+                        borderTop: '1px solid #2e2e34'
+                      }}>
+                        <span>투입 공수:</span>
+                        <span style={{ color: 'var(--text-primary)' }}>총 {selectedReq.spentHours}시간</span>
+                        {selectedReq.spentHoursBreakdown && (
+                          <span style={{ color: 'var(--text-secondary)' }}>
+                            ({[
+                              selectedReq.spentHoursBreakdown.design > 0 ? `디자인 ${selectedReq.spentHoursBreakdown.design}h` : null,
+                              selectedReq.spentHoursBreakdown.publish > 0 ? `퍼블 ${selectedReq.spentHoursBreakdown.publish}h` : null,
+                              selectedReq.spentHoursBreakdown.dev > 0 ? `개발 ${selectedReq.spentHoursBreakdown.dev}h` : null,
+                              selectedReq.spentHoursBreakdown.etc > 0 ? `기타 ${selectedReq.spentHoursBreakdown.etc}h` : null
+                            ].filter(Boolean).join(' · ') || '개발 100%'})
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </form>
-              </div>
+                </div>
+              )}
+
+              {/* 4. 최하단 액션 버튼: 전사 드로어 표준 풀너비 수직 스택 스타일 (CompanyCalendar / 신규 요청 드로어와 동일) */}
+              {!isEditingReq && selectedReq.status === 'DONE' && !selectedReq.clientConfirmed && (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.65rem',
+                  marginTop: 'auto',
+                  paddingTop: '1.5rem',
+                  width: '100%'
+                }}>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    style={{
+                      width: '100%',
+                      height: '46px',
+                      fontSize: '16px',
+                      fontWeight: 400,
+                      borderRadius: '6px',
+                      cursor: 'pointer'
+                    }}
+                    onClick={(e) => handleConfirmRequest(selectedReq.id, e)}
+                  >
+                    확인
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{
+                      width: '100%',
+                      height: '46px',
+                      fontSize: '16px',
+                      fontWeight: 400,
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      color: 'var(--text-primary)',
+                      borderColor: 'var(--border-color)'
+                    }}
+                    onClick={() => handleReopenRequest(selectedReq.id)}
+                  >
+                    재요청
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </>
@@ -1489,7 +1319,7 @@ export default function ClientPortal({
                   flexDirection: 'column',
                   borderTop: '1px solid var(--border-color)'
                 }}>
-                  {/* 1. 긴급 */}
+                  {/* 1. 우선 요청 */}
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -1498,20 +1328,18 @@ export default function ClientPortal({
                     gap: '1.5rem'
                   }}>
                     <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0 }}>
-                      긴급
+                      우선 요청
                     </span>
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
                       <CustomCheckbox
                         checked={newForm.priority === 'HIGH'}
                         onChange={(checked) => setNewForm({ ...newForm, priority: checked ? 'HIGH' : 'NORMAL' })}
-                        label={newForm.priority === 'HIGH' ? '긴급 요청 (우선 처리 대상)' : '긴급 여부 체크 (체크 시 긴급 요청으로 우선 처리됩니다)'}
                         size={18}
-                        style={{ fontSize: '15px' }}
                       />
                     </div>
                   </div>
 
-                  {/* 2. 희망 완료일 */}
+                  {/* 2. 희망일 */}
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -1519,25 +1347,17 @@ export default function ClientPortal({
                     borderBottom: '1px solid var(--border-color)',
                     gap: '1.5rem'
                   }}>
-                    <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0 }}>
+                    <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 400, flexShrink: 0 }}>
                       희망일
                     </span>
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
                       <CustomDatePicker
                         value={newForm.desiredDate}
                         onChange={(val) => setNewForm({ ...newForm, desiredDate: val })}
                         placeholder="희망 완료일 선택"
                         width="160px"
+                        minDate={getTodayStr()}
                       />
-                      {newForm.desiredDate ? (
-                        <span style={{ fontSize: '15px', color: 'var(--text-secondary)' }}>
-                          선택일: <strong style={{ color: 'var(--text-primary)' }}>{newForm.desiredDate}</strong>
-                        </span>
-                      ) : (
-                        <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-                          (미지정 시 일반 일정으로 협의)
-                        </span>
-                      )}
                     </div>
                   </div>
 
@@ -1549,7 +1369,7 @@ export default function ClientPortal({
                     borderBottom: '1px solid var(--border-color)',
                     gap: '1.5rem'
                   }}>
-                    <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0, paddingTop: '6px' }}>
+                    <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 400, flexShrink: 0, paddingTop: '6px' }}>
                       상세내용
                     </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -1657,7 +1477,7 @@ export default function ClientPortal({
                       cursor: 'pointer'
                     }}
                   >
-                    {uploading ? '파일 업로드 중...' : '작업 요청 등록 완료'}
+                    {uploading ? '파일 업로드 중...' : '요청 등록'}
                   </button>
                   <button
                     type="button"

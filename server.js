@@ -1448,12 +1448,10 @@ const handleCheckOutLogic = (req, res) => {
   record.checkOut = nowTime;
   record.status = 'COMPLETED';
 
-  // Calculate work hours with half-day consideration
+  // Calculate work hours with half-day consideration & approved overtime requirement
   if (record.checkIn) {
     const [inH, inM] = record.checkIn.split(':').map(Number);
     const [outH, outM] = nowTime.split(':').map(Number);
-    const totalMinutes = (outH * 60 + outM) - (inH * 60 + inM);
-    const rawHours = Math.max(0, Math.round((totalMinutes / 60) * 10) / 10);
 
     const userLeaves = (db.leaves || []).filter(l => 
       l.userId === record.userId && 
@@ -1463,30 +1461,89 @@ const handleCheckOutLogic = (req, res) => {
     );
     const isAmHalf = record.halfDaySlot === 'AM' || userLeaves.some(l => l.timeSlot === 'AM' || l.leaveType === 'HALF_AM');
     const isPmHalf = record.halfDaySlot === 'PM' || userLeaves.some(l => l.timeSlot === 'PM' || l.leaveType === 'HALF_PM');
+    
+    // Check if there is an approved OVERTIME leave application for today
+    const approvedOvertimeLeave = userLeaves.find(l => l.leaveType === 'OVERTIME');
+
     const policy = getCompanyPolicy(db);
     let expectedCheckOut = '18:00:00';
+    let baseEndMinutes = 18 * 60; // 18:00 standard
+
     if (isPmHalf) {
-      expectedCheckOut = `${policy.halfDayPmWorkEnd || '14:00'}:00`;
+      const pmEnd = policy.halfDayPmWorkEnd || '14:00';
+      expectedCheckOut = `${pmEnd}:00`;
+      const [pmH, pmM] = pmEnd.split(':').map(Number);
+      baseEndMinutes = pmH * 60 + pmM;
     } else if (isAmHalf) {
-      expectedCheckOut = `${policy.halfDayAmWorkEnd || '18:00'}:00`;
+      const amEnd = policy.halfDayAmWorkEnd || '18:00';
+      expectedCheckOut = `${amEnd}:00`;
+      const [amH, amM] = amEnd.split(':').map(Number);
+      baseEndMinutes = amH * 60 + amM;
     }
     record.isEarlyLeave = nowTime < expectedCheckOut;
+
+    const currentOutMinutes = outH * 60 + outM;
+    const isAfterExpectedCheckOut = currentOutMinutes > baseEndMinutes;
+
+    let overtimeHours = 0;
+    let workHours = 8.0;
 
     if (isAmHalf || isPmHalf) {
       record.isHalfDay = true;
       record.halfDaySlot = isAmHalf ? 'AM' : 'PM';
-      // 4 hours granted for half day leave, so total credited work is rawHours + 4
-      record.workHours = Math.round((rawHours + 4) * 10) / 10;
-      // Overtime is any work exceeding the expected 4 hours
-      record.overtimeHours = Math.max(0, Math.round((rawHours - 4) * 10) / 10);
+
+      if (isAfterExpectedCheckOut && approvedOvertimeLeave) {
+        const excessMinutes = currentOutMinutes - baseEndMinutes;
+        const actualOtHours = Math.max(0, Math.round((excessMinutes / 60) * 10) / 10);
+        const approvedLimit = Number(approvedOvertimeLeave.workHours) || actualOtHours;
+        overtimeHours = Math.min(approvedLimit, actualOtHours);
+        workHours = Math.round((8 + overtimeHours) * 10) / 10;
+        record.overtimeLeaveId = approvedOvertimeLeave.id;
+      } else {
+        overtimeHours = 0;
+        const actualMins = Math.min(currentOutMinutes - (inH * 60 + inM), baseEndMinutes - (inH * 60 + inM));
+        const actualH = Math.max(0, Math.round((actualMins / 60) * 10) / 10);
+        workHours = Math.min(8.0, Math.round((actualH + 4) * 10) / 10);
+      }
     } else {
-      record.workHours = rawHours;
-      record.overtimeHours = Math.max(0, Math.round((rawHours - 8) * 10) / 10);
+      if (isAfterExpectedCheckOut && approvedOvertimeLeave) {
+        // Overtime approved & punched out after 18:00
+        const excessMinutes = currentOutMinutes - baseEndMinutes;
+        const actualOtHours = Math.max(0, Math.round((excessMinutes / 60) * 10) / 10);
+        const approvedLimit = Number(approvedOvertimeLeave.workHours) || actualOtHours;
+        overtimeHours = Math.min(approvedLimit, actualOtHours);
+        workHours = Math.round((8 + overtimeHours) * 10) / 10;
+        record.overtimeLeaveId = approvedOvertimeLeave.id;
+      } else {
+        // No approved overtime request or punched out at/before 18:00
+        overtimeHours = 0;
+        if (record.isEarlyLeave) {
+          const workMins = Math.max(0, currentOutMinutes - Math.max(inH * 60 + inM, 9 * 60) - (currentOutMinutes > 13 * 60 ? 60 : 0));
+          workHours = Math.min(8.0, Math.round((workMins / 60) * 10) / 10);
+        } else {
+          // Punched out after 18:00 without approved overtime application -> credited strictly for standard 8 hours
+          workHours = 8.0;
+        }
+      }
     }
+
+    record.workHours = workHours;
+    record.overtimeHours = overtimeHours;
   }
 
   writeDB(db);
-  res.json({ success: true, attendance: record, record });
+
+  let message = '퇴근 처리가 완료되었습니다.';
+  if (record.overtimeHours > 0) {
+    message = `퇴근 완료: 승인된 야근 신청에 따라 연장근로 ${record.overtimeHours}시간이 인정되었습니다.`;
+  } else {
+    const [outH, outM] = nowTime.split(':').map(Number);
+    if ((outH * 60 + outM) > 18 * 60) {
+      message = '퇴근 완료: 승인된 야근 신청 내역이 없어 정규 8시간 근무로 처리되었습니다.';
+    }
+  }
+
+  res.json({ success: true, attendance: record, record, message });
 };
 
 app.post('/api/attendances/check-out', handleCheckOutLogic);
@@ -1528,7 +1585,7 @@ app.post('/api/attendances/reset-today', (req, res) => {
 
 app.put('/api/attendances/:id', (req, res) => {
   const { id } = req.params;
-  const { checkIn, checkOut, workType, isCompanyNetwork, reason, status } = req.body;
+  const { checkIn, checkOut, workType, isCompanyNetwork, reason, status, overtimeHours: manualOvertime } = req.body;
   const db = readDB();
 
   const record = (db.attendances || []).find(a => a.id === id);
@@ -1546,8 +1603,6 @@ app.put('/api/attendances/:id', (req, res) => {
   if (record.checkIn && record.checkOut) {
     const [inH, inM] = record.checkIn.split(':').map(Number);
     const [outH, outM] = record.checkOut.split(':').map(Number);
-    const totalMinutes = (outH * 60 + outM) - (inH * 60 + inM);
-    const rawHours = Math.max(0, Math.round((totalMinutes / 60) * 10) / 10);
 
     const targetDate = record.date || getTodayStr();
     const userLeaves = (db.leaves || []).filter(l => 
@@ -1558,15 +1613,31 @@ app.put('/api/attendances/:id', (req, res) => {
     );
     const isAmHalf = record.halfDaySlot === 'AM' || userLeaves.some(l => l.timeSlot === 'AM' || l.leaveType === 'HALF_AM');
     const isPmHalf = record.halfDaySlot === 'PM' || userLeaves.some(l => l.timeSlot === 'PM' || l.leaveType === 'HALF_PM');
+    const approvedOvertimeLeave = userLeaves.find(l => l.leaveType === 'OVERTIME');
 
-    if (isAmHalf || isPmHalf) {
-      record.isHalfDay = true;
-      record.halfDaySlot = isAmHalf ? 'AM' : 'PM';
-      record.workHours = Math.round((rawHours + 4) * 10) / 10;
-      record.overtimeHours = Math.max(0, Math.round((rawHours - 4) * 10) / 10);
+    const baseEndMinutes = isPmHalf ? (14 * 60) : (18 * 60);
+    const currentOutMinutes = outH * 60 + outM;
+    const isAfterExpectedCheckOut = currentOutMinutes > baseEndMinutes;
+
+    if (manualOvertime !== undefined && manualOvertime !== null) {
+      record.overtimeHours = Math.max(0, Number(manualOvertime) || 0);
+      record.workHours = Math.round((8 + record.overtimeHours) * 10) / 10;
+    } else if (isAfterExpectedCheckOut && approvedOvertimeLeave) {
+      const excessMinutes = currentOutMinutes - baseEndMinutes;
+      const actualOtHours = Math.max(0, Math.round((excessMinutes / 60) * 10) / 10);
+      const approvedLimit = Number(approvedOvertimeLeave.workHours) || actualOtHours;
+      record.overtimeHours = Math.min(approvedLimit, actualOtHours);
+      record.workHours = Math.round((8 + record.overtimeHours) * 10) / 10;
+      record.overtimeLeaveId = approvedOvertimeLeave.id;
     } else {
-      record.workHours = rawHours;
-      record.overtimeHours = Math.max(0, Math.round((rawHours - 8) * 10) / 10);
+      record.overtimeHours = 0;
+      if (currentOutMinutes < baseEndMinutes) {
+        const inMinutes = inH * 60 + inM;
+        const workMins = Math.max(0, currentOutMinutes - inMinutes - (currentOutMinutes > 13 * 60 && inMinutes < 12 * 60 ? 60 : 0));
+        record.workHours = Math.min(8.0, Math.round((workMins / 60) * 10) / 10);
+      } else {
+        record.workHours = 8.0;
+      }
     }
     record.status = status || 'COMPLETED';
   } else if (record.checkIn && !record.checkOut) {
@@ -3442,25 +3513,53 @@ app.post('/api/client-requests/:id/reopen', (req, res) => {
   request.reopenReason = reason || '추가 보완 및 수정 요청';
   request.reopenedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
+  // If there are assigned tasks, resume them back to IN_PROGRESS
+  if (request.assignedTasks && request.assignedTasks.length > 0) {
+    request.assignedTasks.forEach(task => {
+      task.status = 'IN_PROGRESS';
+    });
+  }
+
   logRequestHistory(request, {
     action: '보완 재요청',
     actorName: userName || '고객사',
     detail: `보완 재요청 접수: ${reason || '추가 보완 및 수정 요청'}`
   });
 
-  // Staff Notification
+  // Targeted Notification: notify assigned staff and approver, or ALL_STAFF if none assigned
   if (!db.notifications) db.notifications = [];
-  db.notifications.unshift({
-    id: 'notif-' + Date.now(),
-    targetRole: 'ALL_STAFF',
-    title: '고객사 보완/재요청 접수',
-    message: `[${clientName}]에서 [${request.title}]에 대한 보완 재요청을 접수했습니다. 사유: ${reason || '내용 확인 필요'}`,
-    type: 'CLIENT_REOPENED',
-    requestId: id,
-    isRead: false,
-    link: 'client_requests',
-    createdAt: new Date().toISOString().slice(0, 19).replace('T', ' ')
-  });
+  const assignedStaffIds = (request.assignedTasks || []).map(t => t.staffId).filter(Boolean);
+  if (request.approverId && !assignedStaffIds.includes(request.approverId)) {
+    assignedStaffIds.push(request.approverId);
+  }
+
+  if (assignedStaffIds.length > 0) {
+    assignedStaffIds.forEach(targetStaffId => {
+      db.notifications.unshift({
+        id: 'notif-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+        targetUserId: targetStaffId,
+        title: '고객사 보완/재요청 접수',
+        message: `[${clientName}]에서 [${request.title}]에 대한 보완 재요청을 접수했습니다. 사유: ${reason || '내용 확인 필요'}`,
+        type: 'CLIENT_REOPENED',
+        requestId: id,
+        isRead: false,
+        link: 'client_requests',
+        createdAt: new Date().toISOString().slice(0, 19).replace('T', ' ')
+      });
+    });
+  } else {
+    db.notifications.unshift({
+      id: 'notif-' + Date.now(),
+      targetRole: 'ALL_STAFF',
+      title: '고객사 보완/재요청 접수',
+      message: `[${clientName}]에서 [${request.title}]에 대한 보완 재요청을 접수했습니다. 사유: ${reason || '내용 확인 필요'}`,
+      type: 'CLIENT_REOPENED',
+      requestId: id,
+      isRead: false,
+      link: 'client_requests',
+      createdAt: new Date().toISOString().slice(0, 19).replace('T', ' ')
+    });
+  }
 
   writeDB(db);
   res.json({ success: true, request });

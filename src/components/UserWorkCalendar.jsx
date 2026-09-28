@@ -871,12 +871,14 @@ export default function UserWorkCalendar({ user, attendance, onShowToast }) {
               if (day.workSchedule.leaveType === 'REMOTE') workLabel = '재택근무';
               else if (day.workSchedule.leaveType === 'FIELD') workLabel = '외근';
               else if (day.workSchedule.leaveType === 'TRIP') workLabel = '출장';
-              else if (day.workSchedule.leaveType === 'OVERTIME') workLabel = '야근';
               else if (day.workSchedule.leaveType === 'HOLIDAY_WORK') workLabel = '휴일근무';
             }
 
             const holidayName = getHoliday(day.dateStr);
             const isHoliday = !!holidayName;
+
+            // 주말 또는 법정공휴일에 출근 기록이 있는 경우 휴일근무로 표시
+            const effectiveWorkLabel = workLabel || (hasAtt && (isHoliday || day.isWeekend) ? '휴일근무' : '');
 
             return (
               <div
@@ -898,7 +900,7 @@ export default function UserWorkCalendar({ user, attendance, onShowToast }) {
                   position: 'relative'
                 }}
               >
-                {/* Date Number (Font Size: 16px) & Public Holiday Name */}
+                {/* Date Number & Status / Public Holiday Name (오른쪽 끝 배치) */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -908,102 +910,120 @@ export default function UserWorkCalendar({ user, attendance, onShowToast }) {
                 }}>
                   <span style={{
                     fontSize: '16px',
-                    fontWeight: day.isToday ? 700 : 500,
+                    fontWeight: 400,
                     color: (isSun || isHoliday) ? '#ef4444' : (isSat ? '#3b82f6' : 'var(--text-primary)')
                   }}>
                     {day.dateNumber}
                   </span>
-                  {holidayName && (
-                    <span style={{
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      color: '#ef4444',
+                  {(holidayName || effectiveWorkLabel || leaveLabel) && (
+                    <div style={{
+                      fontSize: '14px',
+                      fontWeight: 400,
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
-                      lineHeight: 1
+                      lineHeight: 1,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
                     }}>
-                      {holidayName}
-                    </span>
+                      {holidayName && (
+                        <span style={{ color: '#ef4444' }}>
+                          {holidayName}
+                        </span>
+                      )}
+                      {holidayName && (effectiveWorkLabel || leaveLabel) && (
+                        <span style={{ color: 'var(--border-color)' }}>·</span>
+                      )}
+                      {(leaveLabel || effectiveWorkLabel) && (
+                        <span style={{ color: day.dateStr > todayStr ? 'var(--text-muted)' : 'var(--text-secondary)' }}>
+                          {leaveLabel || effectiveWorkLabel}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
 
-                {/* Day Content: 출근 시간, 퇴근 시간, 휴가 정보 */}
+                {/* Day Content: 출근/퇴근 (우측 배치 & 시작점 좌측 일치) or 미기록 '-' (가운데 정렬) */}
                 <div style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.25rem',
-                  fontSize: '16px',
+                  width: '100%',
+                  fontSize: '15px',
                   lineHeight: 1.4
                 }}>
-                  {/* 1. 오전반차인 경우: 가장 상단에 '오전 반차' 표기 */}
-                  {hasLeave && isAmHalf && (
+                  {hasAtt && (day.att.checkIn || day.att.checkOut) ? (
                     <div style={{
-                      color: day.dateStr > todayStr ? 'var(--text-muted)' : 'var(--text-secondary)',
-                      fontWeight: 500,
-                      fontSize: '16px'
+                      display: 'flex',
+                      justifyContent: 'flex-end',
+                      width: '100%'
                     }}>
-                      오전 반차
-                    </div>
-                  )}
-
-                  {/* 2. 출근 및 퇴근 시각 */}
-                  {hasAtt ? (
-                    <>
                       <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'auto auto',
+                        columnGap: '6px',
+                        rowGap: '0.3rem',
+                        alignItems: 'center',
                         fontVariantNumeric: 'tabular-nums',
-                        fontSize: '16px',
-                        fontWeight: 600,
-                        color: day.att.isLate ? '#ef4444' : 'var(--text-primary)'
+                        fontSize: '15px',
+                        fontWeight: 400,
+                        lineHeight: 1.4
                       }}>
-                        {day.att.checkIn ? day.att.checkIn.slice(0, 5) : (day.isToday ? '' : '-')}
-                      </div>
-                      <div style={{
-                        fontVariantNumeric: 'tabular-nums',
-                        fontSize: '16px',
-                        fontWeight: 600,
-                        color: 'var(--text-primary)'
-                      }}>
-                        {day.att.checkOut ? day.att.checkOut.slice(0, 5) : (!day.isToday ? '-' : '')}
-                      </div>
-                    </>
-                  ) : (
-                    // 출근 기록이 없는 과거 근무일:
-                    // 주말 제외(!day.isWeekend), 공휴일 제외(!isHoliday), 종일 연차/휴가 제외(!hasLeave || isHalfDay)
-                    // 출근 안 하는 날(추석, 연차 등)은 자동 제외되며, 미출근 근무일은 중복 2줄이 아닌 단일 '-' 1개만 표기
-                    day.isCurrentMonth && !day.isWeekend && !isHoliday && day.dateStr < todayStr && (!hasLeave || isHalfDay) && (
-                      <div style={{
-                        fontVariantNumeric: 'tabular-nums',
-                        fontSize: '16px',
-                        fontWeight: 600,
-                        color: 'var(--text-muted)'
-                      }}>
-                        -
-                      </div>
-                    )
-                  )}
+                        {/* 1행: 출근 라벨 + 시각 */}
+                        <span style={{
+                          color: day.att.isLate ? '#ef4444' : 'var(--text-primary)',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          출근
+                        </span>
+                        <span style={{
+                          color: day.att.isLate ? '#ef4444' : 'var(--text-primary)',
+                          whiteSpace: 'nowrap',
+                          textAlign: 'center'
+                        }}>
+                          {day.att.checkIn ? day.att.checkIn.slice(0, 5) : '-'}
+                        </span>
 
-                  {/* 4. 오후반차 또는 종일 휴가인 경우: 하단에 표기 */}
-                  {hasLeave && !isAmHalf && (
-                    <div style={{
-                      color: day.dateStr > todayStr ? 'var(--text-muted)' : 'var(--text-secondary)',
-                      fontWeight: 500,
-                      fontSize: '16px'
-                    }}>
-                      {leaveLabel}
-                    </div>
-                  )}
+                        {/* 2행: 퇴근 라벨 + 시각 (미기록 시 '-'가 윗줄 시간을 기준으로 가운데 정렬) */}
+                        {(!day.isToday || day.att.checkOut) && (
+                          <>
+                            <span style={{
+                              color: day.att.checkOut ? 'var(--text-primary)' : 'var(--text-muted)',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              퇴근
+                            </span>
+                            <span style={{
+                              color: day.att.checkOut ? 'var(--text-primary)' : 'var(--text-muted)',
+                              whiteSpace: 'nowrap',
+                              textAlign: 'center'
+                            }}>
+                              {day.att.checkOut ? day.att.checkOut.slice(0, 5) : '-'}
+                            </span>
+                          </>
+                        )}
 
-                  {/* 5. 근무 일정(재택근무, 외근 등): 휴가가 없는 날 하단에 표기 */}
-                  {!hasLeave && hasWorkSchedule && (
-                    <div style={{
-                      color: day.dateStr > todayStr ? 'var(--text-muted)' : 'var(--text-secondary)',
-                      fontWeight: 500,
-                      fontSize: '16px'
-                    }}>
-                      {workLabel}
+                        {/* 3행: 야근 라벨 + 시간 (승인된 야근 인정 시 표기) */}
+                        {day.att.overtimeHours > 0 && (
+                          <>
+                            <span style={{
+                              color: 'var(--text-secondary)',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              야근
+                            </span>
+                            <span style={{
+                              color: 'var(--text-secondary)',
+                              whiteSpace: 'nowrap',
+                              textAlign: 'center'
+                            }}>
+                              {day.att.overtimeHours}h
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             );

@@ -7,6 +7,7 @@ export default function QuickMenuHub({
   onCheckOut,
   onNavigate,
   unreadNotifsCount = 0,
+  pendingRequestsCount = 0,
   approvedWorkType,
   todayLeave,
   isTodayFullDayLeave,
@@ -452,8 +453,22 @@ export default function QuickMenuHub({
               minHeight: '220px'
             }}
           >
-            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)' }}>
+            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)', position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
               요청관리
+              {pendingRequestsCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-3px',
+                    right: '-9px',
+                    width: '7px',
+                    height: '7px',
+                    backgroundColor: '#ef4444',
+                    borderRadius: '50%',
+                    display: 'block'
+                  }}
+                />
+              )}
             </h3>
           </div>
 

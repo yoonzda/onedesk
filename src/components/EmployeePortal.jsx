@@ -45,6 +45,20 @@ const calculateDuration = (start, end) => {
   return { hours: Number((diff / 60).toFixed(1)), text };
 };
 
+const formatHtmlContent = (content) => {
+  if (!content) return '';
+  if (/<(p|div|h[1-6]|ul|ol|li|blockquote|strong|b|em|i|u|s|hr|span)[^>]*>/i.test(content)) {
+    return content;
+  }
+  const escaped = content
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+  return escaped.replace(/\n/g, '<br/>');
+};
+
 const getMatchingEmployeesForCategory = (empList, category) => {
   if (!empList || empList.length === 0) return [];
   if (!category || category === 'ETC') return empList;
@@ -134,8 +148,9 @@ export default function EmployeePortal({
   
   useEffect(() => {
     if (openLeaveHistory) {
-      setActiveTab('attendance');
+      setActiveTab('commute');
       loadLeaves();
+      setCommuteAccordionState(prev => ({ ...prev, history: true }));
       setTimeout(() => {
         document.getElementById('leave-history-section')?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
@@ -320,6 +335,21 @@ export default function EmployeePortal({
   const [selectedSlots, setSelectedSlots] = useState({}); // { '2026-09-10': 'ALL' | 'AM' | 'PM' }
   const [applyReason, setApplyReason] = useState('');
 
+  // Commute Tab 4-Part Accordion State (달력보기, 연차 현황, 근태 신청, 근태 내역)
+  const [commuteAccordionState, setCommuteAccordionState] = useState({
+    calendar: false,
+    leaveStatus: false,
+    apply: false,
+    history: false
+  });
+
+  const toggleCommuteSection = (key) => {
+    setCommuteAccordionState(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
   const [isApplyAccordionOpen, setIsApplyAccordionOpen] = useState(false);
   const [showApplyConfirmModal, setShowApplyConfirmModal] = useState(false);
   const [alertModal, setAlertModal] = useState({
@@ -367,6 +397,23 @@ export default function EmployeePortal({
     if (deptLeader) return deptLeader;
     return (employees || []).find(e => e.role === 'ADMIN');
   }, [employees, user]);
+
+  // 사내 전체 직원 (고객사 계정 제외) 및 부서별 그룹핑 (요청관리 최종 승인자 선택용)
+  const internalEmployees = useMemo(() => {
+    return (employees || []).filter(emp => emp.role !== 'CLIENT');
+  }, [employees]);
+
+  const approverUsersByDept = useMemo(() => {
+    const map = new Map();
+    internalEmployees.forEach(u => {
+      const dept = u.dept || '기타';
+      if (!map.has(dept)) {
+        map.set(dept, []);
+      }
+      map.get(dept).push(u);
+    });
+    return Array.from(map.entries());
+  }, [internalEmployees]);
 
   // 일반 사원/팀원 또는 팀장일 경우 기본 결재자 자동 지정
   useEffect(() => {
@@ -1092,6 +1139,7 @@ export default function EmployeePortal({
         setShowApplyConfirmModal(false);
         handleCloseLeaveDrawer();
         setIsApplyAccordionOpen(false);
+        setCommuteAccordionState(prev => ({ ...prev, apply: false, history: true }));
         setSelectedSlots({});
         setApplyReason('');
         loadLeaves();
@@ -1517,7 +1565,7 @@ export default function EmployeePortal({
     }
 
     switch (status) {
-      case 'REQUESTED': return '요청 (접수 대기)';
+      case 'REQUESTED': return '요청';
       case 'RECEIVED': return '접수 완료';
       case 'IN_PROGRESS': return '진행 중';
       case 'DONE': return isConfirmed ? '작업 완료' : '확인 요청';
@@ -1550,8 +1598,23 @@ export default function EmployeePortal({
           <button 
             className={`tab-btn tab-btn-lg ${activeTab === 'client_requests' ? 'active' : ''}`}
             onClick={() => setActiveTab('client_requests')}
+            style={{ position: 'relative' }}
           >
             요청관리
+            {requestedClientRequests.length > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '6px',
+                  right: '8px',
+                  width: '6px',
+                  height: '6px',
+                  backgroundColor: '#ef4444',
+                  borderRadius: '50%',
+                  display: 'block'
+                }}
+              />
+            )}
           </button>
           <button 
             className={`tab-btn tab-btn-lg ${activeTab === 'tasks' ? 'active' : ''}`}
@@ -1800,139 +1863,226 @@ export default function EmployeePortal({
             </div>
           </div>
 
-          {/* 2. 내 근무 리스트 (월간 근무 달력: 기존 형태 100% 온전히 유지) */}
-          <UserWorkCalendar
-            user={user}
-            attendance={attendance}
-            onShowToast={onShowToast}
-          />
+          {/* 4단 대형 아코디언 메뉴: 달력보기 / 연차 현황 / 근태 신청 / 근태 내역 */}
+          <div style={{ marginTop: '3.5rem', display: 'flex', flexDirection: 'column', borderTop: '1px solid var(--border-color)' }}>
 
-          {/* 3. 하단 추가: 내 연차 현황 (박스 스타일 완전 배제: 미니멀 타이포그래피) */}
-          <div style={{ margin: '4rem 0 3.5rem 0' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: '2rem'
-            }}>
-              <h2 style={{
-                fontSize: '24px',
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.02em',
-                margin: 0
-              }}>
-                내 연차 현황
-              </h2>
-            </div>
-
-            {/* 잔여 / 사용 / 총 부여 연차 (1년 미만 사원은 연차 발생일 포함 4열 균형 타이포그래피) */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: nextLeaveGrantInfo ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)',
-              gap: '2rem'
-            }}>
-              <div>
-                <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
-                  잔여 연차
-                </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-                  <span style={{ fontSize: '28px', color: 'var(--text-primary)', lineHeight: 1 }}>
-                    {user.remainingLeave !== undefined ? user.remainingLeave : ((user.totalLeave || 15) - (user.usedLeave || 0))}
-                  </span>
-                  <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>일</span>
-                </div>
-              </div>
-
-              <div>
-                <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
-                  사용 연차
-                </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-                  <span style={{ fontSize: '28px', color: 'var(--text-secondary)', lineHeight: 1 }}>
-                    {user.usedLeave || 0}
-                  </span>
-                  <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>일</span>
-                </div>
-              </div>
-
-              <div>
-                <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
-                  총 부여 연차
-                </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-                  <span style={{ fontSize: '28px', color: 'var(--text-muted)', lineHeight: 1 }}>
-                    {user.totalLeave || 15}
-                  </span>
-                  <span style={{ fontSize: '16px', color: 'var(--text-muted)' }}>일</span>
-                </div>
-              </div>
-
-              {nextLeaveGrantInfo && (
-                <div>
-                  <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
-                    연차 발생일
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-                    <span style={{ fontSize: '28px', color: 'var(--text-primary)', lineHeight: 1 }}>
-                      {nextLeaveGrantInfo.monthlyGrantText}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 4. 근태 신청 버튼 및 인라인 아코디언 영역 */}
-          <div style={{ marginBottom: isApplyAccordionOpen ? '3.5rem' : '2.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: isApplyAccordionOpen ? '1.25rem' : 0 }}>
+            {/* 1. 달력보기 */}
+            <div style={{ borderBottom: '1px solid var(--border-color)' }}>
               <button
                 type="button"
-                className="btn btn-secondary"
-                onClick={() => setIsApplyAccordionOpen(prev => !prev)}
+                onClick={() => toggleCommuteSection('calendar')}
                 style={{
-                  padding: '0.75rem 1.4rem',
-                  fontSize: '15px',
-                  borderRadius: 0,
-                  cursor: 'pointer'
+                  width: '100%',
+                  background: 'none',
+                  border: 'none',
+                  padding: '1.75rem 0.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  outline: 'none'
                 }}
               >
-                {isApplyAccordionOpen ? '닫기' : '근태 신청'}
-              </button>
-            </div>
-
-            {/* 인라인 아코디언 신청 폼 (모던 CSS Grid 기반의 부드럽고 자연스러운 공간 확장) */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateRows: isApplyAccordionOpen ? '1fr' : '0fr',
-                transition: isApplyAccordionOpen
-                  ? 'grid-template-rows 0.75s cubic-bezier(0.22, 1, 0.36, 1), margin-top 0.5s ease'
-                  : 'grid-template-rows 0.5s cubic-bezier(0.25, 1, 0.35, 1), margin-top 0.4s ease',
-                marginTop: isApplyAccordionOpen ? '1.25rem' : 0
-              }}
-            >
-              <div style={{ minHeight: 0, overflow: 'hidden' }}>
-                <div
+                <span style={{ fontSize: '26px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                  달력보기
+                </span>
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   style={{
-                    padding: '1.5rem 0.5rem 2.5rem 0.5rem'
+                    color: 'var(--text-secondary)',
+                    transform: commuteAccordionState.calendar ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)'
                   }}
                 >
-                  <div style={{
-                    marginBottom: '1.75rem',
-                    paddingBottom: '0.75rem',
-                    borderBottom: '1px solid var(--border-color)'
-                  }}>
-                    <h2 style={{
-                      fontSize: '24px',
-                      fontWeight: 700,
-                      margin: 0,
-                      color: 'var(--text-primary)',
-                      letterSpacing: '-0.02em'
-                    }}>
-                      근태 신청
-                    </h2>
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateRows: commuteAccordionState.calendar ? '1fr' : '0fr',
+                  transition: 'grid-template-rows 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
+                  overflow: 'hidden'
+                }}
+              >
+                <div style={{ minHeight: 0 }}>
+                  <div style={{ padding: '0.5rem 0 3rem 0' }}>
+                    <UserWorkCalendar
+                      user={user}
+                      attendance={attendance}
+                      onShowToast={onShowToast}
+                    />
                   </div>
+                </div>
+              </div>
+            </div>
 
-                  <form onSubmit={handleOpenApplyConfirm} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* 2. 연차 현황 */}
+            <div style={{ borderBottom: '1px solid var(--border-color)' }}>
+              <button
+                type="button"
+                onClick={() => toggleCommuteSection('leaveStatus')}
+                style={{
+                  width: '100%',
+                  background: 'none',
+                  border: 'none',
+                  padding: '1.75rem 0.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  outline: 'none'
+                }}
+              >
+                <span style={{ fontSize: '26px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                  연차 현황
+                </span>
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    transform: commuteAccordionState.leaveStatus ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)'
+                  }}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateRows: commuteAccordionState.leaveStatus ? '1fr' : '0fr',
+                  transition: 'grid-template-rows 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
+                  overflow: 'hidden'
+                }}
+              >
+                <div style={{ minHeight: 0 }}>
+                  <div style={{ padding: '2rem 0.25rem 3rem 0.25rem' }}>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: nextLeaveGrantInfo ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)',
+                      gap: '2rem'
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
+                          잔여 연차
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
+                          <span style={{ fontSize: '28px', color: 'var(--text-primary)', lineHeight: 1 }}>
+                            {user.remainingLeave !== undefined ? user.remainingLeave : ((user.totalLeave || 15) - (user.usedLeave || 0))}
+                          </span>
+                          <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>일</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
+                          사용 연차
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
+                          <span style={{ fontSize: '28px', color: 'var(--text-secondary)', lineHeight: 1 }}>
+                            {user.usedLeave || 0}
+                          </span>
+                          <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>일</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
+                          총 부여 연차
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
+                          <span style={{ fontSize: '28px', color: 'var(--text-muted)', lineHeight: 1 }}>
+                            {user.totalLeave || 15}
+                          </span>
+                          <span style={{ fontSize: '16px', color: 'var(--text-muted)' }}>일</span>
+                        </div>
+                      </div>
+
+                      {nextLeaveGrantInfo && (
+                        <div>
+                          <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
+                            연차 발생일
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
+                            <span style={{ fontSize: '28px', color: 'var(--text-primary)', lineHeight: 1 }}>
+                              {nextLeaveGrantInfo.monthlyGrantText}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. 근태 신청 */}
+            <div style={{ borderBottom: '1px solid var(--border-color)' }}>
+              <button
+                type="button"
+                onClick={() => toggleCommuteSection('apply')}
+                style={{
+                  width: '100%',
+                  background: 'none',
+                  border: 'none',
+                  padding: '1.75rem 0.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  outline: 'none'
+                }}
+              >
+                <span style={{ fontSize: '26px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                  근태 신청
+                </span>
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    transform: commuteAccordionState.apply ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)'
+                  }}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateRows: commuteAccordionState.apply ? '1fr' : '0fr',
+                  transition: 'grid-template-rows 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
+                  overflow: 'hidden'
+                }}
+              >
+                <div style={{ minHeight: 0 }}>
+                  <div style={{ padding: '2rem 0.25rem 3rem 0.25rem' }}>
+                    <form onSubmit={handleOpenApplyConfirm} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     {/* 1. 휴가 및 근무 유형 (알약 / 칩 스타일 버튼 선택기) */}
                     <div style={{
                       display: 'flex',
@@ -2193,26 +2343,57 @@ export default function EmployeePortal({
             </div>
           </div>
 
-          {/* 5. 근태 및 휴가 신청 내역 (우리가 사용 중인 표준 custom-table 스타일) */}
-          <div id="leave-history-section" style={{ marginBottom: '4rem' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '1.5rem'
-            }}>
-              <h2 style={{
-                fontSize: '24px',
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.02em',
-                margin: 0
-              }}>
-                근태 및 휴가 신청 내역
-              </h2>
-            </div>
-
-            {/* 표준 목록 테이블 (card, borderRadius: 0, padding: 0) */}
-            <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 0, border: '1px solid var(--border-color)' }}>
+          {/* 4. 근태 내역 */}
+            <div style={{ borderBottom: '1px solid var(--border-color)' }}>
+              <button
+                type="button"
+                onClick={() => toggleCommuteSection('history')}
+                style={{
+                  width: '100%',
+                  background: 'none',
+                  border: 'none',
+                  padding: '1.75rem 0.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  outline: 'none'
+                }}
+              >
+                <span style={{ fontSize: '26px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                  근태 내역
+                </span>
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    transform: commuteAccordionState.history ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)'
+                  }}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateRows: commuteAccordionState.history ? '1fr' : '0fr',
+                  transition: 'grid-template-rows 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
+                  overflow: 'hidden'
+                }}
+              >
+                <div style={{ minHeight: 0 }}>
+                  <div id="leave-history-section" style={{ padding: '2rem 0.25rem 3.5rem 0.25rem' }}>
+                    {/* 표준 목록 테이블 (card, borderRadius: 0, padding: 0) */}
+                    <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 0, border: '1px solid var(--border-color)' }}>
               <div style={{ overflowX: 'auto', width: '100%' }}>
                 <table className="custom-table">
                   <thead>
@@ -2276,7 +2457,8 @@ export default function EmployeePortal({
                               </td>
                               <td style={{
                                 color: isRejected ? 'var(--text-muted)' : 'var(--text-primary)',
-                                wordBreak: 'break-all',
+                                wordBreak: 'keep-all',
+                                overflowWrap: 'break-word',
                                 borderBottom: isExpanded ? 'none' : '1px solid var(--border-color)',
                                 verticalAlign: (group.dateLines?.length || 0) > 1 ? 'top' : 'middle'
                               }}>
@@ -2385,7 +2567,7 @@ export default function EmployeePortal({
                                         <span style={{ fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0, fontSize: '15px' }}>
                                           반려 사유
                                         </span>
-                                        <span style={{ color: 'var(--text-primary)', lineHeight: 1.6, wordBreak: 'break-all', fontSize: '15px' }}>
+                                        <span style={{ color: 'var(--text-primary)', lineHeight: 1.6, wordBreak: 'keep-all', overflowWrap: 'break-word', fontSize: '15px' }}>
                                           {group.rejectReason || '사유가 입력되지 않았습니다.'}
                                         </span>
                                       </div>
@@ -2404,7 +2586,11 @@ export default function EmployeePortal({
             </div>
           </div>
         </div>
-      )}
+      </div>
+    </div>
+  </div>
+</div>
+)}
 
       {/* TAB 2: CALENDAR (일정 관리) */}
       {activeTab === 'calendar' && (
@@ -2900,10 +3086,10 @@ export default function EmployeePortal({
                       borderBottom: '1px solid var(--border-color)',
                       gap: '1.5rem'
                     }}>
-                      <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0 }}>
+                      <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 400, flexShrink: 0 }}>
                         제목
                       </span>
-                      <div style={{ flex: 1, fontSize: '18px', color: 'var(--text-primary)', fontWeight: 600, lineHeight: 1.5, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ flex: 1, fontSize: '18px', color: 'var(--text-primary)', fontWeight: 400, lineHeight: 1.5, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         {selectedReq.priority === 'HIGH' && (
                           selectedReq.status === 'DONE' ? (
                             <span className="urgent-dot-done" title="긴급 (작업 완료)" />
@@ -2923,12 +3109,20 @@ export default function EmployeePortal({
                       borderBottom: '1px solid var(--border-color)',
                       gap: '1.5rem'
                     }}>
-                      <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0 }}>
+                      <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 400, flexShrink: 0 }}>
                         내용
                       </span>
-                      <div style={{ flex: 1, fontSize: '17px', color: 'var(--text-primary)', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                        {selectedReq.content}
-                      </div>
+                      <div 
+                        style={{ 
+                          flex: 1, 
+                          fontSize: '16px', 
+                          color: 'var(--text-primary)', 
+                          lineHeight: 1.7, 
+                          wordBreak: 'break-word',
+                          letterSpacing: '-0.01em'
+                        }}
+                        dangerouslySetInnerHTML={{ __html: formatHtmlContent(selectedReq.content) }}
+                      />
                     </div>
 
                     {/* 5. 상태 */}
@@ -2939,28 +3133,18 @@ export default function EmployeePortal({
                       borderBottom: '1px solid var(--border-color)',
                       gap: '1.5rem'
                     }}>
-                      <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0 }}>
+                      <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 400, flexShrink: 0 }}>
                         상태
                       </span>
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                         <span style={{
                           fontSize: '18px',
                           color: selectedReq.status === 'IN_PROGRESS' ? '#3b82f6' : 'var(--text-primary)',
-                          fontWeight: 600,
+                          fontWeight: 400,
                           lineHeight: 1.5
                         }}>
                           {getStatusLabel(selectedReq)}
                         </span>
-                        {selectedReq.status === 'REQUESTED' && (
-                          <button 
-                            type="button"
-                            className="btn btn-secondary btn-sm" 
-                            style={{ fontSize: '13px', padding: '0.2rem 0.65rem' }}
-                            onClick={() => handleAcceptRequest(selectedReq.id)}
-                          >
-                            접수 처리
-                          </button>
-                        )}
                       </div>
                     </div>
 
@@ -2972,7 +3156,7 @@ export default function EmployeePortal({
                       borderBottom: '1px solid var(--border-color)',
                       gap: '1.5rem'
                     }}>
-                      <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0 }}>
+                      <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 400, flexShrink: 0 }}>
                         배정 업무
                       </span>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -3240,13 +3424,7 @@ export default function EmployeePortal({
                               );
                             })}
                           </div>
-                        ) : (
-                          !isAddingTask && (
-                            <span style={{ fontSize: '16px', color: 'var(--text-muted)' }}>
-                              배정된 인원 없음
-                            </span>
-                          )
-                        )}
+                        ) : null}
 
                         {/* Inline Task Add Form / Button (박스 없이 인라인, 이미 추가된 인원 제외) */}
                         {(() => {
@@ -3268,7 +3446,7 @@ export default function EmployeePortal({
                                   value={newTaskCategory}
                                   onChange={e => handleCategoryChange(e.target.value)}
                                   className="form-control"
-                                  style={{ width: '90px', height: '32px', fontSize: '13px', padding: '0.2rem 0.4rem' }}
+                                  style={{ width: '95px', height: '36px', fontSize: '14px', padding: '0.2rem 0.4rem' }}
                                 >
                                   <option value="DEV">개발</option>
                                   <option value="DESIGN">디자인</option>
@@ -3281,7 +3459,7 @@ export default function EmployeePortal({
                                   value={newTaskAssigneeId}
                                   onChange={e => setNewTaskAssigneeId(e.target.value)}
                                   className="form-control"
-                                  style={{ width: '160px', height: '32px', fontSize: '13px', padding: '0.2rem 0.4rem' }}
+                                  style={{ width: '170px', height: '36px', fontSize: '14px', padding: '0.2rem 0.4rem' }}
                                 >
                                   {candidateEmployees.map(emp => (
                                     <option key={emp.id} value={emp.id}>
@@ -3293,7 +3471,7 @@ export default function EmployeePortal({
                                 <button
                                   type="button"
                                   className="btn btn-primary btn-sm"
-                                  style={{ height: '32px', padding: '0 0.65rem', fontSize: '13px' }}
+                                  style={{ height: '36px', padding: '0 0.75rem', fontSize: '14px' }}
                                   onClick={handleAddInlineTask}
                                 >
                                   추가
@@ -3301,7 +3479,7 @@ export default function EmployeePortal({
                                 <button
                                   type="button"
                                   className="btn btn-secondary btn-sm"
-                                  style={{ height: '32px', padding: '0 0.5rem', fontSize: '13px' }}
+                                  style={{ height: '36px', padding: '0 0.6rem', fontSize: '14px' }}
                                   onClick={() => setIsAddingTask(false)}
                                 >
                                   취소
@@ -3312,7 +3490,7 @@ export default function EmployeePortal({
 
                           if (availableEmployees.length === 0) {
                             return (
-                              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                              <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
                                 모든 직원이 배정되었습니다.
                               </div>
                             );
@@ -3327,8 +3505,8 @@ export default function EmployeePortal({
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '0.35rem',
-                                  fontSize: '13px',
-                                  padding: '0.25rem 0.7rem'
+                                  fontSize: '14px',
+                                  padding: '0.3rem 0.75rem'
                                 }}
                                 onClick={() => {
                                   setIsAddingTask(true);
@@ -3354,7 +3532,7 @@ export default function EmployeePortal({
                       borderBottom: '1px solid var(--border-color)',
                       gap: '1.5rem'
                     }}>
-                      <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0 }}>
+                      <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 400, flexShrink: 0 }}>
                         최종 승인자
                       </span>
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -3367,14 +3545,31 @@ export default function EmployeePortal({
                             <select
                               value={selectedReq.approverId || ''}
                               onChange={e => handleChangeInlineApprover(e.target.value)}
-                              className="form-control"
-                              style={{ width: 'auto', minWidth: '160px', height: '34px', fontSize: '14px' }}
+                              style={{
+                                minWidth: '220px',
+                                height: '38px',
+                                fontSize: '15px',
+                                backgroundColor: 'var(--bg-input, var(--bg-card))',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '4px',
+                                color: 'var(--text-primary)',
+                                cursor: 'pointer',
+                                padding: '0 0.75rem',
+                                outline: 'none'
+                              }}
                             >
                               <option value="">미지정</option>
-                              {employees.map(emp => (
-                                <option key={emp.id} value={emp.id}>
-                                  {emp.name} ({emp.dept || '부서'}{emp.role === 'ADMIN' ? ' · 관리자' : emp.role === 'TEAM_LEADER' ? ' · 팀장' : ''})
-                                </option>
+                              {approverUsersByDept.map(([deptName, deptUsers]) => (
+                                <optgroup key={deptName} label={`── ${deptName} ──`}>
+                                  {deptUsers.map(u => {
+                                    const title = u.position ? u.position : (u.role === 'ADMIN' ? '최고관리자' : u.role === 'TEAM_LEADER' ? '팀장' : '');
+                                    return (
+                                      <option key={u.id} value={u.id}>
+                                        {u.name}{title ? ` (${title})` : ''}
+                                      </option>
+                                    );
+                                  })}
+                                </optgroup>
                               ))}
                             </select>
 
@@ -3388,7 +3583,7 @@ export default function EmployeePortal({
                                   <button
                                     type="button"
                                     className="btn btn-primary btn-sm"
-                                    style={{ fontSize: '13px', padding: '0.35rem 0.85rem' }}
+                                    style={{ fontSize: '14px', padding: '0.35rem 0.85rem' }}
                                     onClick={() => handleFinalApprove(selectedReq)}
                                   >
                                     최종 완료 승인 및 고객사 전달
@@ -4000,7 +4195,7 @@ export default function EmployeePortal({
                 <span style={{ width: '80px', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0, paddingTop: '2px' }}>
                   사유
                 </span>
-                <span style={{ color: 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-all', flex: 1, lineHeight: 1.5 }}>
+                <span style={{ color: 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'keep-all', overflowWrap: 'break-word', flex: 1, lineHeight: 1.5 }}>
                   {applyReason}
                 </span>
               </div>

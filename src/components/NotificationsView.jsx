@@ -259,7 +259,8 @@ export default function NotificationsView({
                     color: isUnread ? 'var(--text-secondary)' : 'var(--text-muted)',
                     lineHeight: 1.55,
                     marginTop: '6px',
-                    wordBreak: 'break-all'
+                    wordBreak: 'keep-all',
+                    overflowWrap: 'break-word'
                   }}>
                     {notif.message}
                   </div>

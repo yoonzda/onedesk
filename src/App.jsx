@@ -69,6 +69,7 @@ export default function App() {
   const [tasks, setTasks] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [clients, setClients] = useState([]);
+  const [clientRequests, setClientRequests] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [leaves, setLeaves] = useState([]);
@@ -158,7 +159,7 @@ export default function App() {
     try {
       const today = getTodayStr();
       
-      const [attRes, schRes, tskRes, empRes, cliRes, annoRes, notifRes, lvRes, filesRes] = await Promise.all([
+      const [attRes, schRes, tskRes, empRes, cliRes, annoRes, notifRes, lvRes, filesRes, reqsRes] = await Promise.all([
         currentUser.role !== 'CLIENT' ? fetch(`/api/attendances?userId=${currentUser.id}&date=${today}`).then(r => r.json()) : Promise.resolve([]),
         currentUser.role !== 'CLIENT' ? fetch('/api/schedules').then(r => r.json()) : Promise.resolve([]),
         currentUser.role !== 'CLIENT' ? fetch('/api/tasks').then(r => r.json()) : Promise.resolve([]),
@@ -167,7 +168,8 @@ export default function App() {
         fetch('/api/announcements').then(r => r.json()),
         fetch(`/api/notifications?userId=${currentUser.id}`).then(r => r.json()),
         currentUser.role !== 'CLIENT' ? fetch('/api/leaves').then(r => r.json()) : Promise.resolve([]),
-        fetch('/api/files').then(r => r.json()).catch(() => [])
+        fetch('/api/files').then(r => r.json()).catch(() => []),
+        fetch('/api/client-requests').then(r => r.json()).catch(() => [])
       ]);
 
       if (currentUser.role !== 'CLIENT') {
@@ -192,6 +194,7 @@ export default function App() {
         }
       }
       setClients(Array.isArray(cliRes) ? cliRes : []);
+      setClientRequests(Array.isArray(reqsRes) ? reqsRes : []);
       setAnnouncements(Array.isArray(annoRes) ? annoRes : []);
       setNotifications(Array.isArray(notifRes) ? notifRes : []);
       setFiles(Array.isArray(filesRes) ? filesRes : []);
@@ -219,6 +222,22 @@ export default function App() {
       localStorage.setItem('ws_toast_position', userToastPos);
       localStorage.setItem('ws_theme', userTheme);
     }
+  }, [user?.id]);
+
+  // Real-time polling for client requests (요청관리 신규 알림 즉시 감지)
+  useEffect(() => {
+    if (!user) return;
+    const reqPollInterval = setInterval(() => {
+      fetch('/api/client-requests')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setClientRequests(data);
+          }
+        })
+        .catch(() => {});
+    }, 5000);
+    return () => clearInterval(reqPollInterval);
   }, [user?.id]);
 
   // Session activity & expiration listener (업무 시간 기준 12시간 TTL 세션 관리)
@@ -380,7 +399,11 @@ export default function App() {
 
       if (data.success) {
         setTodayAttendance(data.attendance);
-        showToast('퇴근 완료', '퇴근 처리 되었습니다.', 'success');
+        if (user) await loadAppData(user);
+        const msg = data.message || '퇴근 처리 되었습니다.';
+        showToast('퇴근 완료', msg, 'success');
+      } else {
+        showToast('퇴근 처리 실패', data.message || '퇴근 처리에 실패했습니다.', 'danger');
       }
     } catch (err) {
       showToast('퇴근 처리 실패', '퇴근 처리 중 오류가 발생했습니다.', 'danger');
@@ -785,6 +808,7 @@ export default function App() {
                   setCurrentView(viewName);
                 }}
                 unreadNotifsCount={unreadNotifsCount}
+                pendingRequestsCount={clientRequests.filter(r => r.status === 'REQUESTED').length}
                 activeRequestsCount={clients.length}
                 pendingTasksCount={tasks.filter(t => t.status !== 'DONE').length}
                 remainingLeave={user.totalLeave ? (user.totalLeave - (user.usedLeave || 0)) : 15}

@@ -9,7 +9,9 @@ export default function CustomDatePicker({
   height = '42px',
   style = {},
   align = 'left',
-  clearable = true
+  clearable = true,
+  minDate = null,
+  maxDate = null
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const initialDate = value ? new Date(value) : new Date();
@@ -208,14 +210,18 @@ export default function CustomDatePicker({
               const isSelected = value === item.dateStr;
               const isToday = todayStr === item.dateStr;
               const hasRequest = requestDates && requestDates.includes(item.dateStr);
+              const isDisabled = Boolean((minDate && item.dateStr < minDate) || (maxDate && item.dateStr > maxDate));
 
-              const textColor = item.isCurrentMonth ? 'var(--text-primary)' : 'var(--text-muted)';
+              const textColor = isDisabled 
+                ? 'var(--text-muted)' 
+                : (item.isCurrentMonth ? 'var(--text-primary)' : 'var(--text-muted)');
 
               return (
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => handleSelectDate(item.dateStr)}
+                  disabled={isDisabled}
+                  onClick={() => !isDisabled && handleSelectDate(item.dateStr)}
                   style={{
                     height: '42px',
                     display: 'flex',
@@ -233,25 +239,25 @@ export default function CustomDatePicker({
                     color: isSelected 
                       ? 'var(--bg-main)' 
                       : textColor,
-                    opacity: item.isCurrentMonth ? 1 : 0.35,
+                    opacity: isDisabled ? 0.2 : (item.isCurrentMonth ? 1 : 0.35),
                     fontSize: '16px',
-                    fontWeight: isSelected || isToday ? 600 : 400,
-                    cursor: 'pointer',
+                    fontWeight: 400,
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
                     transition: 'var(--transition)'
                   }}
                   onMouseEnter={(e) => {
-                    if (!isSelected) {
+                    if (!isSelected && !isDisabled) {
                       e.currentTarget.style.backgroundColor = 'var(--primary-light)';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!isSelected) {
+                    if (!isSelected && !isDisabled) {
                       e.currentTarget.style.backgroundColor = 'transparent';
                     }
                   }}
                 >
                   <span style={{ lineHeight: 1 }}>{item.day}</span>
-                  {hasRequest && (
+                  {hasRequest && !isDisabled && (
                     <span 
                       style={{
                         width: '4px',
@@ -268,28 +274,37 @@ export default function CustomDatePicker({
           </div>
 
           {/* Footer: Compact Today button */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginTop: '0.85rem',
-            paddingTop: '0.65rem',
-            borderTop: '1px solid var(--border-color)'
-          }}>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => handleSelectDate(todayStr)}
-              style={{
-                padding: '0.3rem 1.2rem',
-                fontSize: '15px',
-                height: 'auto',
-                lineHeight: 1.4
-              }}
-            >
-              오늘
-            </button>
-          </div>
+          {(() => {
+            const isTodayDisabled = Boolean((minDate && todayStr < minDate) || (maxDate && todayStr > maxDate));
+            return (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: '0.85rem',
+                paddingTop: '0.65rem',
+                borderTop: '1px solid var(--border-color)'
+              }}>
+                <button
+                  type="button"
+                  disabled={isTodayDisabled}
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => !isTodayDisabled && handleSelectDate(todayStr)}
+                  style={{
+                    padding: '0.3rem 1.2rem',
+                    fontSize: '15px',
+                    height: 'auto',
+                    lineHeight: 1.4,
+                    opacity: isTodayDisabled ? 0.35 : 1,
+                    cursor: isTodayDisabled ? 'not-allowed' : 'pointer',
+                    fontWeight: 400
+                  }}
+                >
+                  오늘
+                </button>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>

@@ -111,6 +111,14 @@ html, body {
   line-height: 1.6;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* Ensure Korean words wrap naturally by word boundaries across all text containers */
+p, span, div, td, th, li, label, button, a {
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 /* Custom Scrollbars */
@@ -288,37 +296,45 @@ th {
 .editor-btn:hover {
   background: var(--primary-light) !important;
 }
-.request-content-html h2 {
+.request-content-html h2,
+.html-editor-content h2 {
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 400;
   margin: 1rem 0 0.5rem;
   color: var(--text-primary);
 }
-.request-content-html h3 {
+.request-content-html h3,
+.html-editor-content h3 {
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 400;
   margin: 0.85rem 0 0.4rem;
   color: var(--text-primary);
 }
-.request-content-html p {
+.request-content-html p,
+.html-editor-content p {
   margin: 0 0 0.75rem;
   line-height: 1.7;
 }
-.request-content-html ul, .request-content-html ol {
-  margin: 0.5rem 0 0.85rem 1.5rem;
+.request-content-html ul, .request-content-html ol,
+.html-editor-content ul, .html-editor-content ol {
+  list-style-position: inside;
   padding: 0;
+  margin: 0.5rem 0 0.85rem 0;
 }
-.request-content-html li {
+.request-content-html li,
+.html-editor-content li {
   margin-bottom: 0.35rem;
-  line-height: 1.6;
+  line-height: 1.7;
 }
-.request-content-html blockquote {
+.request-content-html blockquote,
+.html-editor-content blockquote {
   border-left: 3px solid var(--border-color);
   margin: 0.75rem 0;
   padding: 0.4rem 0 0.4rem 1rem;
   color: var(--text-secondary);
 }
-.request-content-html hr {
+.request-content-html hr,
+.html-editor-content hr {
   border: none;
   border-top: 1px solid var(--border-color);
   margin: 1.25rem 0;
@@ -821,6 +837,8 @@ select::-ms-expand {
   border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
   font-size: 16px !important;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .custom-table tr:hover td {
