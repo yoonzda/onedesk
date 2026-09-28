@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { FileText, Printer, X, Copy, Check, HelpCircle } from 'lucide-react';
+import { Printer, X, Copy, Check, HelpCircle } from 'lucide-react';
 import { getHoliday } from '../utils/holidays';
 
 export default function UserWorkCalendar({ user, attendance, onShowToast }) {
@@ -782,40 +782,19 @@ export default function UserWorkCalendar({ user, attendance, onShowToast }) {
           return (
             <button
               type="button"
+              className="btn btn-secondary"
               disabled={!isCalMonthPaydayPassed}
               onClick={isCalMonthPaydayPassed ? handleOpenPaystub : undefined}
               title={isCalMonthPaydayPassed ? `${calMonth + 1}월 급여 명세서 확인` : `${calMonth + 1}월 정기 급여 지급일(${salaryPaymentDay}일) 도래 전입니다.`}
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '0.6rem 1.15rem',
-                backgroundColor: 'var(--bg-card)',
-                color: isCalMonthPaydayPassed ? 'var(--text-primary)' : 'var(--text-muted)',
-                border: '1px solid var(--border-color)',
-                borderRadius: 0,
+                padding: '0.75rem 1.4rem',
                 fontSize: '15px',
-                fontWeight: 600,
+                borderRadius: 0,
                 cursor: isCalMonthPaydayPassed ? 'pointer' : 'not-allowed',
-                opacity: isCalMonthPaydayPassed ? 1 : 0.45,
-                transition: 'all 0.15s ease',
-                letterSpacing: '-0.01em'
-              }}
-              onMouseEnter={(e) => {
-                if (isCalMonthPaydayPassed) {
-                  e.currentTarget.style.backgroundColor = 'var(--bg-hover, rgba(255, 255, 255, 0.06))';
-                  e.currentTarget.style.borderColor = 'var(--text-secondary)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (isCalMonthPaydayPassed) {
-                  e.currentTarget.style.backgroundColor = 'var(--bg-card)';
-                  e.currentTarget.style.borderColor = 'var(--border-color)';
-                }
+                opacity: isCalMonthPaydayPassed ? 1 : 0.45
               }}
             >
-              <FileText size={16} style={{ color: isCalMonthPaydayPassed ? 'var(--text-secondary)' : 'var(--text-muted)' }} />
-              <span>{calMonth + 1}월 급여 명세서</span>
+              {calMonth + 1}월 급여 명세서
             </button>
           );
         })()}
@@ -968,43 +947,31 @@ export default function UserWorkCalendar({ user, attendance, onShowToast }) {
                     </div>
                   )}
 
-                  {/* 2. 출근 시각 */}
+                  {/* 2. 출근 및 퇴근 시각 */}
                   {hasAtt ? (
-                    <div style={{
-                      fontVariantNumeric: 'tabular-nums',
-                      fontSize: '16px',
-                      fontWeight: 600,
-                      color: day.att.isLate ? '#ef4444' : 'var(--text-primary)'
-                    }}>
-                      {day.att.checkIn ? day.att.checkIn.slice(0, 5) : (day.isToday ? '' : '-')}
-                    </div>
-                  ) : (
-                    // 출근 기록이 없는 과거 근무일 (반차 포함, 종일 휴가 제외)
-                    !hasAtt && day.isCurrentMonth && !day.isWeekend && day.dateStr < todayStr && (!hasLeave || isHalfDay) && (
+                    <>
                       <div style={{
                         fontVariantNumeric: 'tabular-nums',
                         fontSize: '16px',
                         fontWeight: 600,
-                        color: 'var(--text-muted)'
+                        color: day.att.isLate ? '#ef4444' : 'var(--text-primary)'
                       }}>
-                        -
+                        {day.att.checkIn ? day.att.checkIn.slice(0, 5) : (day.isToday ? '' : '-')}
                       </div>
-                    )
-                  )}
-
-                  {/* 3. 퇴근 시각 */}
-                  {hasAtt ? (
-                    <div style={{
-                      fontVariantNumeric: 'tabular-nums',
-                      fontSize: '16px',
-                      fontWeight: 600,
-                      color: 'var(--text-primary)'
-                    }}>
-                      {day.att.checkOut ? day.att.checkOut.slice(0, 5) : (!day.isToday ? '-' : '')}
-                    </div>
+                      <div style={{
+                        fontVariantNumeric: 'tabular-nums',
+                        fontSize: '16px',
+                        fontWeight: 600,
+                        color: 'var(--text-primary)'
+                      }}>
+                        {day.att.checkOut ? day.att.checkOut.slice(0, 5) : (!day.isToday ? '-' : '')}
+                      </div>
+                    </>
                   ) : (
-                    // 퇴근 기록이 없는 과거 근무일 (반차 포함, 종일 휴가 제외)
-                    !hasAtt && day.isCurrentMonth && !day.isWeekend && day.dateStr < todayStr && (!hasLeave || isHalfDay) && (
+                    // 출근 기록이 없는 과거 근무일:
+                    // 주말 제외(!day.isWeekend), 공휴일 제외(!isHoliday), 종일 연차/휴가 제외(!hasLeave || isHalfDay)
+                    // 출근 안 하는 날(추석, 연차 등)은 자동 제외되며, 미출근 근무일은 중복 2줄이 아닌 단일 '-' 1개만 표기
+                    day.isCurrentMonth && !day.isWeekend && !isHoliday && day.dateStr < todayStr && (!hasLeave || isHalfDay) && (
                       <div style={{
                         fontVariantNumeric: 'tabular-nums',
                         fontSize: '16px',

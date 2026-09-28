@@ -1691,6 +1691,30 @@ app.post('/api/leaves', (req, res) => {
       }
     }
 
+    // Calculate total requested annual leave days and validate against remainingLeave
+    let totalRequestedAnnualLeave = 0;
+    for (const item of items) {
+      const itemType = item.leaveType || leaveType;
+      const isWorkType = itemType === 'REMOTE' || itemType === 'FIELD' || itemType === 'TRIP' || itemType === 'OVERTIME' || itemType === 'HOLIDAY_WORK';
+      if (!isWorkType && (itemType === 'ANNUAL' || itemType === 'HALF_AM' || itemType === 'HALF_PM')) {
+        const slot = item.timeSlot || (leaveType === 'HALF_AM' ? 'AM' : (leaveType === 'HALF_PM' ? 'PM' : 'ALL'));
+        const days = item.daysCount !== undefined ? Number(item.daysCount) : (slot === 'ALL' ? 1.0 : 0.5);
+        totalRequestedAnnualLeave += days;
+      }
+    }
+
+    if (totalRequestedAnnualLeave > 0 && user) {
+      const legalLeave = calculateLegalLeave(user.hireDate);
+      const totalLeave = legalLeave + (user.manualLeaveAdjustment || 0);
+      const remainingLeave = totalLeave - (user.usedLeave || 0);
+      if (totalRequestedAnnualLeave > remainingLeave) {
+        return res.status(400).json({
+          success: false,
+          message: `잔여 연차 일수(${remainingLeave}일)가 부족하여 신청할 수 없습니다. (신청 일수: ${totalRequestedAnnualLeave}일)`
+        });
+      }
+    }
+
     const createdLeaves = [];
     const createdSchedules = [];
     let totalDeduction = 0;
@@ -1853,6 +1877,18 @@ app.post('/api/leaves', (req, res) => {
 
   const isWorkType = leaveType === 'REMOTE' || leaveType === 'FIELD' || leaveType === 'TRIP' || leaveType === 'OVERTIME' || leaveType === 'HOLIDAY_WORK';
   const finalDaysCount = isWorkType ? 0 : (Number(daysCount) || 1.0);
+
+  if (!isWorkType && (leaveType === 'ANNUAL' || leaveType === 'HALF_AM' || leaveType === 'HALF_PM') && user) {
+    const legalLeave = calculateLegalLeave(user.hireDate);
+    const totalLeave = legalLeave + (user.manualLeaveAdjustment || 0);
+    const remainingLeave = totalLeave - (user.usedLeave || 0);
+    if (finalDaysCount > remainingLeave) {
+      return res.status(400).json({
+        success: false,
+        message: `잔여 연차 일수(${remainingLeave}일)가 부족하여 신청할 수 없습니다. (신청 일수: ${finalDaysCount}일)`
+      });
+    }
+  }
 
   const newLeave = {
     id: 'lv-' + Date.now(),

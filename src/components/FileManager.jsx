@@ -834,7 +834,7 @@ export default function FileManager({
         );
       })()}
 
-      {/* TAB 3: 유형 (분류체계: 문서, 엑셀, 이미지, 기타) */}
+      {/* TAB 3: 유형 (보드형 묶음 레이아웃: 문서, 엑셀, 이미지, 기타) */}
       {activeTab === 'TYPE' && (() => {
         const categories = ['문서', '엑셀', '이미지', '기타'];
         const grouped = {
@@ -845,55 +845,87 @@ export default function FileManager({
         };
 
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, minmax(280px, 1fr))',
+            gap: '1.25rem',
+            alignItems: 'start',
+            overflowX: 'auto',
+            paddingBottom: '2rem'
+          }}>
             {categories.map(cat => {
               const catFiles = grouped[cat] || [];
               return (
-                <div key={cat}>
-                  {/* Category Header */}
+                <div
+                  key={cat}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.75rem',
+                    minWidth: 0
+                  }}
+                >
+                  {/* Column Header: 유형 명칭 및 파일 수 */}
                   <div style={{
-                    fontSize: '20px',
-                    fontWeight: 700,
-                    color: 'var(--text-primary)',
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    gap: '0.5rem',
                     paddingBottom: '0.65rem',
                     borderBottom: '1px solid var(--border-color)',
-                    marginBottom: '0.5rem'
+                    marginBottom: '0.15rem'
                   }}>
-                    {cat}
+                    <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {cat}
+                    </span>
+                    <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                      {catFiles.length}
+                    </span>
                   </div>
 
-                  {/* Files List */}
-                  {catFiles.length === 0 ? (
-                    <div style={{ padding: '1.25rem 0', color: 'var(--text-muted)', fontSize: '14.5px' }}>
-                      해당 유형의 파일이 없습니다.
-                    </div>
-                  ) : (
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      backgroundColor: 'var(--bg-card)',
-                      border: '1px solid var(--border-color)'
-                    }}>
-                      {catFiles.map(file => (
+                  {/* Cards Stack */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', flex: 1 }}>
+                    {catFiles.length === 0 ? (
+                      <div style={{
+                        padding: '2.5rem 1rem',
+                        textAlign: 'center',
+                        color: 'var(--text-muted)',
+                        fontSize: '14.5px',
+                        backgroundColor: 'var(--bg-card)',
+                        border: '1px dashed var(--border-color)'
+                      }}>
+                        등록된 파일이 없습니다
+                      </div>
+                    ) : (
+                      catFiles.map(file => (
                         <div
                           key={file.id}
                           style={{
+                            backgroundColor: 'var(--bg-card)',
+                            border: '1px solid var(--border-color)',
+                            padding: '1rem',
                             display: 'flex',
-                            alignItems: 'center',
-                            padding: '0.9rem 1.25rem',
-                            borderBottom: '1px solid var(--border-color)',
-                            fontSize: '15px'
+                            flexDirection: 'column',
+                            gap: '0.65rem',
+                            transition: 'all 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--text-secondary)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--border-color)';
                           }}
                         >
                           {/* File Name */}
-                          <div style={{ flex: 1, minWidth: 0, wordBreak: 'break-all', paddingRight: '1rem' }}>
+                          <div style={{ minWidth: 0, wordBreak: 'break-all' }}>
                             <a
                               href={file.url}
                               download={file.name}
                               style={{
                                 color: 'var(--text-primary)',
                                 textDecoration: 'none',
-                                fontWeight: 500,
+                                fontWeight: 600,
+                                fontSize: '15px',
+                                lineHeight: 1.4,
                                 cursor: 'pointer'
                               }}
                               onMouseEnter={(e) => e.currentTarget.style.color = '#3b82f6'}
@@ -903,30 +935,56 @@ export default function FileManager({
                             </a>
                           </div>
 
-                          {/* Size */}
-                          <div style={{ width: '100px', textAlign: 'right', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                            {file.sizeFormatted || '-'}
+                          {/* Meta Information: Size · Uploader · Date */}
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: '0.4rem',
+                            fontSize: '14px',
+                            color: 'var(--text-muted)',
+                            fontVariantNumeric: 'tabular-nums'
+                          }}>
+                            <span>{file.sizeFormatted || '-'}</span>
+                            <span>·</span>
+                            <span>{file.uploaderName || '-'}</span>
+                            {file.createdAt && (
+                              <>
+                                <span>·</span>
+                                <span>{file.createdAt.slice(0, 10)}</span>
+                              </>
+                            )}
                           </div>
 
-                          {/* Uploader */}
-                          <div style={{ width: '110px', textAlign: 'center', color: 'var(--text-primary)' }}>
-                            {file.uploaderName || '-'}
-                          </div>
+                          {/* Memo */}
+                          {file.memo && (
+                            <div style={{
+                              fontSize: '14px',
+                              color: 'var(--text-secondary)',
+                              lineHeight: 1.4,
+                              wordBreak: 'break-all',
+                              paddingTop: '0.2rem'
+                            }}>
+                              {file.memo}
+                            </div>
+                          )}
 
-                          {/* Date */}
-                          <div style={{ width: '120px', textAlign: 'center', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                            {file.createdAt ? file.createdAt.slice(0, 10) : '-'}
-                          </div>
-
-                          {/* Actions */}
-                          <div style={{ width: '120px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.65rem' }}>
+                          {/* Card Actions: 다운로드 · 삭제 */}
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'flex-end',
+                            gap: '0.65rem',
+                            paddingTop: '0.6rem',
+                            borderTop: '1px solid var(--border-color)',
+                            fontSize: '14px'
+                          }}>
                             <a
                               href={file.url}
                               download={file.name}
                               style={{
                                 color: 'var(--text-primary)',
                                 textDecoration: 'none',
-                                fontSize: '13.5px',
                                 fontWeight: 500,
                                 cursor: 'pointer'
                               }}
@@ -946,7 +1004,7 @@ export default function FileManager({
                                     border: 'none',
                                     padding: 0,
                                     color: 'var(--text-muted)',
-                                    fontSize: '13.5px',
+                                    fontSize: '14px',
                                     cursor: 'pointer'
                                   }}
                                   onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
@@ -958,9 +1016,44 @@ export default function FileManager({
                             )}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    )}
+                  </div>
+
+                  {/* Add File Button (Like '+ 새 페이지' in reference board) */}
+                  <button
+                    type="button"
+                    onClick={() => setShowUploadDrawer(true)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      background: 'transparent',
+                      border: '1px dashed var(--border-color)',
+                      color: 'var(--text-muted)',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.4rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      marginTop: 'auto'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--text-secondary)';
+                      e.currentTarget.style.color = 'var(--text-primary)';
+                      e.currentTarget.style.backgroundColor = 'var(--bg-hover, rgba(255, 255, 255, 0.04))';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--border-color)';
+                      e.currentTarget.style.color = 'var(--text-muted)';
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    <Plus size={16} strokeWidth={2} />
+                    <span>파일 등록</span>
+                  </button>
                 </div>
               );
             })}

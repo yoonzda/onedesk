@@ -278,7 +278,9 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
         );
       }
 
-      const isPastWeekday = day.dateStr < todayStr && !isWeekend && !att && !leave && day.isCurrentMonth;
+      const holidayName = getHoliday(day.dateStr);
+      const isHoliday = !!holidayName;
+      const isPastWeekday = day.dateStr < todayStr && !isWeekend && !isHoliday && !att && !leave && day.isCurrentMonth;
 
       return {
         ...day,

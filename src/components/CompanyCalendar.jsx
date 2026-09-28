@@ -1749,8 +1749,12 @@ export default function CompanyCalendar({
                         style={{
                           borderRight: colIdx === 6 ? 'none' : '1px solid var(--border-color)',
                           backgroundColor: isToday
-                            ? 'rgba(255, 255, 255, 0.04)'
+                            ? 'rgba(255, 255, 255, 0.05)'
                             : (!item.isCurrentMonth ? 'rgba(0,0,0,0.015)' : 'transparent'),
+                          outline: isToday ? '2px solid var(--text-primary, #ffffff)' : 'none',
+                          outlineOffset: '-2px',
+                          position: isToday ? 'relative' : 'static',
+                          zIndex: isToday ? 5 : 0,
                           opacity: item.isCurrentMonth ? 1 : 0.35
                         }}
                       />
@@ -2059,9 +2063,9 @@ export default function CompanyCalendar({
                 <input
                   type="text"
                   required
+                  placeholder="일정을 입력해주세요"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="일정 제목을 입력하세요"
                   style={{
                     width: '100%',
                     fontSize: '28px',
@@ -2160,7 +2164,7 @@ export default function CompanyCalendar({
                           const nextEndDate = (!form.endDate || form.endDate < val) ? val : form.endDate;
                           setForm({ ...form, startDate: val, endDate: nextEndDate });
                         }}
-                        placeholder="시작일"
+                        placeholder=""
                         clearable={false}
                         width="160px"
                       />
@@ -2189,7 +2193,7 @@ export default function CompanyCalendar({
                       <CustomDatePicker
                         value={form.endDate}
                         onChange={(val) => setForm({ ...form, endDate: val })}
-                        placeholder="종료일"
+                        placeholder=""
                         clearable={false}
                         width="160px"
                       />
@@ -2229,7 +2233,6 @@ export default function CompanyCalendar({
                     type="text"
                     value={form.location}
                     onChange={(e) => setForm({ ...form, location: e.target.value })}
-                    placeholder="회의실 또는 장소 입력 (예: 본사 대회의실, 3층 회의실 A)"
                     style={{
                       flex: 1,
                       fontSize: '18px',
@@ -2401,7 +2404,6 @@ export default function CompanyCalendar({
                     rows={3}
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    placeholder="회의 내용, 안건 등 내용을 입력하세요"
                     style={{
                       flex: 1,
                       fontSize: '18px',

@@ -123,18 +123,22 @@ export default function EmployeePortal({
   onUpdateUser
 }) {
   const [activeTab, setActiveTab] = useState(
-    openLeaveHistory || targetScheduleId 
-      ? 'calendar' 
-      : (targetRequestId 
-          ? 'client_requests' 
-          : (initialTab === 'admin_attendance' ? 'admin' : initialTab))
+    openLeaveHistory 
+      ? 'attendance'
+      : (targetScheduleId 
+          ? 'calendar' 
+          : (targetRequestId 
+              ? 'client_requests' 
+              : (initialTab === 'admin_attendance' ? 'admin' : initialTab)))
   ); // commute, calendar, tasks, client_requests, files, settings, admin
   
   useEffect(() => {
     if (openLeaveHistory) {
-      setActiveTab('calendar');
+      setActiveTab('attendance');
       loadLeaves();
-      setShowLeaveHistoryDrawer(true);
+      setTimeout(() => {
+        document.getElementById('leave-history-section')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     } else if (targetScheduleId) {
       setActiveTab('calendar');
     } else if (targetRequestId) {
@@ -318,6 +322,22 @@ export default function EmployeePortal({
 
   const [isApplyAccordionOpen, setIsApplyAccordionOpen] = useState(false);
   const [showApplyConfirmModal, setShowApplyConfirmModal] = useState(false);
+  const [alertModal, setAlertModal] = useState({
+    isOpen: false,
+    title: '안내',
+    message: '',
+    details: null
+  });
+
+  const showAlert = (message, title = '안내', details = null) => {
+    setAlertModal({
+      isOpen: true,
+      title,
+      message,
+      details
+    });
+  };
+
   const [isSubmittingLeave, setIsSubmittingLeave] = useState(false);
   const [expandedGroupKey, setExpandedGroupKey] = useState(null);
 
@@ -429,7 +449,7 @@ export default function EmployeePortal({
     };
   }, [selectedSlots]);
 
-  // 1년 미만 사원의 다음 연차 발생일 계산
+  // 1년 미만 사원의 연차 발생일 계산
   const nextLeaveGrantInfo = useMemo(() => {
     if (!user?.hireDate) return null;
     const hireDate = new Date(user.hireDate);
@@ -446,25 +466,9 @@ export default function EmployeePortal({
     // 이미 1년 이상인 경우 null
     if (today >= oneYearAnniversary) return null;
 
-    // 1년 미만 기간: 매월 입사일자(hireDay)에 1일씩 발생
-    let candidate = new Date(today.getFullYear(), today.getMonth(), hireDay);
-    if (today.getDate() >= hireDay) {
-      candidate = new Date(today.getFullYear(), today.getMonth() + 1, hireDay);
-    }
-    if (candidate > oneYearAnniversary) {
-      candidate = oneYearAnniversary;
-    }
-
-    const todayZero = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const candidateZero = new Date(candidate.getFullYear(), candidate.getMonth(), candidate.getDate());
-    const diffDays = Math.round((candidateZero.getTime() - todayZero.getTime()) / (1000 * 60 * 60 * 24));
-
-    const m = candidate.getMonth() + 1;
-    const d = candidate.getDate();
-
     return {
-      displayMonthDay: `${m}월 ${d}일`,
-      daysLeft: diffDays
+      hireDay,
+      monthlyGrantText: `매월 ${hireDay}일`
     };
   }, [user?.hireDate]);
 
@@ -907,17 +911,49 @@ export default function EmployeePortal({
     if (e) e.preventDefault();
     const dateKeys = Object.keys(selectedSlots).sort();
     if (dateKeys.length === 0) {
-      alert('달력에서 최소 1개 이상의 일정을 선택해 주세요.');
+      showAlert('달력에서 최소 1개 이상의 일정을 선택해 주세요.', '일정 미선택');
       return;
     }
+
+    // 연차 / 반차 신청 시 잔여 연차 일수 초과 여부 검증
+    if (applyType === 'ANNUAL' || applyType === 'HALF_AM' || applyType === 'HALF_PM') {
+      let requestedDays = 0;
+      dateKeys.forEach(dateStr => {
+        const slot = selectedSlots[dateStr] || 'ALL';
+        if (applyType === 'HALF_AM' || applyType === 'HALF_PM' || slot === 'AM' || slot === 'PM') {
+          requestedDays += 0.5;
+        } else {
+          requestedDays += 1.0;
+        }
+      });
+
+      const currentRemaining = Number(
+        user?.remainingLeave !== undefined 
+          ? user.remainingLeave 
+          : ((user?.totalLeave || 15) - (user?.usedLeave || 0))
+      );
+
+      if (requestedDays > currentRemaining) {
+        showAlert(
+          '잔여 연차 일수가 부족하여 신청할 수 없습니다.',
+          '연차 부족 안내',
+          [
+            { label: '신청 일수', value: `${requestedDays}일` },
+            { label: '잔여 연차', value: `${currentRemaining}일` }
+          ]
+        );
+        return;
+      }
+    }
+
     if (user?.role !== 'ADMIN' && !approverId && user?.role !== 'TEAM_LEADER') {
-      alert('결재선을 선택해 주세요.');
+      showAlert('결재선을 선택해 주세요.', '결재선 미선택');
       return;
     }
     if (user?.role === 'TEAM_LEADER') {
       const selectedLeaders = otherTeamLeaders.filter(m => selectedTeamApproverIds.includes(m.id));
       if (selectedLeaders.length < 2) {
-        alert('최고 관리자 외에 타 부서 팀장 2명을 결재선으로 선택해야 합니다. (총 3인 결재)');
+        showAlert('최고 관리자 외에 타 부서 팀장 2명을 결재선으로 선택해야 합니다. (총 3인 결재)', '결재선 안내');
         return;
       }
     }
@@ -925,12 +961,12 @@ export default function EmployeePortal({
       const [sh, sm] = workStartTime.split(':').map(Number);
       const [eh, em] = workEndTime.split(':').map(Number);
       if (eh * 60 + em <= sh * 60 + sm) {
-        alert('근무 종료 시간은 시작 시간보다 이후여야 합니다.');
+        showAlert('근무 종료 시간은 시작 시간보다 이후여야 합니다.', '시간 설정 오류');
         return;
       }
     }
     if (!applyReason.trim()) {
-      alert('신청 사유를 입력해 주세요.');
+      showAlert('신청 사유를 입력해 주세요.', '사유 미입력');
       return;
     }
 
@@ -940,9 +976,42 @@ export default function EmployeePortal({
   // 2. Final Execution upon user confirming in modal
   const handleExecuteApplyLeave = async () => {
     if (isSubmittingLeave) return;
-    setIsSubmittingLeave(true);
 
     const dateKeys = Object.keys(selectedSlots).sort();
+
+    // 연차 / 반차 잔여 일수 최종 방어 검증
+    if (applyType === 'ANNUAL' || applyType === 'HALF_AM' || applyType === 'HALF_PM') {
+      let requestedDays = 0;
+      dateKeys.forEach(dateStr => {
+        const slot = selectedSlots[dateStr] || 'ALL';
+        if (applyType === 'HALF_AM' || applyType === 'HALF_PM' || slot === 'AM' || slot === 'PM') {
+          requestedDays += 0.5;
+        } else {
+          requestedDays += 1.0;
+        }
+      });
+
+      const currentRemaining = Number(
+        user?.remainingLeave !== undefined 
+          ? user.remainingLeave 
+          : ((user?.totalLeave || 15) - (user?.usedLeave || 0))
+      );
+
+      if (requestedDays > currentRemaining) {
+        showAlert(
+          '잔여 연차 일수가 부족하여 신청할 수 없습니다.',
+          '연차 부족 안내',
+          [
+            { label: '신청 일수', value: `${requestedDays}일` },
+            { label: '잔여 연차', value: `${currentRemaining}일` }
+          ]
+        );
+        setShowApplyConfirmModal(false);
+        return;
+      }
+    }
+
+    setIsSubmittingLeave(true);
 
     let finalApproverId = approverId;
     let finalApproverName = '';
@@ -1028,10 +1097,10 @@ export default function EmployeePortal({
         loadLeaves();
         onRefresh();
       } else {
-        alert(data.message || '신청 처리에 실패했습니다.');
+        showAlert(data.message || '신청 처리에 실패했습니다.', '오류');
       }
     } catch (err) {
-      alert('신청 처리 중 오류가 발생했습니다.');
+      showAlert('신청 처리 중 오류가 발생했습니다.', '오류');
     } finally {
       setIsSubmittingLeave(false);
     }
@@ -1546,20 +1615,16 @@ export default function EmployeePortal({
             {/* 상태 (대형 타이포그래피) */}
             <div style={{
               fontSize: '40px',
-              fontWeight: 700,
               color: 'var(--text-primary)',
               letterSpacing: '-0.02em',
               marginBottom: '1.25rem',
               lineHeight: 1.1
             }}>
               {attendance && attendance.checkIn ? (
-                attendance.status === 'COMPLETED' ? '퇴근 완료' : (attendance.status === 'OUT' ? '외출 중' : (attendance.workType === 'REMOTE' ? '재택근무 중' : (attendance.workType === 'FIELD' ? '외근 중' : (isAmHalfLeave ? '오전 반차 · 근무 중' : '근무 중'))))
+                attendance.status === 'COMPLETED' ? '퇴근 완료' : (attendance.status === 'OUT' ? '외출 중' : (attendance.workType === 'REMOTE' ? '재택근무 중' : (attendance.workType === 'FIELD' ? '외근 중' : '근무 중')))
               ) : (
                 isTodayFullDayLeave && todayLeave?.status === 'APPROVED' ? (todayLeave.leaveType === 'SICK' ? '병가' : (todayLeave.leaveType === 'SPECIAL' ? '경조사' : (todayLeave.leaveType === 'ETC' ? '휴가' : '연차'))) :
-                (isAmHalfLeave && todayLeave?.status === 'APPROVED' ? '오전 반차 · 출근 전' :
-                (isPmHalfLeave && todayLeave?.status === 'APPROVED' ? '오후 반차' :
-                (approvedWorkType === 'REMOTE' ? '출근 전 · 재택근무' :
-                (approvedWorkType === 'FIELD' ? '출근 전 · 외근' : '출근 전'))))
+                '출근 전'
               )}
             </div>
 
@@ -1747,14 +1812,10 @@ export default function EmployeePortal({
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '1.25rem',
               marginBottom: '2rem'
             }}>
               <h2 style={{
                 fontSize: '24px',
-                fontWeight: 700,
                 color: 'var(--text-primary)',
                 letterSpacing: '-0.02em',
                 margin: 0
@@ -1763,59 +1824,56 @@ export default function EmployeePortal({
               </h2>
             </div>
 
-            {/* 잔여 / 사용 / 총 부여 연차 (1년 미만 사원은 다음 발생일 포함 4열 균형 타이포그래피) */}
+            {/* 잔여 / 사용 / 총 부여 연차 (1년 미만 사원은 연차 발생일 포함 4열 균형 타이포그래피) */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: nextLeaveGrantInfo ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)',
               gap: '2rem'
             }}>
               <div>
-                <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 500 }}>
+                <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
                   잔여 연차
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-                  <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
+                  <span style={{ fontSize: '28px', color: 'var(--text-primary)', lineHeight: 1 }}>
                     {user.remainingLeave !== undefined ? user.remainingLeave : ((user.totalLeave || 15) - (user.usedLeave || 0))}
                   </span>
-                  <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-secondary)' }}>일</span>
+                  <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>일</span>
                 </div>
               </div>
 
               <div>
-                <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 500 }}>
+                <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
                   사용 연차
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-                  <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-secondary)', lineHeight: 1 }}>
+                  <span style={{ fontSize: '28px', color: 'var(--text-secondary)', lineHeight: 1 }}>
                     {user.usedLeave || 0}
                   </span>
-                  <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-secondary)' }}>일</span>
+                  <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>일</span>
                 </div>
               </div>
 
               <div>
-                <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 500 }}>
+                <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
                   총 부여 연차
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-                  <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-muted)', lineHeight: 1 }}>
+                  <span style={{ fontSize: '28px', color: 'var(--text-muted)', lineHeight: 1 }}>
                     {user.totalLeave || 15}
                   </span>
-                  <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-muted)' }}>일</span>
+                  <span style={{ fontSize: '16px', color: 'var(--text-muted)' }}>일</span>
                 </div>
               </div>
 
               {nextLeaveGrantInfo && (
                 <div>
-                  <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 500 }}>
-                    다음 연차 발생일
+                  <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
+                    연차 발생일
                   </div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-                    <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
-                      {nextLeaveGrantInfo.displayMonthDay}
-                    </span>
-                    <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-secondary)' }}>
-                      ({nextLeaveGrantInfo.daysLeft === 0 ? '오늘' : `${nextLeaveGrantInfo.daysLeft}일 후`})
+                    <span style={{ fontSize: '28px', color: 'var(--text-primary)', lineHeight: 1 }}>
+                      {nextLeaveGrantInfo.monthlyGrantText}
                     </span>
                   </div>
                 </div>
@@ -1833,7 +1891,6 @@ export default function EmployeePortal({
                 style={{
                   padding: '0.75rem 1.4rem',
                   fontSize: '15px',
-                  fontWeight: 600,
                   borderRadius: 0,
                   cursor: 'pointer'
                 }}
@@ -2137,7 +2194,7 @@ export default function EmployeePortal({
           </div>
 
           {/* 5. 근태 및 휴가 신청 내역 (우리가 사용 중인 표준 custom-table 스타일) */}
-          <div style={{ marginBottom: '4rem' }}>
+          <div id="leave-history-section" style={{ marginBottom: '4rem' }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -2146,7 +2203,6 @@ export default function EmployeePortal({
             }}>
               <h2 style={{
                 fontSize: '24px',
-                fontWeight: 700,
                 color: 'var(--text-primary)',
                 letterSpacing: '-0.02em',
                 margin: 0
@@ -2199,7 +2255,6 @@ export default function EmployeePortal({
                               }}
                             >
                               <td style={{
-                                fontWeight: isRejected ? 400 : 600,
                                 color: isRejected ? 'var(--text-muted)' : 'var(--text-primary)',
                                 whiteSpace: 'nowrap',
                                 borderBottom: isExpanded ? 'none' : '1px solid var(--border-color)',
@@ -2212,7 +2267,6 @@ export default function EmployeePortal({
                                 </div>
                               </td>
                               <td style={{
-                                fontWeight: isRejected ? 400 : 600,
                                 color: isRejected ? 'var(--text-muted)' : 'var(--text-primary)',
                                 whiteSpace: 'nowrap',
                                 borderBottom: isExpanded ? 'none' : '1px solid var(--border-color)',
@@ -2239,7 +2293,7 @@ export default function EmployeePortal({
                               <td style={{ textAlign: 'center', whiteSpace: 'nowrap', borderBottom: isExpanded ? 'none' : '1px solid var(--border-color)', verticalAlign: (group.dateLines?.length || 0) > 1 ? 'top' : 'middle' }}>
                                 {isPending ? (
                                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '15px' }}>
-                                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                                    <span style={{ color: 'var(--text-primary)' }}>
                                       승인 대기
                                     </span>
                                     <span style={{ color: 'var(--border-color)' }}>·</span>
@@ -2254,7 +2308,6 @@ export default function EmployeePortal({
                                         border: 'none',
                                         padding: 0,
                                         fontSize: '15px',
-                                        fontWeight: 500,
                                         color: 'var(--text-muted)',
                                         cursor: 'pointer',
                                         textDecoration: 'underline',
@@ -2275,7 +2328,6 @@ export default function EmployeePortal({
                                       alignItems: 'center', 
                                       gap: '0.4rem', 
                                       color: 'var(--text-muted)', 
-                                      fontWeight: 600,
                                       fontSize: '15px',
                                       cursor: hasExpandableContent ? 'pointer' : 'default'
                                     }}
@@ -2288,7 +2340,7 @@ export default function EmployeePortal({
                                     )}
                                   </div>
                                 ) : (
-                                  <span style={{ fontWeight: 500, color: 'var(--text-secondary)', fontSize: '15px' }}>
+                                  <span style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>
                                     {(group.isSuperAdminLeave && group.status === 'APPROVED') ? '등록 완료' : statusInfo.label}
                                   </span>
                                 )}
@@ -2354,157 +2406,10 @@ export default function EmployeePortal({
         </div>
       )}
 
-      {/* TAB 2: CALENDAR & LEAVE STATUS (일정 관리 & 연차 현황) */}
+      {/* TAB 2: CALENDAR (일정 관리) */}
       {activeTab === 'calendar' && (
         <div style={{ paddingTop: '1.5rem', paddingBottom: '5.5rem', width: '100%' }}>
-          {/* 연차 현황 (기존 스타일 100% 보존) */}
-          <div style={{ marginBottom: '3rem' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '1.25rem',
-              marginBottom: '2.5rem'
-            }}>
-              <h2 style={{
-                fontSize: '24px',
-                fontWeight: 700,
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.02em',
-                margin: 0
-              }}>
-                연차 현황
-              </h2>
-
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    loadLeaves();
-                    setShowLeaveHistoryDrawer(true);
-                  }}
-                  style={{
-                    padding: '0.75rem 1.4rem',
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    borderRadius: 0
-                  }}
-                >
-                  신청 내역
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowLeaveModal(true)}
-                  style={{
-                    padding: '0.75rem 1.4rem',
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    borderRadius: 0
-                  }}
-                >
-                  연차 / 휴가 신청
-                </button>
-              </div>
-            </div>
-
-            {/* 잔여 / 사용 / 총 부여 연차 (1년 미만 사원은 다음 발생일 포함 4열 균형 타이포그래피) */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: nextLeaveGrantInfo ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)',
-              gap: '2rem'
-            }}>
-              {/* 잔여 연차 */}
-              <div>
-                <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 500 }}>
-                  잔여 연차
-                </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-                  <span style={{
-                    fontSize: '28px',
-                    fontWeight: 700,
-                    color: 'var(--text-primary)',
-                    letterSpacing: '-0.02em',
-                    lineHeight: 1
-                  }}>
-                    {user.remainingLeave !== undefined ? user.remainingLeave : ((user.totalLeave || 15) - (user.usedLeave || 0))}
-                  </span>
-                  <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-secondary)' }}>
-                    일
-                  </span>
-                </div>
-              </div>
-
-              {/* 사용 연차 */}
-              <div>
-                <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 500 }}>
-                  사용 연차
-                </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-                  <span style={{
-                    fontSize: '28px',
-                    fontWeight: 700,
-                    color: 'var(--text-secondary)',
-                    letterSpacing: '-0.02em',
-                    lineHeight: 1
-                  }}>
-                    {user.usedLeave || 0}
-                  </span>
-                  <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-secondary)' }}>
-                    일
-                  </span>
-                </div>
-              </div>
-
-              {/* 총 부여 연차 */}
-              <div>
-                <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 500 }}>
-                  총 부여 연차
-                </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-                  <span style={{
-                    fontSize: '28px',
-                    fontWeight: 700,
-                    color: 'var(--text-muted)',
-                    letterSpacing: '-0.02em',
-                    lineHeight: 1
-                  }}>
-                    {user.totalLeave || 15}
-                  </span>
-                  <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-muted)' }}>
-                    일
-                  </span>
-                </div>
-              </div>
-
-              {/* 1년 미만 사원: 다음 연차 발생일 */}
-              {nextLeaveGrantInfo && (
-                <div>
-                  <div style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 500 }}>
-                    다음 연차 발생일
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-                    <span style={{
-                      fontSize: '28px',
-                      fontWeight: 700,
-                      color: 'var(--text-primary)',
-                      letterSpacing: '-0.02em',
-                      lineHeight: 1
-                    }}>
-                      {nextLeaveGrantInfo.displayMonthDay}
-                    </span>
-                    <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-secondary)' }}>
-                      ({nextLeaveGrantInfo.daysLeft === 0 ? '오늘' : `${nextLeaveGrantInfo.daysLeft}일 후`})
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 3. 전사 및 고객사 협업 일정 달력 */}
+          {/* 전사 및 고객사 협업 일정 달력 */}
           <CompanyCalendar
             user={user}
             schedules={schedules}
@@ -4116,49 +4021,44 @@ export default function EmployeePortal({
         </div>
       )}
 
-      {/* DRAWER: LEAVE & WORK APPLICATION HISTORY */}
-      {showLeaveHistoryDrawer && (
-        <div
-          className={`detail-backdrop ${isHistoryClosing ? 'closing' : ''}`}
-          onClick={handleCloseHistoryDrawer}
+      {/* CUSTOM IN-APP ALERT MODAL (브라우저 기본 alert 대체) */}
+      {alertModal.isOpen && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+          style={{ zIndex: 1200 }}
         >
-          <div
-            className={`detail-slide-drawer drawer-lg ${isHistoryClosing ? 'closing' : ''}`}
+          <div 
+            className="modal-content" 
             onClick={(e) => e.stopPropagation()}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              width: 'min(780px, 100vw)'
+            style={{ 
+              maxWidth: '440px', 
+              width: '90%',
+              padding: '2rem 2.25rem',
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6)'
             }}
           >
-            {/* Drawer Header */}
-            <div style={{
-              padding: '1.75rem 2rem',
-              borderBottom: '1px solid var(--border-color)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              backgroundColor: 'var(--bg-card)'
-            }}>
-              <h3 style={{ fontSize: '22px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-                근태 및 휴가 신청 내역
+            <div className="modal-header" style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h3 style={{ fontSize: '22px', margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                {alertModal.title}
               </h3>
               <button
                 type="button"
-                onClick={handleCloseHistoryDrawer}
+                onClick={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
                 title="닫기"
                 aria-label="닫기"
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  padding: '6px',
+                  padding: '4px',
                   cursor: 'pointer',
                   color: 'var(--text-primary)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  outline: 'none',
-                  borderRadius: '4px'
+                  outline: 'none'
                 }}
               >
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -4168,300 +4068,32 @@ export default function EmployeePortal({
               </button>
             </div>
 
-            {/* Drawer Sub-Header: Month Selector & View Mode (순수 텍스트 & 심플한 컨트롤) */}
-            <div style={{
-              padding: '0.85rem 2rem',
-              backgroundColor: 'var(--bg-hover)',
-              borderBottom: '1px solid var(--border-color)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '1rem',
-              flexWrap: 'wrap'
-            }}>
-              {/* Month Navigation */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                <button
-                  type="button"
-                  onClick={handlePrevHistoryMonth}
-                  disabled={historyViewMode === 'ALL'}
-                  title="이전 달"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '2px 8px',
-                    cursor: historyViewMode === 'ALL' ? 'default' : 'pointer',
-                    color: historyViewMode === 'ALL' ? 'var(--text-muted)' : 'var(--text-primary)',
-                    opacity: historyViewMode === 'ALL' ? 0.25 : 1,
-                    fontSize: '18px',
-                    fontWeight: 700,
-                    borderRadius: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    lineHeight: 1
-                  }}
-                >
-                  ‹
-                </button>
-                <span style={{
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  color: historyViewMode === 'ALL' ? 'var(--text-muted)' : 'var(--text-primary)',
-                  letterSpacing: '-0.01em',
-                  minWidth: '105px',
-                  textAlign: 'center'
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div style={{ color: 'var(--text-primary)', fontSize: '17px', lineHeight: 1.55 }}>
+                {alertModal.message}
+              </div>
+
+              {alertModal.details && Array.isArray(alertModal.details) && (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.85rem',
+                  padding: '0.25rem 0'
                 }}>
-                  {historyYear}년 {parseInt(historyMonth, 10)}월
-                </span>
-                <button
-                  type="button"
-                  onClick={handleNextHistoryMonth}
-                  disabled={historyViewMode === 'ALL'}
-                  title="다음 달"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '2px 8px',
-                    cursor: historyViewMode === 'ALL' ? 'default' : 'pointer',
-                    color: historyViewMode === 'ALL' ? 'var(--text-muted)' : 'var(--text-primary)',
-                    opacity: historyViewMode === 'ALL' ? 0.25 : 1,
-                    fontSize: '18px',
-                    fontWeight: 700,
-                    borderRadius: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    lineHeight: 1
-                  }}
-                >
-                  ›
-                </button>
-              </div>
-
-              {/* View Mode Toggle: 미니멀 텍스트 링크 (Strictly NO Badges / NO Chips) */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', fontSize: '14px' }}>
-                <button
-                  type="button"
-                  onClick={() => setHistoryViewMode('MONTH')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '2px 0',
-                    cursor: 'pointer',
-                    fontWeight: historyViewMode === 'MONTH' ? 700 : 400,
-                    color: historyViewMode === 'MONTH' ? 'var(--text-primary)' : 'var(--text-muted)',
-                    borderBottom: historyViewMode === 'MONTH' ? '2px solid var(--text-primary)' : '2px solid transparent'
-                  }}
-                >
-                  당월 내역
-                </button>
-                <span style={{ color: 'var(--border-color)', opacity: 0.6 }}>·</span>
-                <button
-                  type="button"
-                  onClick={() => setHistoryViewMode('ALL')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '2px 0',
-                    cursor: 'pointer',
-                    fontWeight: historyViewMode === 'ALL' ? 700 : 400,
-                    color: historyViewMode === 'ALL' ? 'var(--text-primary)' : 'var(--text-muted)',
-                    borderBottom: historyViewMode === 'ALL' ? '2px solid var(--text-primary)' : '2px solid transparent'
-                  }}
-                >
-                  전체 내역
-                </button>
-              </div>
-            </div>
-
-            {/* Drawer Body */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 2rem 3rem 2rem' }}>
-              {filteredMyLeaves.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '5rem 1rem', color: 'var(--text-secondary)', fontSize: '16px' }}>
-                  {historyViewMode === 'MONTH' ? `${historyYear}년 ${parseInt(historyMonth, 10)}월 신청 내역이 없습니다.` : '신청 내역이 없습니다.'}
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {filteredMyLeaves.map((item) => {
-                    const typeLabel = getLeaveTypeLabel(item);
-                    const statusInfo = getLeaveStatusInfo(item.status);
-                    const isPending = item.status === 'PENDING';
-                    const isApproved = item.status === 'APPROVED';
-                    const isRejected = item.status === 'REJECTED';
-                    const isCancelRequested = item.status === 'CANCEL_REQUESTED';
-                    const isFutureOrToday = item.startDate >= todayStr;
-                    const isTargeted = targetLeaveId && String(item.id) === String(targetLeaveId);
-
-                    return (
-                      <div
-                        key={item.id}
-                        style={{
-                          padding: '1.35rem 0.5rem',
-                          borderBottom: '1px solid var(--border-color)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '0.65rem',
-                          backgroundColor: isTargeted ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
-                          borderRadius: isTargeted ? '6px' : 0,
-                          transition: 'background-color 0.2s ease'
-                        }}
-                      >
-                        {/* Top Line: 날짜만 깔끔하게 노출 (우측 상단 분리 상태 텍스트 완전 제거) */}
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-                            {formatLeaveDateWithWeekday(item.startDate)}
-                          </span>
-                        </div>
-
-                        {/* Metadata Rows: 흐름상 유형 → 신청일 → 신청사유 → 결재자 → 승인상태 (→ 반려사유) */}
-                        <div style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '0.45rem',
-                          fontSize: '15px',
-                          lineHeight: 1.5,
-                          marginTop: '0.15rem'
-                        }}>
-                          {/* 1. 유형 */}
-                          <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                            <span style={{ width: '72px', color: 'var(--text-muted)', flexShrink: 0 }}>
-                              유형
-                            </span>
-                            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
-                              {typeLabel}
-                              {item.workStartTime && item.workEndTime && (
-                                <span style={{ fontWeight: 500, color: 'var(--text-secondary)', marginLeft: '8px' }}>
-                                  · {item.workStartTime} ~ {item.workEndTime}{item.workHours ? ` · ${item.workHours}시간` : ''}
-                                </span>
-                              )}
-                            </span>
-                          </div>
-
-                          {/* 2. 신청일 */}
-                          <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                            <span style={{ width: '72px', color: 'var(--text-muted)', flexShrink: 0 }}>
-                              신청일
-                            </span>
-                            <span style={{ color: 'var(--text-secondary)' }}>
-                              {item.createdAt ? item.createdAt.slice(0, 16).replace('T', ' ') : '-'}
-                            </span>
-                          </div>
-
-                          {/* 3. 신청사유 */}
-                          <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                            <span style={{ width: '72px', color: 'var(--text-muted)', flexShrink: 0 }}>
-                              신청사유
-                            </span>
-                            <span style={{ color: 'var(--text-primary)', wordBreak: 'break-all' }}>
-                              {item.reason || '-'}
-                            </span>
-                          </div>
-
-                          {/* 4. 결재자 */}
-                          <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                            <span style={{ width: '72px', color: 'var(--text-muted)', flexShrink: 0 }}>
-                              결재자
-                            </span>
-                            {Array.isArray(item.approvers) && item.approvers.length > 0 ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', color: 'var(--text-secondary)' }}>
-                                <span style={{ fontWeight: 600 }}>({item.approvers.filter(a => a.status === 'APPROVED').length}/{item.approvers.length} 승인)</span>
-                                {item.approvers.map(a => (
-                                  <span key={a.id} style={{ color: a.status === 'APPROVED' ? '#10b981' : (a.status === 'REJECTED' ? '#ef4444' : 'var(--text-muted)'), fontWeight: a.status === 'APPROVED' ? 600 : 400 }}>
-                                    {a.name} ({a.status === 'APPROVED' ? '승인' : (a.status === 'REJECTED' ? '반려' : '대기')})
-                                  </span>
-                                ))}
-                              </div>
-                            ) : (
-                              <span style={{ color: 'var(--text-secondary)' }}>
-                                {(user?.role === 'ADMIN' || item.userId === 'usr-admin' || item.userId === 'admin') ? '본인 전결' : (item.approverName || '최고관리자')}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* 5. 승인상태 */}
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <span style={{ width: '72px', color: 'var(--text-muted)', flexShrink: 0 }}>
-                              승인상태
-                            </span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                              <span style={{
-                                fontWeight: 600,
-                                color: statusInfo.color,
-                                letterSpacing: '-0.01em'
-                              }}>
-                                {((user?.role === 'ADMIN' || item.userId === 'usr-admin' || item.userId === 'admin') && item.status === 'APPROVED') ? '등록 완료' : statusInfo.label}
-                              </span>
-
-                              {/* 승인 대기 상태일 때 신청 취소 버튼 */}
-                              {isPending && (
-                                <>
-                                  <span style={{ color: 'var(--text-muted)', opacity: 0.5, fontSize: '13px' }}>·</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleCancelMyLeave(item.id)}
-                                    style={{
-                                      background: 'none',
-                                      border: 'none',
-                                      padding: 0,
-                                      fontSize: '14px',
-                                      fontWeight: 500,
-                                      color: 'var(--text-muted)',
-                                      cursor: 'pointer',
-                                      textDecoration: 'underline',
-                                      textUnderlineOffset: '3px',
-                                      outline: 'none',
-                                      transition: 'color 0.15s ease'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
-                                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
-                                  >
-                                    신청 취소
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* 6. 반려사유 (반려된 경우) */}
-                          {isRejected && (
-                            <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                              <span style={{ width: '72px', color: '#ef4444', fontWeight: 600, flexShrink: 0 }}>
-                                반려사유
-                              </span>
-                              <span style={{ color: '#ef4444', wordBreak: 'break-all', fontWeight: 500 }}>
-                                {item.rejectReason || '사유가 입력되지 않았습니다.'}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {alertModal.details.map((item, idx) => (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '16px' }}>{item.label}</span>
+                      <span style={{ color: 'var(--text-primary)', fontSize: '20px', letterSpacing: '-0.01em' }}>{item.value}</span>
+                    </div>
+                  ))}
                 </div>
               )}
-            </div>
-
-            {/* Drawer Footer */}
-            <div style={{
-              padding: '1.25rem 2rem',
-              borderTop: '1px solid var(--border-color)',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              backgroundColor: 'var(--bg-card)'
-            }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={handleCloseHistoryDrawer}
-                style={{ height: '44px', padding: '0 1.75rem', fontSize: '16px', fontWeight: 600, borderRadius: 0 }}
-              >
-                닫기
-              </button>
             </div>
           </div>
         </div>
       )}
+
+
 
       {/* MODAL: COMPLETE REQUEST & MAN-HOURS (LEGACY FALLBACK) */}
       {completingReq && (

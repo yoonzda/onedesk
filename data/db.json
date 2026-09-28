@@ -37,6 +37,69 @@
       "annualSalary": 84000000,
       "accessLogs": [
         {
+          "id": "log-1790558542514-la0",
+          "sessionId": "sess-1790557698312-ppw83",
+          "timestamp": "2026-09-28 10:22:22",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790557698312-n0n",
+          "sessionId": "sess-1790557698312-ppw83",
+          "timestamp": "2026-09-28 10:08:18",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790554548997-jbe",
+          "sessionId": "sess-1790554548997-7l6y6",
+          "timestamp": "2026-09-28 09:15:48",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790554509012-us5",
+          "sessionId": "sess-1790554498242-xfhz9",
+          "timestamp": "2026-09-28 09:15:09",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790554498242-l6p",
+          "sessionId": "sess-1790554498242-xfhz9",
+          "timestamp": "2026-09-28 09:14:58",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790553687533-8pi",
+          "sessionId": "sess-1790553684154-u6ww6",
+          "timestamp": "2026-09-28 09:01:27",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790553684154-t98",
+          "sessionId": "sess-1790553684154-u6ww6",
+          "timestamp": "2026-09-28 09:01:24",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
           "id": "log-1790139915762-af3",
           "sessionId": "sess-1790139915762-0l5vo",
           "timestamp": "2026-09-23 14:05:15",
@@ -257,13 +320,40 @@
       "usedLeave": 7,
       "preferences": {
         "toastPosition": "top-left",
-        "theme": "light"
+        "theme": "dark"
       },
       "annualSalary": 54000000,
       "bankName": "국민은행",
       "accountNumber": "",
       "createdAt": "2026-01-01",
       "accessLogs": [
+        {
+          "id": "log-1790558546505-11b",
+          "sessionId": "sess-1790558546505-agfpy",
+          "timestamp": "2026-09-28 10:22:26",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790553695060-2n7",
+          "sessionId": "sess-1790553692244-gvc83",
+          "timestamp": "2026-09-28 09:01:35",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790553692244-aq1",
+          "sessionId": "sess-1790553692244-gvc83",
+          "timestamp": "2026-09-28 09:01:32",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
         {
           "id": "log-1790121443848-3hv",
           "sessionId": "sess-1790121441193-wo23v",
@@ -908,6 +998,24 @@
       "createdAt": "2026-01-01",
       "accessLogs": [
         {
+          "id": "log-1790557692997-hw6",
+          "sessionId": "sess-1790553701525-excna",
+          "timestamp": "2026-09-28 10:08:12",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790553701525-idh",
+          "sessionId": "sess-1790553701525-excna",
+          "timestamp": "2026-09-28 09:01:41",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
           "id": "log-1790121455505-slw",
           "sessionId": "sess-1790121453273-net7u",
           "timestamp": "2026-09-23 08:57:35",
@@ -961,6 +1069,44 @@
     }
   ],
   "attendances": [
+    {
+      "id": "att-1790553703269",
+      "userId": "usr-insa2",
+      "userName": "이지은",
+      "dept": "인사총무팀",
+      "date": "2026-09-28",
+      "checkIn": "09:01:43",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790553693537",
+      "userId": "usr-emp1",
+      "userName": "이민수",
+      "dept": "경영지원본부",
+      "date": "2026-09-28",
+      "checkIn": "09:01:33",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
     {
       "id": "att-1790142166170",
       "userId": "usr-admin",
@@ -3921,6 +4067,62 @@
       "approverId": "usr-admin",
       "approverName": "본인 전결",
       "approvers": null
+    },
+    {
+      "id": "sch-1790555075351",
+      "title": "신입사원 교육",
+      "category": "INTERNAL_MEETING",
+      "startDate": "2026-09-28T09:00",
+      "endDate": "2026-09-30T10:00",
+      "allDay": false,
+      "dept": "인사총무팀",
+      "authorId": "usr-insa2",
+      "authorName": "이지은",
+      "approvalStatus": "APPROVED",
+      "status": "APPROVED",
+      "createdAt": "2026-09-28T00:24:35.351Z",
+      "history": [
+        {
+          "action": "CREATE",
+          "userId": "usr-insa2",
+          "userName": "이지은",
+          "timestamp": "2026-09-28T00:24:35.351Z",
+          "summary": "일정 등록"
+        }
+      ],
+      "isClientShared": false,
+      "clientId": "cli-001",
+      "location": "3층 회의실",
+      "description": "개발 1팀 인사 신입 사원 교육",
+      "fileIds": [],
+      "attendeeIds": [
+        "usr-insa2",
+        "usr-team11",
+        "usr-team13",
+        "usr-team12"
+      ],
+      "attendees": [
+        {
+          "id": "usr-team11",
+          "name": "강동원",
+          "dept": "개발1팀"
+        },
+        {
+          "id": "usr-team12",
+          "name": "정수빈",
+          "dept": "개발1팀"
+        },
+        {
+          "id": "usr-team13",
+          "name": "송하은",
+          "dept": "개발1팀"
+        },
+        {
+          "id": "usr-insa2",
+          "name": "이지은",
+          "dept": "인사총무팀"
+        }
+      ]
     }
   ],
   "tasks": [
@@ -5579,6 +5781,42 @@
     }
   ],
   "notifications": [
+    {
+      "id": "notif-1790555075351-264",
+      "targetUserId": "usr-team12",
+      "targetRole": "EMPLOYEE",
+      "title": "회의 참석자로 추가됨",
+      "message": "'신입사원 교육' 일정(2026-09-28)에 참석자로 추가되었습니다.",
+      "type": "SCHEDULE",
+      "isRead": false,
+      "link": "calendar",
+      "targetId": "sch-1790555075351",
+      "createdAt": "2026-09-28 00:24:35"
+    },
+    {
+      "id": "notif-1790555075351-4451",
+      "targetUserId": "usr-team13",
+      "targetRole": "EMPLOYEE",
+      "title": "회의 참석자로 추가됨",
+      "message": "'신입사원 교육' 일정(2026-09-28)에 참석자로 추가되었습니다.",
+      "type": "SCHEDULE",
+      "isRead": false,
+      "link": "calendar",
+      "targetId": "sch-1790555075351",
+      "createdAt": "2026-09-28 00:24:35"
+    },
+    {
+      "id": "notif-1790555075351-957",
+      "targetUserId": "usr-team11",
+      "targetRole": "EMPLOYEE",
+      "title": "회의 참석자로 추가됨",
+      "message": "'신입사원 교육' 일정(2026-09-28)에 참석자로 추가되었습니다.",
+      "type": "SCHEDULE",
+      "isRead": false,
+      "link": "calendar",
+      "targetId": "sch-1790555075351",
+      "createdAt": "2026-09-28 00:24:35"
+    },
     {
       "id": "notif-1789706417264",
       "targetUserId": "usr-emp1",
@@ -7786,7 +8024,7 @@
       "totalLeave": 3,
       "usedLeave": 0,
       "remainingLeave": 3,
-      "status": "PENDING_REVIEW",
+      "status": "PAID",
       "paymentDate": "2026-09-25",
       "bankName": "국민은행",
       "accountNumber": "",
