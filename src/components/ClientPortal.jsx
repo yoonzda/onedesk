@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, RotateCcw, Search, X } from 'lucide-react';
 import CustomDatePicker from './CustomDatePicker';
 import CustomCheckbox from './CustomCheckbox';
 import HtmlEditor from './HtmlEditor';
@@ -31,7 +31,9 @@ export default function ClientPortal({
   user, 
   onShowToast,
   onGoHome,
-  onUpdateUser
+  onUpdateUser,
+  targetRequestId = null,
+  onClearTargetRequestId = null
 }) {
   const [activeTab, setActiveTab] = useState('IN_PROGRESS'); // IN_PROGRESS (진행 중), REVIEW (확인 요청), DONE (작업 완료)
   const [requests, setRequests] = useState([]);
@@ -154,6 +156,17 @@ export default function ClientPortal({
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchInputRef = useRef(null);
+
+  useEffect(() => {
+    if (isSearchOpen && searchInputRef.current) {
+      const timer = setTimeout(() => {
+        searchInputRef.current?.focus({ preventScroll: true });
+      }, 360);
+      return () => clearTimeout(timer);
+    }
+  }, [isSearchOpen]);
 
   // Pagination / Load More (더보기)
   const [visibleCount, setVisibleCount] = useState(10);
@@ -275,6 +288,47 @@ export default function ClientPortal({
     }
   }, [selectedReq]);
 
+  const handledTargetRequestIdRef = useRef(null);
+
+  useEffect(() => {
+    if (!targetRequestId) {
+      handledTargetRequestIdRef.current = null;
+      return;
+    }
+    if (handledTargetRequestIdRef.current === targetRequestId) {
+      return;
+    }
+
+    const openTarget = (req) => {
+      handledTargetRequestIdRef.current = targetRequestId;
+      setSelectedReq(req);
+      setIsDrawerClosing(false);
+      loadComments(req.id);
+      if (req.status === 'DONE' && req.clientConfirmed) setActiveTab('DONE');
+      else if (req.status === 'DONE' && !req.clientConfirmed) setActiveTab('REVIEW');
+      else setActiveTab('IN_PROGRESS');
+      if (onClearTargetRequestId) {
+        onClearTargetRequestId();
+      }
+    };
+
+    const found = requests.find(r => r.id === targetRequestId);
+    if (found) {
+      openTarget(found);
+    } else {
+      fetch(`/api/client-requests?clientId=${user.id}&role=CLIENT`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setRequests(data);
+            const req = data.find(r => r.id === targetRequestId);
+            if (req) openTarget(req);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [targetRequestId, requests]);
+
   // File Upload Handler
   const handleFileUpload = async (e, isComment = false) => {
     const file = e.target.files[0];
@@ -392,7 +446,7 @@ export default function ClientPortal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           authorId: user.id,
-          authorName: `${user.managerName} (${user.companyName})`,
+          authorName: user.managerName || user.name || '담당자',
           authorRole: 'CLIENT',
           content: commentText.trim(),
           attachments: commentAttachments
@@ -567,12 +621,12 @@ export default function ClientPortal({
         flexWrap: 'wrap',
         gap: '1rem',
         borderBottom: '1px solid var(--border-color)',
-        marginBottom: '1.5rem',
+        marginBottom: '0',
         position: 'relative',
         zIndex: 20
       }}>
         {/* Left: 3 Tabs (진행 중 | 확인 요청 🔴 | 작업 완료) - 전환 시 검색조건 자동 초기화 */}
-        <div style={{ display: 'flex', gap: '0.6rem' }}>
+        <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '-1px' }}>
           <button 
             type="button"
             className={`tab-btn tab-btn-lg ${activeTab === 'IN_PROGRESS' ? 'active' : ''}`}
@@ -614,34 +668,175 @@ export default function ClientPortal({
           </button>
         </div>
 
-        {/* Right: Search Input + Custom Date Filter (완료 탭: 완료일 기준, 타 탭: 등록일 기준) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', paddingBottom: '0.5rem' }}>
+        {/* Right: Unified Minimal Icon Toolbar (Search Toggle + Date Picker + Reset Icon) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingBottom: '0.4rem' }}>
+          {/* 1. 검색 아이콘 버튼 (전폭 리본 바 토글) */}
+          <button
+            type="button"
+            onClick={() => setIsSearchOpen(!isSearchOpen)}
+            title="검색 (전폭 검색 바 토글)"
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: (isSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-muted)',
+              opacity: (isSearchOpen || searchTerm) ? 1 : 0.45,
+              outline: 'none',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.color = 'var(--text-primary)';
+              e.currentTarget.style.opacity = '0.9';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.color = (isSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-muted)';
+              e.currentTarget.style.opacity = (isSearchOpen || searchTerm) ? 1 : 0.45;
+            }}
+          >
+            <Search size={22} strokeWidth={2} />
+          </button>
+
+          {/* 2. 완료일 / 등록일 선택 달력 아이콘 */}
           <CustomDatePicker 
             value={selectedDate}
             onChange={(val) => { setSelectedDate(val); setVisibleCount(10); }}
             requestDates={currentRequestDates}
-            placeholder={activeTab === 'DONE' ? '완료일 검색' : '등록일 검색'}
+            placeholder={activeTab === 'DONE' ? '완료일 선택' : '등록일 선택'}
+            iconOnly={true}
+            align="right"
           />
 
-          <input 
-            type="text"
-            placeholder="제목 또는 내용 검색..."
-            value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setVisibleCount(10); }}
-            className="form-control"
-            style={{ width: '250px', height: '42px', padding: '0 0.85rem' }}
-          />
+          {/* 3. 필터 초기화 아이콘 */}
+          <button
+            type="button"
+            onClick={() => {
+              setSearchTerm('');
+              setSelectedDate('');
+              setVisibleCount(10);
+            }}
+            title="필터 초기화"
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '6px',
+              cursor: 'pointer',
+              color: (searchTerm || selectedDate) ? 'var(--text-primary)' : 'var(--text-muted)',
+              opacity: (searchTerm || selectedDate) ? 1 : 0.3,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              outline: 'none',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.color = 'var(--text-primary)';
+              e.currentTarget.style.opacity = '0.9';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.color = (searchTerm || selectedDate) ? 'var(--text-primary)' : 'var(--text-muted)';
+              e.currentTarget.style.opacity = (searchTerm || selectedDate) ? '1' : '0.3';
+            }}
+          >
+            <RotateCcw size={22} strokeWidth={2} />
+          </button>
+        </div>
+      </div>
 
-          {(searchTerm || selectedDate) && (
+      {/* Option 2: Full-Width Search Ribbon Bar (부드러운 하드웨어 가속 슬라이드) */}
+      <div
+        style={{
+          height: isSearchOpen ? '84px' : '0px',
+          opacity: isSearchOpen ? 1 : 0,
+          overflow: 'hidden',
+          transition: 'height 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease',
+          marginBottom: '1.5rem',
+          pointerEvents: isSearchOpen ? 'auto' : 'none',
+          willChange: 'height, opacity'
+        }}
+      >
+        <div
+          style={{
+            height: '84px',
+            padding: '0 2rem',
+            backgroundColor: 'var(--bg-card, #141417)',
+            borderBottom: '1px solid var(--border-color)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxSizing: 'border-box',
+            gap: '1rem'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flex: 1 }}>
+            <Search size={22} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setVisibleCount(10); }}
+              placeholder="검색어 입력"
+              tabIndex={isSearchOpen ? 0 : -1}
+              style={{
+                width: '100%',
+                height: '48px',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                fontSize: '16px',
+                color: 'var(--text-primary)',
+                padding: '0 4px',
+                fontWeight: 400
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setIsSearchOpen(false);
+                  setSearchTerm('');
+                  setVisibleCount(10);
+                }
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
+            {searchTerm.trim() && (
+              <span style={{ fontSize: '15px', color: 'var(--text-muted)', whiteSpace: 'nowrap', userSelect: 'none', fontWeight: 400 }}>
+                {currentList.length}건
+              </span>
+            )}
             <button
               type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => { setSearchTerm(''); setSelectedDate(''); setVisibleCount(10); }}
-              style={{ height: '42px' }}
+              tabIndex={isSearchOpen ? 0 : -1}
+              onClick={() => {
+                setIsSearchOpen(false);
+                setSearchTerm('');
+                setVisibleCount(10);
+              }}
+              title="닫기"
+              aria-label="닫기"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-muted)',
+                outline: 'none',
+                borderRadius: '4px',
+                transition: 'color 0.15s ease',
+                flexShrink: 0
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
             >
-              초기화
+              <X size={22} strokeWidth={2} />
             </button>
-          )}
+          </div>
         </div>
       </div>
 
@@ -869,9 +1064,9 @@ export default function ClientPortal({
                   paddingBottom: '1.25rem'
                 }}>
                   <h2 style={{
-                    fontSize: '26px',
-                    fontWeight: 700,
-                    color: 'var(--text-primary)',
+                    fontSize: '22px',
+                    fontWeight: 400,
+                    color: '#ffffff',
                     lineHeight: 1.4,
                     wordBreak: 'keep-all',
                     margin: 0,
@@ -891,7 +1086,7 @@ export default function ClientPortal({
                           borderRadius: 0,
                           padding: '0.45rem 1rem',
                           fontSize: '15px',
-                          fontWeight: 600
+                          fontWeight: 400
                         }}
                       >
                         수정
@@ -945,7 +1140,7 @@ export default function ClientPortal({
                   }}>
                     {/* 1. 제목 (한 줄) */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                      <label style={{ width: '120px', flexShrink: 0, fontSize: '17px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      <label style={{ width: '120px', flexShrink: 0, fontSize: '17px', fontWeight: 400, color: 'var(--text-primary)' }}>
                         제목
                       </label>
                       <input
@@ -960,7 +1155,7 @@ export default function ClientPortal({
 
                     {/* 2. 우선 요청 (한 줄 독립 배치) */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                      <label style={{ width: '120px', flexShrink: 0, fontSize: '17px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      <label style={{ width: '120px', flexShrink: 0, fontSize: '17px', fontWeight: 400, color: 'var(--text-primary)' }}>
                         우선 요청
                       </label>
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
@@ -1015,7 +1210,7 @@ export default function ClientPortal({
                           borderRadius: 0,
                           padding: '0.6rem 1.75rem',
                           fontSize: '15px',
-                          fontWeight: 600,
+                          fontWeight: 400,
                           background: '#27272a',
                           color: '#f4f4f5',
                           border: '1px solid #3f3f46',
@@ -1096,7 +1291,7 @@ export default function ClientPortal({
                                 gap: '0.35rem'
                               }}
                             >
-                              <span>📎 {formatFileName(att.name)}</span>
+                              <span>{formatFileName(att.name)}</span>
                               <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>[다운로드]</span>
                             </a>
                           ))}
@@ -1110,7 +1305,7 @@ export default function ClientPortal({
               {/* 2. 요청 내용 (수정 모드가 아닐 때 노출) */}
               {!isEditingReq && (
                 <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 400, color: 'var(--text-primary)', marginBottom: '0.85rem' }}>
+                  <h3 style={{ fontSize: '17px', fontWeight: 400, color: '#ffffff', marginBottom: '0.85rem' }}>
                     요청 내용
                   </h3>
                   <div
@@ -1119,10 +1314,11 @@ export default function ClientPortal({
                       fontSize: '16px',
                       lineHeight: 1.75,
                       wordBreak: 'break-word',
-                      color: 'var(--text-primary)',
-                      background: '#1c1c20',
-                      border: '1px solid #2e2e34',
-                      padding: '1.5rem',
+                      color: '#f4f4f5',
+                      background: '#18181c',
+                      border: '1px solid #2a2a30',
+                      borderRadius: '6px',
+                      padding: '1.25rem 1.5rem',
                       letterSpacing: '-0.01em'
                     }}
                     dangerouslySetInnerHTML={{ __html: formatHtmlContent(selectedReq.content) }}
@@ -1130,62 +1326,230 @@ export default function ClientPortal({
                 </div>
               )}
 
-              {/* 3. 조치 내용 (작업 완료일, 조치 내용 본문, 투입 공수를 하나의 단일 박스로 통합) */}
-              {!isEditingReq && (selectedReq.completionSummary || selectedReq.spentHours > 0 || selectedReq.completedAt) && (
+              {/* 3. 조치 내용 (작업 완료일, 조치 내용 본문만 단정하게 표시 - 공수는 사내에만 노출) */}
+              {!isEditingReq && (selectedReq.completionSummary || selectedReq.completedAt || selectedReq.status === 'DONE') && (
                 <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 400, color: 'var(--text-primary)', marginBottom: '0.85rem' }}>
+                  <h3 style={{ fontSize: '17px', fontWeight: 400, color: '#ffffff', marginBottom: '0.85rem' }}>
                     조치 내용
                   </h3>
                   <div style={{
-                    fontSize: '16px',
-                    lineHeight: 1.75,
-                    wordBreak: 'break-word',
-                    color: 'var(--text-primary)',
-                    background: '#1c1c20',
-                    border: '1px solid #2e2e34',
-                    padding: '1.5rem',
-                    letterSpacing: '-0.01em',
+                    background: '#18181c',
+                    border: '1px solid #2a2a30',
+                    borderRadius: '6px',
+                    padding: '1.25rem 1.5rem',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '1rem'
+                    gap: '0.85rem'
                   }}>
-                    {selectedReq.completedAt && (
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', fontSize: '15px', color: 'var(--text-secondary)' }}>
-                        <span>작업 완료일</span>
-                        <span style={{ color: 'var(--text-primary)' }}>{selectedReq.completedAt.slice(0, 10)}</span>
-                      </div>
-                    )}
-
-                    <div style={{ color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
-                      {selectedReq.completionSummary || '조치 완료되었습니다.'}
+                    {/* 상단 메타데이터: 조치 상태 및 완료일 */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingBottom: '0.65rem',
+                      borderBottom: '1px solid #26262b',
+                      fontSize: '14px'
+                    }}>
+                      <span style={{ color: '#34d399', fontWeight: 400 }}>조치 완료</span>
+                      {selectedReq.completedAt && (
+                        <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>
+                          완료일 {selectedReq.completedAt.slice(0, 10)}
+                        </span>
+                      )}
                     </div>
 
-                    {selectedReq.spentHours > 0 && (
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        alignItems: 'baseline',
-                        gap: '0.5rem',
-                        fontSize: '15px',
-                        color: 'var(--text-secondary)',
-                        paddingTop: '0.85rem',
-                        borderTop: '1px solid #2e2e34'
-                      }}>
-                        <span>투입 공수:</span>
-                        <span style={{ color: 'var(--text-primary)' }}>총 {selectedReq.spentHours}시간</span>
-                        {selectedReq.spentHoursBreakdown && (
-                          <span style={{ color: 'var(--text-secondary)' }}>
-                            ({[
-                              selectedReq.spentHoursBreakdown.design > 0 ? `디자인 ${selectedReq.spentHoursBreakdown.design}h` : null,
-                              selectedReq.spentHoursBreakdown.publish > 0 ? `퍼블 ${selectedReq.spentHoursBreakdown.publish}h` : null,
-                              selectedReq.spentHoursBreakdown.dev > 0 ? `개발 ${selectedReq.spentHoursBreakdown.dev}h` : null,
-                              selectedReq.spentHoursBreakdown.etc > 0 ? `기타 ${selectedReq.spentHoursBreakdown.etc}h` : null
-                            ].filter(Boolean).join(' · ') || '개발 100%'})
-                          </span>
-                        )}
+                    {/* 조치 내용 본문 */}
+                    <div style={{
+                      fontSize: '16px',
+                      color: '#f4f4f5',
+                      lineHeight: 1.75,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      fontWeight: 400,
+                      letterSpacing: '-0.01em'
+                    }}>
+                      {selectedReq.completionSummary || '요청하신 작업이 정상적으로 완료되었습니다.'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. 댓글 (사내 및 고객사 소통) */}
+              {!isEditingReq && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingBottom: '0.5rem',
+                    borderBottom: '1px solid var(--border-color)'
+                  }}>
+                    <h3 style={{ fontSize: '17px', fontWeight: 400, color: '#ffffff', margin: 0 }}>
+                      댓글 {comments.length > 0 && <span style={{ fontSize: '15px', color: 'var(--text-muted)' }}>· {comments.length}</span>}
+                    </h3>
+                  </div>
+
+                  {/* 댓글 목록 */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {comments.length === 0 ? (
+                      <div style={{ fontSize: '15px', color: 'var(--text-muted)', padding: '1rem 0', textAlign: 'center' }}>
+                        등록된 댓글이 없습니다.
                       </div>
+                    ) : (
+                      comments.map((comm) => {
+                        let cleanAuthor = (comm.authorName || '작성자').trim();
+                        while (/\([^)]*\)/.test(cleanAuthor)) {
+                          cleanAuthor = cleanAuthor.replace(/\([^)]*\)/g, '').trim();
+                        }
+                        while (/\[[^\]]*\]/.test(cleanAuthor)) {
+                          cleanAuthor = cleanAuthor.replace(/\[[^\]]*\]/g, '').trim();
+                        }
+                        if (selectedReq?.clientName) {
+                          const pureClient = selectedReq.clientName.replace(/[()\[\]\s]/g, '');
+                          if (pureClient) {
+                            cleanAuthor = cleanAuthor.replaceAll(pureClient, '').trim();
+                          }
+                        }
+                        cleanAuthor = cleanAuthor
+                          .replace(/\(주\)/g, '')
+                          .replace(/주식회사/g, '')
+                          .replace(/알파솔루션/g, '')
+                          .replace(/[()\[\]]/g, '')
+                          .trim();
+                        if (!cleanAuthor) cleanAuthor = '작성자';
+
+                        return (
+                          <div
+                            key={comm.id}
+                            style={{
+                              padding: '1rem 1.25rem',
+                              backgroundColor: '#18181c',
+                              border: '1px solid #2a2a30',
+                              borderRadius: '6px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '0.75rem'
+                            }}
+                          >
+                            {/* 작성자 이름 단독 표시: 소프트 블루 색상 + 하단 헤어라인 구분선으로 발화 주체 명확화 */}
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              paddingBottom: '0.55rem',
+                              borderBottom: '1px solid #26262b'
+                            }}>
+                              <span style={{ fontSize: '15px', color: '#93c5fd', fontWeight: 400 }}>
+                                {cleanAuthor}
+                              </span>
+                            </div>
+
+                            {/* 댓글 내용: 선명하고 시원한 16px 본문 */}
+                            <div style={{
+                              fontSize: '16px',
+                              color: '#f4f4f5',
+                              lineHeight: 1.7,
+                              whiteSpace: 'pre-wrap',
+                              wordBreak: 'break-word',
+                              fontWeight: 400,
+                              letterSpacing: '-0.01em'
+                            }}>
+                              {comm.content}
+                            </div>
+
+                            {/* 첨부파일 (클립 이모지 없이 깔끔한 텍스트 링크) */}
+                            {comm.attachments && comm.attachments.length > 0 && (
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', paddingTop: '0.35rem', borderTop: '1px solid #26262b' }}>
+                                {comm.attachments.map(att => (
+                                  <a
+                                    key={att.id || att.url}
+                                    href={att.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={{ fontSize: '14px', color: '#60a5fa', textDecoration: 'none' }}
+                                  >
+                                    첨부: {formatFileName(att.name)}
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* 날짜와 시간은 이름 옆이 아닌 아래에 배치 */}
+                            <div style={{ fontSize: '14px', color: 'var(--text-muted)', paddingTop: '0.15rem' }}>
+                              {comm.createdAt?.slice(0, 16)}
+                            </div>
+                          </div>
+                        );
+                      })
                     )}
                   </div>
+
+                  {/* 댓글 입력 폼 */}
+                  <form onSubmit={handleSendComment} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <textarea
+                      value={commentText}
+                      onChange={e => setCommentText(e.target.value)}
+                      placeholder="댓글을 입력하세요..."
+                      rows={3}
+                      style={{
+                        width: '100%',
+                        backgroundColor: '#18181b',
+                        border: '1px solid #3f3f46',
+                        borderRadius: '6px',
+                        color: 'var(--text-primary)',
+                        padding: '0.85rem',
+                        fontSize: '15px',
+                        fontFamily: 'inherit',
+                        resize: 'vertical',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label
+                        style={{
+                          fontSize: '14px',
+                          color: 'var(--text-secondary)',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          padding: '0.4rem 0.8rem',
+                          backgroundColor: '#1f1f24',
+                          border: '1px solid #333339',
+                          borderRadius: '4px'
+                        }}
+                      >
+                        파일 첨부
+                        <input
+                          type="file"
+                          style={{ display: 'none' }}
+                          onChange={e => handleFileUpload(e, true)}
+                        />
+                      </label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        {commentAttachments.length > 0 && (
+                          <span style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
+                            첨부 {commentAttachments.length}개
+                          </span>
+                        )}
+                        <button
+                          type="submit"
+                          style={{
+                            padding: '0.55rem 1.4rem',
+                            fontSize: '15px',
+                            fontWeight: 400,
+                            backgroundColor: '#27272a',
+                            color: '#f4f4f5',
+                            border: '1px solid #3f3f46',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          댓글 등록
+                        </button>
+                      </div>
+                    </div>
+                  </form>
                 </div>
               )}
 
@@ -1201,22 +1565,6 @@ export default function ClientPortal({
                 }}>
                   <button
                     type="button"
-                    className="btn btn-primary"
-                    style={{
-                      width: '100%',
-                      height: '46px',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      borderRadius: '6px',
-                      cursor: 'pointer'
-                    }}
-                    onClick={(e) => handleConfirmRequest(selectedReq.id, e)}
-                  >
-                    확인
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
                     style={{
                       width: '100%',
                       height: '46px',
@@ -1224,8 +1572,33 @@ export default function ClientPortal({
                       fontWeight: 400,
                       borderRadius: '6px',
                       cursor: 'pointer',
+                      backgroundColor: '#2563eb',
+                      color: '#ffffff',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)'
+                    }}
+                    onClick={(e) => handleConfirmRequest(selectedReq.id, e)}
+                  >
+                    확인
+                  </button>
+                  <button
+                    type="button"
+                    style={{
+                      width: '100%',
+                      height: '46px',
+                      fontSize: '16px',
+                      fontWeight: 400,
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      backgroundColor: '#1c1c20',
                       color: 'var(--text-primary)',
-                      borderColor: 'var(--border-color)'
+                      border: '1px solid #333339',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
                     }}
                     onClick={() => handleReopenRequest(selectedReq.id)}
                   >

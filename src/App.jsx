@@ -52,6 +52,9 @@ export default function App() {
   
   // Navigation View State: 'HUB', 'COMMUTE', 'CLIENT_REQUESTS', 'PROJECTS', 'NOTIFICATIONS', 'CALENDAR_LEAVE', 'SETTINGS', 'ADMIN_CONTACT'
   const [currentView, setCurrentView] = useState('HUB');
+  const [previousView, setPreviousView] = useState('HUB');
+
+
 
   // Theme State
   const [theme, setTheme] = useState(() => {
@@ -665,7 +668,16 @@ export default function App() {
       setOpenLeaveHistory(false);
       setTargetLeaveId(null);
       setTargetScheduleId(null);
-      setTargetRequestId(tId);
+
+      let resolvedRequestId = tId;
+      if (!resolvedRequestId && notif.message && clientRequests.length > 0) {
+        const match = clientRequests.find(r => r.title && (notif.message.includes(`[${r.title}]`) || notif.message.includes(r.title)));
+        if (match) {
+          resolvedRequestId = match.id;
+        }
+      }
+
+      setTargetRequestId(resolvedRequestId);
       setCurrentView('CLIENT_REQUESTS');
     } 
     // 4. Tasks (업무 관리)
@@ -788,7 +800,14 @@ export default function App() {
             onGoHome={() => setCurrentView('HUB')}
             currentView={currentView}
             unreadNotifsCount={unreadNotifsCount}
-            onOpenNotifications={() => setCurrentView('NOTIFICATIONS')}
+            onOpenNotifications={() => {
+              if (currentView === 'NOTIFICATIONS') {
+                setCurrentView(previousView || 'HUB');
+              } else {
+                setPreviousView(currentView);
+                setCurrentView('NOTIFICATIONS');
+              }
+            }}
           />
 
           {/* Main Content Area */}
@@ -867,6 +886,8 @@ export default function App() {
                   onShowToast={showToast}
                   onGoHome={() => setCurrentView('HUB')}
                   onUpdateUser={(updatedUser) => setUser(updatedUser)}
+                  targetRequestId={targetRequestId}
+                  onClearTargetRequestId={() => setTargetRequestId(null)}
                 />
               ) : (
                 <EmployeePortal
@@ -894,6 +915,7 @@ export default function App() {
                   initialTab="client_requests"
                   targetRequestId={targetRequestId}
                   onClearTargetRequestId={() => setTargetRequestId(null)}
+                  initialClientRequests={clientRequests}
                   onGoHome={() => setCurrentView('HUB')}
                   approvedWorkType={todayApprovedWorkType}
                   todayLeave={todayLeave}
@@ -956,7 +978,7 @@ export default function App() {
                 onReadAllNotifications={handleReadAllNotifications}
                 onDeleteNotification={handleDeleteNotification}
                 onNavigate={handleNavigateFromNotification}
-                onGoHome={() => setCurrentView('HUB')}
+                onGoHome={() => setCurrentView(previousView || 'HUB')}
               />
             )}
 
@@ -1192,6 +1214,8 @@ export default function App() {
           </div>
         </div>
       )}
+
+
 
     </div>
   );

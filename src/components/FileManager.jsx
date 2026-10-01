@@ -1,5 +1,5 @@
-import React, { useState, useRef, useMemo } from 'react';
-import { ChevronDown, Plus } from 'lucide-react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { ChevronDown, Plus, Search, X, User, ArrowUpDown, RotateCcw, Check, ArrowUpRight } from 'lucide-react';
 import CustomCheckbox from './CustomCheckbox';
 
 export default function FileManager({
@@ -9,19 +9,46 @@ export default function FileManager({
   onUploadFile,
   onDeleteFile,
   onLinkFileToSchedule,
-  onShowToast
+  onShowToast,
+  onNavigateToSchedule
 }) {
   // Main view tab: 'ALL' (전체) | 'SCHEDULE' (일정) | 'TYPE' (유형)
   const [activeTab, setActiveTab] = useState('ALL');
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchInputRef = useRef(null);
   const [onlyMyFiles, setOnlyMyFiles] = useState(false);
-  const [sortBy, setSortBy] = useState('LATEST'); // 'LATEST' | 'NAME' | 'SIZE'
+  const [sortBy, setSortBy] = useState('NAME_ASC'); // 'NAME_ASC' | 'NAME_DESC' | 'DATE_DESC' | 'DATE_ASC' | 'SIZE_DESC' | 'SIZE_ASC'
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const sortRef = useRef(null);
 
-  // Accordion state for 'SCHEDULE' tab
-  // Open 'UNLINKED' and active schedules by default
-  const [openAccordionIds, setOpenAccordionIds] = useState(() => new Set(['UNLINKED']));
+  useEffect(() => {
+    if (isSearchOpen && searchInputRef.current) {
+      const timer = setTimeout(() => {
+        searchInputRef.current?.focus({ preventScroll: true });
+      }, 360);
+      return () => clearTimeout(timer);
+    }
+  }, [isSearchOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (sortRef.current && !sortRef.current.contains(e.target)) {
+        setIsSortOpen(false);
+      }
+    };
+    if (isSortOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isSortOpen]);
+
+  // Accordion state for 'SCHEDULE' tab (always closed by default)
+  const [openAccordionIds, setOpenAccordionIds] = useState(() => new Set());
 
   // Upload Drawer State
   const [showUploadDrawer, setShowUploadDrawer] = useState(false);
@@ -105,16 +132,27 @@ export default function FileManager({
 
     // Sort
     return list.sort((a, b) => {
-      if (sortBy === 'NAME') {
-        return (a.name || '').localeCompare(b.name || '', 'ko-KR');
+      if (sortBy === 'NAME_DESC') {
+        return (b.name || '').localeCompare(a.name || '', 'ko-KR');
       }
-      if (sortBy === 'SIZE') {
+      if (sortBy === 'DATE_DESC' || sortBy === 'LATEST') {
+        const timeA = new Date(a.createdAt || 0).getTime();
+        const timeB = new Date(b.createdAt || 0).getTime();
+        return timeB - timeA;
+      }
+      if (sortBy === 'DATE_ASC') {
+        const timeA = new Date(a.createdAt || 0).getTime();
+        const timeB = new Date(b.createdAt || 0).getTime();
+        return timeA - timeB;
+      }
+      if (sortBy === 'SIZE_ASC') {
+        return (a.size || 0) - (b.size || 0);
+      }
+      if (sortBy === 'SIZE_DESC' || sortBy === 'SIZE') {
         return (b.size || 0) - (a.size || 0);
       }
-      // Default: 'LATEST'
-      const timeA = new Date(a.createdAt || 0).getTime();
-      const timeB = new Date(b.createdAt || 0).getTime();
-      return timeB - timeA;
+      // Default: 'NAME_ASC' / 'NAME'
+      return (a.name || '').localeCompare(b.name || '', 'ko-KR');
     });
   }, [files, searchQuery, onlyMyFiles, sortBy, user]);
 
@@ -259,143 +297,392 @@ export default function FileManager({
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '1rem',
-        marginBottom: '1.25rem'
+        marginBottom: '1.5rem'
       }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.85rem' }}>
+        <div>
           <h2 style={{
-            fontSize: '26px',
-            fontWeight: 700,
+            fontSize: '28px',
+            fontWeight: 400,
             margin: 0,
             color: 'var(--text-primary)',
-            letterSpacing: '-0.02em'
+            letterSpacing: '-0.02em',
+            lineHeight: 1
           }}>
             파일 보관함
           </h2>
-          <span style={{ fontSize: '15px', color: 'var(--text-muted)' }}>
-            총 {processedFiles.length}건
-          </span>
         </div>
 
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => setShowUploadDrawer(true)}
-          style={{
-            height: '42px',
-            padding: '0 1.25rem',
-            fontSize: '14px',
-            fontWeight: 600,
-            borderRadius: '4px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            cursor: 'pointer'
-          }}
-        >
-          <Plus size={18} strokeWidth={2.2} />
-          파일 등록
-        </button>
-      </div>
-
-      {/* 2. Top Navigation Tabs: 전체 | 일정 | 유형 */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '1.75rem',
-        borderBottom: '1px solid var(--border-color)',
-        marginBottom: '1.5rem'
-      }}>
-        {[
-          { id: 'ALL', label: '전체' },
-          { id: 'SCHEDULE', label: '일정' },
-          { id: 'TYPE', label: '유형' }
-        ].map(tab => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <button
-            key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab.id)}
+            className="btn btn-primary"
+            onClick={() => setShowUploadDrawer(true)}
             style={{
-              background: 'none',
-              border: 'none',
-              padding: '0.65rem 0.2rem',
-              fontSize: '16px',
-              fontWeight: activeTab === tab.id ? 700 : 500,
-              color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-muted)',
-              borderBottom: activeTab === tab.id ? '2px solid var(--text-primary)' : '2px solid transparent',
-              cursor: 'pointer',
-              outline: 'none',
-              transition: 'all 0.15s ease'
+              height: '42px',
+              padding: '0 1.25rem',
+              fontSize: '15px',
+              fontWeight: 400,
+              borderRadius: '4px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              cursor: 'pointer'
             }}
           >
-            {tab.label}
+            <Plus size={18} strokeWidth={2} />
+            파일 등록
           </button>
-        ))}
+        </div>
       </div>
 
-      {/* 3. Search & Filter Bar */}
+      {/* 2. Top Navigation Tabs + Right Minimal Icon Toolbar */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '1rem',
-        padding: '0.85rem 1.25rem',
-        backgroundColor: 'var(--bg-card)',
-        border: '1px solid var(--border-color)',
-        marginBottom: '1.75rem'
+        borderBottom: '1px solid var(--border-color)',
+        marginBottom: '0',
+        position: 'relative',
+        zIndex: 20
       }}>
-        {/* Search Input */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: '260px' }}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '15px', fontWeight: 600 }}>Q</span>
-          <input
-            type="text"
-            className="form-control"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="파일명 또는 업로더 검색..."
-            style={{
-              border: 'none',
-              background: 'transparent',
-              fontSize: '15px',
-              padding: '4px 0',
-              outline: 'none',
-              boxShadow: 'none',
-              color: 'var(--text-primary)',
-              width: '100%'
-            }}
-          />
+        {/* Left: Navigation Tabs: 전체 | 일정 | 유형 (사내 공통 tab-btn tab-btn-lg 표준 적용) */}
+        <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', marginBottom: '-1px' }}>
+          {[
+            { id: 'ALL', label: '전체' },
+            { id: 'SCHEDULE', label: '일정' },
+            { id: 'TYPE', label: '유형' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`tab-btn tab-btn-lg ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* Right Controls: 내 등록 파일 & 정렬 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-          {/* 내 등록 파일 Checkbox (Rule 5) */}
-          <CustomCheckbox
-            checked={onlyMyFiles}
-            onChange={setOnlyMyFiles}
-            label="내 등록 파일"
-          />
+        {/* Right: Unified Minimal Icon Toolbar (Search Toggle + Only My Files + Sort Popover + Reset Icon) */}
+        {(() => {
+          const hasActiveFilter = Boolean(searchQuery || onlyMyFiles || sortBy !== 'NAME_ASC');
 
-          {/* Sort Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '13.5px', color: 'var(--text-secondary)' }}>정렬</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingBottom: '0.4rem', position: 'relative' }}>
+              {/* 1. 검색 아이콘 버튼 (전폭 리본 바 토글) */}
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                title="검색 (전폭 검색 바 토글)"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: (isSearchOpen || searchQuery) ? 'var(--text-primary)' : 'var(--text-muted)',
+                  opacity: (isSearchOpen || searchQuery) ? 1 : 0.45,
+                  outline: 'none',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                  e.currentTarget.style.opacity = '0.9';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.color = (isSearchOpen || searchQuery) ? 'var(--text-primary)' : 'var(--text-muted)';
+                  e.currentTarget.style.opacity = (isSearchOpen || searchQuery) ? 1 : 0.45;
+                }}
+              >
+                <Search size={22} strokeWidth={2} />
+              </button>
+
+              {/* 2. 내 등록 파일 아이콘 버튼 (User) */}
+              <button
+                type="button"
+                onClick={() => setOnlyMyFiles(!onlyMyFiles)}
+                title={onlyMyFiles ? "내 등록 파일 필터 적용 중 (클릭하여 전체 보기)" : "내 등록 파일만 보기"}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: onlyMyFiles ? 'var(--text-primary)' : 'var(--text-muted)',
+                  opacity: onlyMyFiles ? 1 : 0.45,
+                  outline: 'none',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                  e.currentTarget.style.opacity = '0.9';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.color = onlyMyFiles ? 'var(--text-primary)' : 'var(--text-muted)';
+                  e.currentTarget.style.opacity = onlyMyFiles ? 1 : 0.45;
+                }}
+              >
+                <User size={22} strokeWidth={2} />
+              </button>
+
+              {/* 3. 정렬 아이콘 버튼 (ArrowUpDown + Popover Menu) */}
+              <div ref={sortRef} style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsSortOpen(!isSortOpen)}
+                  title={`정렬: ${
+                    sortBy === 'NAME_ASC' ? '이름순 (A-Z)' :
+                    sortBy === 'NAME_DESC' ? '이름순 (Z-A)' :
+                    sortBy === 'DATE_DESC' ? '최신순' :
+                    sortBy === 'DATE_ASC' ? '오래된순' :
+                    sortBy === 'SIZE_DESC' ? '용량 큰순' : '용량 작은순'
+                  }`}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: (sortBy !== 'NAME_ASC' || isSortOpen) ? 'var(--text-primary)' : 'var(--text-muted)',
+                    opacity: (sortBy !== 'NAME_ASC' || isSortOpen) ? 1 : 0.45,
+                    outline: 'none',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                    e.currentTarget.style.opacity = '0.9';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.color = (sortBy !== 'NAME_ASC' || isSortOpen) ? 'var(--text-primary)' : 'var(--text-muted)';
+                    e.currentTarget.style.opacity = (sortBy !== 'NAME_ASC' || isSortOpen) ? 1 : 0.45;
+                  }}
+                >
+                  <ArrowUpDown size={22} strokeWidth={2} />
+                </button>
+
+                {isSortOpen && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 4px)',
+                    right: 0,
+                    backgroundColor: 'var(--bg-card)',
+                    border: '1px solid var(--border-color)',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.45)',
+                    padding: 0,
+                    minWidth: '160px',
+                    zIndex: 100,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden'
+                  }}>
+                    {[
+                      {
+                        category: 'name',
+                        options: [
+                          { id: 'NAME_ASC', label: '이름순 (A-Z)' },
+                          { id: 'NAME_DESC', label: '이름순 (Z-A)' }
+                        ]
+                      },
+                      {
+                        category: 'date',
+                        options: [
+                          { id: 'DATE_DESC', label: '최신순' },
+                          { id: 'DATE_ASC', label: '오래된순' }
+                        ]
+                      },
+                      {
+                        category: 'size',
+                        options: [
+                          { id: 'SIZE_DESC', label: '용량 큰순' },
+                          { id: 'SIZE_ASC', label: '용량 작은순' }
+                        ]
+                      }
+                    ].map((group, gIdx, gArr) => (
+                      <div
+                        key={group.category}
+                        style={{
+                          borderBottom: gIdx < gArr.length - 1 ? '1px solid var(--border-color)' : 'none'
+                        }}
+                      >
+                        {group.options.map(opt => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => {
+                              setSortBy(opt.id);
+                              setIsSortOpen(false);
+                            }}
+                            style={{
+                              width: '100%',
+                              background: 'transparent',
+                              border: 'none',
+                              padding: '0.65rem 0.95rem',
+                              textAlign: 'left',
+                              fontSize: '14.5px',
+                              fontWeight: 400,
+                              color: sortBy === opt.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              outline: 'none',
+                              whiteSpace: 'nowrap',
+                              transition: 'background-color 0.15s ease, color 0.15s ease'
+                            }}
+                            onMouseEnter={e => {
+                              e.currentTarget.style.backgroundColor = 'var(--bg-hover, rgba(255, 255, 255, 0.04))';
+                              e.currentTarget.style.color = 'var(--text-primary)';
+                            }}
+                            onMouseLeave={e => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                              e.currentTarget.style.color = sortBy === opt.id ? 'var(--text-primary)' : 'var(--text-secondary)';
+                            }}
+                          >
+                            <span>{opt.label}</span>
+                            {sortBy === opt.id && <Check size={16} color="var(--text-primary)" strokeWidth={2} />}
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 4. 필터 초기화 아이콘 버튼 (RotateCcw) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setOnlyMyFiles(false);
+                  setSortBy('NAME_ASC');
+                  setIsSearchOpen(false);
+                }}
+                title="필터 초기화"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '6px',
+                  cursor: 'pointer',
+                  color: hasActiveFilter ? 'var(--text-primary)' : 'var(--text-muted)',
+                  opacity: hasActiveFilter ? 1 : 0.3,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  outline: 'none',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                  e.currentTarget.style.opacity = '0.9';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.color = hasActiveFilter ? 'var(--text-primary)' : 'var(--text-muted)';
+                  e.currentTarget.style.opacity = hasActiveFilter ? 1 : 0.3;
+                }}
+              >
+                <RotateCcw size={22} strokeWidth={2} />
+              </button>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Full-Width Search Ribbon Bar (부드러운 하드웨어 가속 슬라이드) */}
+      <div
+        style={{
+          height: isSearchOpen ? '84px' : '0px',
+          opacity: isSearchOpen ? 1 : 0,
+          overflow: 'hidden',
+          transition: 'height 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease',
+          marginBottom: '1.5rem',
+          pointerEvents: isSearchOpen ? 'auto' : 'none',
+          willChange: 'height, opacity'
+        }}
+      >
+        <div
+          style={{
+            height: '84px',
+            padding: '0 2rem',
+            backgroundColor: 'var(--bg-card, #141417)',
+            borderBottom: '1px solid var(--border-color)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxSizing: 'border-box',
+            gap: '1rem'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flex: 1 }}>
+            <Search size={22} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="검색어 입력"
+              tabIndex={isSearchOpen ? 0 : -1}
+              style={{
+                width: '100%',
+                height: '48px',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                fontSize: '16px',
+                color: 'var(--text-primary)',
+                padding: '0 4px',
+                fontWeight: 400
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setIsSearchOpen(false);
+                  setSearchQuery('');
+                }
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
+            {searchQuery.trim() && (
+              <span style={{ fontSize: '15px', color: 'var(--text-muted)', whiteSpace: 'nowrap', userSelect: 'none', fontWeight: 400 }}>
+                {processedFiles.length}건
+              </span>
+            )}
+            <button
+              type="button"
+              tabIndex={isSearchOpen ? 0 : -1}
+              onClick={() => {
+                setIsSearchOpen(false);
+                setSearchQuery('');
+              }}
+              title="닫기"
+              aria-label="닫기"
               style={{
                 background: 'transparent',
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-primary)',
-                fontSize: '13.5px',
-                padding: '4px 8px',
-                borderRadius: '4px',
+                border: 'none',
+                padding: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-muted)',
                 outline: 'none',
-                cursor: 'pointer'
+                borderRadius: '4px',
+                transition: 'color 0.15s ease',
+                flexShrink: 0
               }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
             >
-              <option value="LATEST" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>최신순</option>
-              <option value="NAME" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>파일명순</option>
-              <option value="SIZE" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>용량순</option>
-            </select>
+              <X size={22} strokeWidth={2} />
+            </button>
           </div>
         </div>
       </div>
@@ -427,18 +714,18 @@ export default function FileManager({
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                padding: '0.85rem 1.25rem',
+                padding: '1rem 1.5rem',
                 borderBottom: '1px solid var(--border-color)',
-                fontSize: '14px',
-                fontWeight: 600,
+                fontSize: '16px',
+                fontWeight: 400,
                 color: 'var(--text-secondary)'
               }}>
-                <div style={{ flex: 1, minWidth: '200px' }}>파일명</div>
+                <div style={{ flex: 1, minWidth: '220px' }}>파일명</div>
                 <div style={{ width: '90px', textAlign: 'center' }}>유형</div>
                 <div style={{ width: '100px', textAlign: 'right' }}>용량</div>
                 <div style={{ width: '110px', textAlign: 'center' }}>등록자</div>
-                <div style={{ width: '120px', textAlign: 'center' }}>등록일</div>
-                <div style={{ width: '170px', textAlign: 'right' }}>관리</div>
+                <div style={{ width: '130px', textAlign: 'center' }}>등록일</div>
+                <div style={{ width: '180px', textAlign: 'right' }}>관리</div>
               </div>
 
               {/* Rows */}
@@ -448,16 +735,16 @@ export default function FileManager({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    padding: '1rem 1.25rem',
+                    padding: '1.2rem 1.5rem',
                     borderBottom: '1px solid var(--border-color)',
-                    fontSize: '15px',
+                    fontSize: '16px',
                     transition: 'background-color 0.15s ease'
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
                   {/* File Name (Download Link) */}
-                  <div style={{ flex: 1, minWidth: '200px', wordBreak: 'break-all', paddingRight: '1rem' }}>
+                  <div style={{ flex: 1, minWidth: '220px', wordBreak: 'break-all', paddingRight: '1rem' }}>
                     <a
                       href={file.url}
                       download={file.name}
@@ -465,7 +752,9 @@ export default function FileManager({
                       style={{
                         color: 'var(--text-primary)',
                         textDecoration: 'none',
-                        fontWeight: 500,
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        lineHeight: 1.5,
                         cursor: 'pointer',
                         transition: 'color 0.15s ease'
                       }}
@@ -476,40 +765,39 @@ export default function FileManager({
                     </a>
                   </div>
 
-                  {/* Format/Type (Pure typography text - Rule 1) */}
-                  <div style={{ width: '90px', textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '13.5px' }}>
+                  {/* Format/Type (Pure typography text - Rule 1 & 7) */}
+                  <div style={{ width: '90px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '16px' }}>
                     {getFileFormat(file.name)}
                   </div>
 
                   {/* Size */}
-                  <div style={{ width: '100px', textAlign: 'right', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                  <div style={{ width: '100px', textAlign: 'right', color: 'var(--text-secondary)', fontSize: '16px', fontVariantNumeric: 'tabular-nums' }}>
                     {file.sizeFormatted || '-'}
                   </div>
 
                   {/* Uploader */}
-                  <div style={{ width: '110px', textAlign: 'center', color: 'var(--text-primary)' }}>
+                  <div style={{ width: '110px', textAlign: 'center', color: 'var(--text-primary)', fontSize: '16px' }}>
                     {file.uploaderName || '-'}
                   </div>
 
                   {/* Date */}
-                  <div style={{ width: '120px', textAlign: 'center', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                  <div style={{ width: '130px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '16px', fontVariantNumeric: 'tabular-nums' }}>
                     {file.createdAt ? file.createdAt.slice(0, 10) : '-'}
                   </div>
 
                   {/* Actions (다운로드 · 일정 연결 · 삭제) */}
-                  <div style={{ width: '170px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.65rem' }}>
+                  <div style={{ width: '180px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.65rem' }}>
                     <a
                       href={file.url}
                       download={file.name}
                       style={{
-                        color: 'var(--text-primary)',
+                        color: '#60a5fa',
                         textDecoration: 'none',
-                        fontSize: '13.5px',
-                        fontWeight: 500,
+                        fontSize: '15.5px',
                         cursor: 'pointer'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = '#3b82f6'}
-                      onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+                      onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                      onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                     >
                       다운로드
                     </a>
@@ -522,7 +810,7 @@ export default function FileManager({
                         border: 'none',
                         padding: 0,
                         color: 'var(--text-secondary)',
-                        fontSize: '13.5px',
+                        fontSize: '15.5px',
                         cursor: 'pointer'
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
@@ -541,7 +829,7 @@ export default function FileManager({
                             border: 'none',
                             padding: 0,
                             color: 'var(--text-muted)',
-                            fontSize: '13.5px',
+                            fontSize: '15.5px',
                             cursor: 'pointer'
                           }}
                           onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
@@ -559,12 +847,12 @@ export default function FileManager({
         </div>
       )}
 
-      {/* TAB 2: 일정 (아코디언 FAQ 스타일 - 최상단 '미지정' + 일정 리스트) */}
+      {/* TAB 2: 일정 (근태 관리 아코디언 스타일 - 보더 디바이더 및 부드러운 그리드 슬라이드) */}
       {activeTab === 'SCHEDULE' && (() => {
         // 1. Unlinked files
         const unlinkedFiles = processedFiles.filter(f => getFileScheduleIds(f).length === 0);
 
-        // 2. Schedules that have files or are meetings
+        // 2. Schedules that have files
         const schedulesWithFiles = (meetingSchedules || []).map(sch => {
           const sFiles = processedFiles.filter(f => {
             const schedIds = getFileScheduleIds(f);
@@ -574,203 +862,100 @@ export default function FileManager({
             schedule: sch,
             files: sFiles
           };
-        }).filter(item => item.files.length > 0); // Only show schedules that have files in this view
+        }).filter(item => item.files.length > 0);
 
         const isUnlinkedOpen = openAccordionIds.has('UNLINKED');
 
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
             {/* Section 1: 미지정 (가장 상단 배치) */}
-            <div style={{
-              backgroundColor: 'var(--bg-card)',
-              border: '1px solid var(--border-color)'
-            }}>
-              {/* Accordion Header: 미지정 (파일 건수 없이 깔끔한 성명과 ChevronDown 아이콘) */}
-              <div
+            <div style={{ borderBottom: '1px solid var(--border-color)' }}>
+              <button
+                type="button"
                 onClick={() => toggleAccordion('UNLINKED')}
                 style={{
+                  width: '100%',
+                  background: 'none',
+                  border: 'none',
+                  padding: '1.85rem 0.25rem 1.6rem 0.25rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '1.2rem 1.5rem',
                   cursor: 'pointer',
-                  userSelect: 'none'
+                  textAlign: 'left',
+                  outline: 'none'
                 }}
               >
-                <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  미지정
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <span style={{
+                    fontSize: '26px',
+                    color: 'var(--text-primary)',
+                    letterSpacing: '-0.02em',
+                    fontWeight: 400,
+                    lineHeight: 1.15
+                  }}>
+                    미지정
+                  </span>
                 </div>
                 <div style={{
                   display: 'inline-flex',
                   alignItems: 'center',
+                  color: isUnlinkedOpen ? 'var(--text-primary)' : 'var(--text-secondary)',
                   transform: isUnlinkedOpen ? 'rotate(180deg)' : 'none',
-                  transition: 'transform 0.2s ease',
-                  color: 'var(--text-secondary)'
+                  transition: 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)'
                 }}>
-                  <ChevronDown size={20} strokeWidth={2.2} />
+                  <ChevronDown size={24} strokeWidth={2} />
                 </div>
-              </div>
+              </button>
 
-              {/* Accordion Body: 파일명, 용량, 다운로드, 삭제 */}
-              {isUnlinkedOpen && (
-                <div style={{ borderTop: '1px solid var(--border-color)' }}>
-                  {unlinkedFiles.length === 0 ? (
-                    <div style={{ padding: '2rem 1.5rem', color: 'var(--text-muted)', fontSize: '14.5px' }}>
-                      미지정 파일이 없습니다.
-                    </div>
-                  ) : (
-                    unlinkedFiles.map(file => (
-                      <div
-                        key={file.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '0.9rem 1.5rem',
-                          borderBottom: '1px solid var(--border-color)',
-                          fontSize: '15px',
-                          gap: '1rem'
-                        }}
-                      >
-                        {/* File Name */}
-                        <div style={{ flex: 1, minWidth: 0, wordBreak: 'break-all' }}>
-                          <a
-                            href={file.url}
-                            download={file.name}
-                            style={{
-                              color: 'var(--text-primary)',
-                              textDecoration: 'none',
-                              fontWeight: 500,
-                              cursor: 'pointer'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.color = '#3b82f6'}
-                            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
-                          >
-                            {file.name}
-                          </a>
-                        </div>
-
-                        {/* Size */}
-                        <div style={{ width: '100px', textAlign: 'right', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                          {file.sizeFormatted || '-'}
-                        </div>
-
-                        {/* Actions (다운로드 · 삭제) */}
-                        <div style={{ width: '120px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.65rem' }}>
-                          <a
-                            href={file.url}
-                            download={file.name}
-                            style={{
-                              color: 'var(--text-primary)',
-                              textDecoration: 'none',
-                              fontSize: '13.5px',
-                              fontWeight: 500,
-                              cursor: 'pointer'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.color = '#3b82f6'}
-                            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
-                          >
-                            다운로드
-                          </a>
-                          {(user?.role === 'ADMIN' || file.uploaderId === user?.id || file.uploaderName === user?.name) && (
-                            <>
-                              <span style={{ color: 'var(--border-color)' }}>·</span>
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(file.id, file.name)}
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  padding: 0,
-                                  color: 'var(--text-muted)',
-                                  fontSize: '13.5px',
-                                  cursor: 'pointer'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
-                                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
-                              >
-                                삭제
-                              </button>
-                            </>
-                          )}
-                        </div>
+              <div style={{
+                display: 'grid',
+                gridTemplateRows: isUnlinkedOpen ? '1fr' : '0fr',
+                transition: 'grid-template-rows 0.3s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.3s',
+                overflow: 'hidden',
+                visibility: isUnlinkedOpen ? 'visible' : 'hidden'
+              }}>
+                <div style={{ minHeight: 0 }}>
+                  <div style={{
+                    margin: '0 0.5rem 1.5rem 0.75rem',
+                    borderLeft: '2px solid var(--text-muted)',
+                    paddingLeft: '1.25rem'
+                  }}>
+                    {unlinkedFiles.length === 0 ? (
+                      <div style={{
+                        padding: '1rem 0.5rem',
+                        color: 'var(--text-muted)',
+                        fontSize: '18px'
+                      }}>
+                        미지정 파일이 없습니다.
                       </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Section 2: Schedules List */}
-            {schedulesWithFiles.map(({ schedule: sch, files: sFiles }) => {
-              const isOpen = openAccordionIds.has(sch.id);
-              const schedDate = sch.startDate ? sch.startDate.slice(0, 10) : '';
-
-              return (
-                <div
-                  key={sch.id}
-                  style={{
-                    backgroundColor: 'var(--bg-card)',
-                    border: '1px solid var(--border-color)'
-                  }}
-                >
-                  {/* Accordion Header (일정 이름, 날짜, ChevronDown 아이콘) */}
-                  <div
-                    onClick={() => toggleAccordion(sch.id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '1.2rem 1.5rem',
-                      cursor: 'pointer',
-                      userSelect: 'none'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.85rem' }}>
-                      <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        {sch.title}
-                      </span>
-                      {schedDate && (
-                        <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-                          {schedDate}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      transform: isOpen ? 'rotate(180deg)' : 'none',
-                      transition: 'transform 0.2s ease',
-                      color: 'var(--text-secondary)'
-                    }}>
-                      <ChevronDown size={20} strokeWidth={2.2} />
-                    </div>
-                  </div>
-
-                  {/* Accordion Body: 파일명, 용량, 다운로드, 삭제 */}
-                  {isOpen && (
-                    <div style={{ borderTop: '1px solid var(--border-color)' }}>
-                      {sFiles.map(file => (
+                    ) : (
+                      unlinkedFiles.map((file, idx) => (
                         <div
                           key={file.id}
                           style={{
                             display: 'flex',
                             alignItems: 'center',
-                            padding: '0.9rem 1.5rem',
-                            borderBottom: '1px solid var(--border-color)',
-                            fontSize: '15px',
-                            gap: '1rem'
+                            justifyContent: 'space-between',
+                            padding: '1rem 0.5rem',
+                            borderTop: idx > 0 ? '1px solid var(--border-color)' : 'none',
+                            gap: '1.5rem'
                           }}
                         >
-                          {/* File Name */}
+                          {/* File Name (Download Link) */}
                           <div style={{ flex: 1, minWidth: 0, wordBreak: 'break-all' }}>
                             <a
                               href={file.url}
                               download={file.name}
+                              title="클릭 시 다운로드"
                               style={{
                                 color: 'var(--text-primary)',
                                 textDecoration: 'none',
-                                fontWeight: 500,
-                                cursor: 'pointer'
+                                fontSize: '18px',
+                                fontWeight: 400,
+                                lineHeight: 1.5,
+                                cursor: 'pointer',
+                                transition: 'color 0.15s ease'
                               }}
                               onMouseEnter={(e) => e.currentTarget.style.color = '#3b82f6'}
                               onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
@@ -779,54 +964,192 @@ export default function FileManager({
                             </a>
                           </div>
 
-                          {/* Size */}
-                          <div style={{ width: '100px', textAlign: 'right', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                            {file.sizeFormatted || '-'}
-                          </div>
+                          {/* Right: 용량 & 삭제 */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexShrink: 0 }}>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '18px', fontVariantNumeric: 'tabular-nums' }}>
+                              {file.sizeFormatted || '-'}
+                            </span>
 
-                          {/* Actions (다운로드 · 삭제) */}
-                          <div style={{ width: '120px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.65rem' }}>
-                            <a
-                              href={file.url}
-                              download={file.name}
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(file.id, file.name)}
                               style={{
-                                color: 'var(--text-primary)',
-                                textDecoration: 'none',
-                                fontSize: '13.5px',
-                                fontWeight: 500,
-                                cursor: 'pointer'
+                                background: 'none',
+                                border: 'none',
+                                padding: 0,
+                                color: 'var(--text-muted)',
+                                fontSize: '18px',
+                                cursor: 'pointer',
+                                transition: 'color 0.15s ease'
                               }}
-                              onMouseEnter={(e) => e.currentTarget.style.color = '#3b82f6'}
-                              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+                              onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
+                              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
                             >
-                              다운로드
-                            </a>
-                            {(user?.role === 'ADMIN' || file.uploaderId === user?.id || file.uploaderName === user?.name) && (
-                              <>
-                                <span style={{ color: 'var(--border-color)' }}>·</span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDelete(file.id, file.name)}
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    padding: 0,
-                                    color: 'var(--text-muted)',
-                                    fontSize: '13.5px',
-                                    cursor: 'pointer'
-                                  }}
-                                  onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
-                                  onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
-                                >
-                                  삭제
-                                </button>
-                              </>
-                            )}
+                              삭제
+                            </button>
                           </div>
                         </div>
-                      ))}
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Schedules List */}
+            {schedulesWithFiles.map(({ schedule: sch, files: sFiles }) => {
+              const isOpen = openAccordionIds.has(sch.id);
+              const schedDate = sch.startDate ? sch.startDate.slice(0, 10) : '';
+
+              return (
+                <div key={sch.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <button
+                    type="button"
+                    onClick={() => toggleAccordion(sch.id)}
+                    style={{
+                      width: '100%',
+                      background: 'none',
+                      border: 'none',
+                      padding: '1.85rem 0.25rem 1.6rem 0.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      outline: 'none'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
+                      <span style={{
+                        fontSize: '26px',
+                        color: 'var(--text-primary)',
+                        letterSpacing: '-0.02em',
+                        fontWeight: 400,
+                        lineHeight: 1.15
+                      }}>
+                        {sch.title}
+                      </span>
+                      {schedDate && (
+                        <span style={{ fontSize: '18px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+                          {schedDate}
+                        </span>
+                      )}
+                      {onNavigateToSchedule && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onNavigateToSchedule(sch.id);
+                          }}
+                          title="일정 관리로 이동"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '18px',
+                            color: 'var(--text-muted)',
+                            cursor: 'pointer',
+                            padding: '0 4px',
+                            lineHeight: 1,
+                            transition: 'color 0.15s ease'
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+                          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                        >
+                          <span>일정 보기</span>
+                          <ArrowUpRight size={18} strokeWidth={2} />
+                        </span>
+                      )}
                     </div>
-                  )}
+
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      color: isOpen ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      transform: isOpen ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)'
+                    }}>
+                      <ChevronDown size={24} strokeWidth={2} />
+                    </div>
+                  </button>
+
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateRows: isOpen ? '1fr' : '0fr',
+                    transition: 'grid-template-rows 0.3s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.3s',
+                    overflow: 'hidden',
+                    visibility: isOpen ? 'visible' : 'hidden'
+                  }}>
+                    <div style={{ minHeight: 0 }}>
+                      <div style={{
+                        margin: '0 0.5rem 1.5rem 0.75rem',
+                        borderLeft: '2px solid var(--text-muted)',
+                        paddingLeft: '1.25rem'
+                      }}>
+                        {sFiles.map((file, idx) => (
+                          <div
+                            key={file.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '1rem 0.5rem',
+                              borderTop: idx > 0 ? '1px solid var(--border-color)' : 'none',
+                              gap: '1.5rem'
+                            }}
+                          >
+                            {/* File Name (Download Link) */}
+                            <div style={{ flex: 1, minWidth: 0, wordBreak: 'break-all' }}>
+                              <a
+                                href={file.url}
+                                download={file.name}
+                                title="클릭 시 다운로드"
+                                style={{
+                                  color: 'var(--text-primary)',
+                                  textDecoration: 'none',
+                                  fontSize: '18px',
+                                  fontWeight: 400,
+                                  lineHeight: 1.5,
+                                  cursor: 'pointer',
+                                  transition: 'color 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = '#3b82f6'}
+                                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+                              >
+                                {file.name}
+                              </a>
+                            </div>
+
+                            {/* Right: 용량 & 삭제 */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexShrink: 0 }}>
+                              <span style={{ color: 'var(--text-muted)', fontSize: '18px', fontVariantNumeric: 'tabular-nums' }}>
+                                {file.sizeFormatted || '-'}
+                              </span>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(file.id, file.name)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  padding: 0,
+                                  color: 'var(--text-muted)',
+                                  fontSize: '18px',
+                                  cursor: 'pointer',
+                                  transition: 'color 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
+                                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               );
             })}
@@ -869,15 +1192,15 @@ export default function FileManager({
                   <div style={{
                     display: 'flex',
                     alignItems: 'baseline',
-                    gap: '0.5rem',
-                    paddingBottom: '0.65rem',
+                    gap: '0.65rem',
+                    paddingBottom: '0.75rem',
                     borderBottom: '1px solid var(--border-color)',
                     marginBottom: '0.15rem'
                   }}>
-                    <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    <span style={{ fontSize: '20px', fontWeight: 400, color: 'var(--text-primary)' }}>
                       {cat}
                     </span>
-                    <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                    <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>
                       {catFiles.length}
                     </span>
                   </div>
@@ -889,7 +1212,7 @@ export default function FileManager({
                         padding: '2.5rem 1rem',
                         textAlign: 'center',
                         color: 'var(--text-muted)',
-                        fontSize: '14.5px',
+                        fontSize: '16px',
                         backgroundColor: 'var(--bg-card)',
                         border: '1px dashed var(--border-color)'
                       }}>
@@ -902,10 +1225,10 @@ export default function FileManager({
                           style={{
                             backgroundColor: 'var(--bg-card)',
                             border: '1px solid var(--border-color)',
-                            padding: '1rem',
+                            padding: '1.15rem 1.25rem',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '0.65rem',
+                            gap: '0.75rem',
                             transition: 'all 0.15s ease'
                           }}
                           onMouseEnter={(e) => {
@@ -923,9 +1246,9 @@ export default function FileManager({
                               style={{
                                 color: 'var(--text-primary)',
                                 textDecoration: 'none',
-                                fontWeight: 600,
-                                fontSize: '15px',
-                                lineHeight: 1.4,
+                                fontSize: '16px',
+                                fontWeight: 400,
+                                lineHeight: 1.5,
                                 cursor: 'pointer'
                               }}
                               onMouseEnter={(e) => e.currentTarget.style.color = '#3b82f6'}
@@ -941,8 +1264,8 @@ export default function FileManager({
                             alignItems: 'center',
                             flexWrap: 'wrap',
                             gap: '0.4rem',
-                            fontSize: '14px',
-                            color: 'var(--text-muted)',
+                            fontSize: '15px',
+                            color: 'var(--text-secondary)',
                             fontVariantNumeric: 'tabular-nums'
                           }}>
                             <span>{file.sizeFormatted || '-'}</span>
@@ -959,9 +1282,9 @@ export default function FileManager({
                           {/* Memo */}
                           {file.memo && (
                             <div style={{
-                              fontSize: '14px',
+                              fontSize: '15px',
                               color: 'var(--text-secondary)',
-                              lineHeight: 1.4,
+                              lineHeight: 1.5,
                               wordBreak: 'break-all',
                               paddingTop: '0.2rem'
                             }}>
@@ -977,19 +1300,18 @@ export default function FileManager({
                             gap: '0.65rem',
                             paddingTop: '0.6rem',
                             borderTop: '1px solid var(--border-color)',
-                            fontSize: '14px'
+                            fontSize: '15.5px'
                           }}>
                             <a
                               href={file.url}
                               download={file.name}
                               style={{
-                                color: 'var(--text-primary)',
+                                color: '#60a5fa',
                                 textDecoration: 'none',
-                                fontWeight: 500,
                                 cursor: 'pointer'
                               }}
-                              onMouseEnter={(e) => e.currentTarget.style.color = '#3b82f6'}
-                              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+                              onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                              onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                             >
                               다운로드
                             </a>
@@ -1004,7 +1326,7 @@ export default function FileManager({
                                     border: 'none',
                                     padding: 0,
                                     color: 'var(--text-muted)',
-                                    fontSize: '14px',
+                                    fontSize: '15.5px',
                                     cursor: 'pointer'
                                   }}
                                   onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
@@ -1026,12 +1348,12 @@ export default function FileManager({
                     onClick={() => setShowUploadDrawer(true)}
                     style={{
                       width: '100%',
-                      padding: '0.75rem',
+                      padding: '0.85rem',
                       background: 'transparent',
                       border: '1px dashed var(--border-color)',
                       color: 'var(--text-muted)',
-                      fontSize: '14px',
-                      fontWeight: 500,
+                      fontSize: '15px',
+                      fontWeight: 400,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1081,7 +1403,7 @@ export default function FileManager({
               justifyContent: 'space-between',
               backgroundColor: 'var(--bg-card)'
             }}>
-              <h3 style={{ fontSize: '22px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+              <h3 style={{ fontSize: '22px', fontWeight: 400, margin: 0, color: 'var(--text-primary)' }}>
                 보관함 파일 등록
               </h3>
               <button
@@ -1102,7 +1424,7 @@ export default function FileManager({
                   borderRadius: '4px'
                 }}
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -1127,7 +1449,7 @@ export default function FileManager({
                     borderBottom: '1px solid var(--border-color)',
                     gap: '1.5rem'
                   }}>
-                    <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0, paddingTop: '6px' }}>
+                    <span style={{ width: '100px', fontSize: '16px', color: 'var(--text-secondary)', flexShrink: 0, paddingTop: '6px' }}>
                       파일
                     </span>
                     <div style={{ flex: 1 }}>
@@ -1155,19 +1477,19 @@ export default function FileManager({
                         />
                         {selectedFile ? (
                           <div>
-                            <div style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                            <div style={{ fontSize: '16px', color: 'var(--text-primary)' }}>
                               {selectedFile.name}
                             </div>
-                            <div style={{ fontSize: '15px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                            <div style={{ fontSize: '14.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
                               {Math.round(selectedFile.size / 1024)} KB · 클릭하여 변경
                             </div>
                           </div>
                         ) : (
                           <div>
-                            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                            <div style={{ fontSize: '16px', color: 'var(--text-primary)' }}>
                               파일을 마우스로 끌어다 놓거나 클릭하여 선택
                             </div>
-                            <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                            <div style={{ fontSize: '14.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
                               PDF, Word, Excel, PowerPoint, 이미지 등 모든 파일 지원
                             </div>
                           </div>
@@ -1184,7 +1506,7 @@ export default function FileManager({
                     borderBottom: '1px solid var(--border-color)',
                     gap: '1.5rem'
                   }}>
-                    <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0, paddingTop: '6px' }}>
+                    <span style={{ width: '100px', fontSize: '16px', color: 'var(--text-secondary)', flexShrink: 0, paddingTop: '6px' }}>
                       연결 일정
                     </span>
                     <div style={{
@@ -1200,7 +1522,7 @@ export default function FileManager({
                       gap: '0.65rem'
                     }}>
                       {meetingSchedules.length === 0 ? (
-                        <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>연결 가능한 일정이 없습니다.</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '14.5px' }}>연결 가능한 일정이 없습니다.</div>
                       ) : (
                         meetingSchedules.map(sch => {
                           const isChecked = selectedScheduleIds.includes(sch.id);
@@ -1229,7 +1551,7 @@ export default function FileManager({
                     borderBottom: '1px solid var(--border-color)',
                     gap: '1.5rem'
                   }}>
-                    <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0 }}>
+                    <span style={{ width: '100px', fontSize: '16px', color: 'var(--text-secondary)', flexShrink: 0 }}>
                       메모
                     </span>
                     <input
@@ -1239,7 +1561,7 @@ export default function FileManager({
                       placeholder="파일 관련 메모 또는 설명을 입력하세요 (선택)"
                       style={{
                         flex: 1,
-                        fontSize: '18px',
+                        fontSize: '16px',
                         background: 'transparent',
                         border: 'none',
                         outline: 'none',
@@ -1266,8 +1588,8 @@ export default function FileManager({
                     style={{
                       width: '100%',
                       height: '46px',
-                      fontSize: '16px',
-                      fontWeight: 600,
+                      fontSize: '15px',
+                      fontWeight: 400,
                       borderRadius: '6px',
                       cursor: 'pointer'
                     }}
@@ -1282,8 +1604,8 @@ export default function FileManager({
                     style={{
                       width: '100%',
                       height: '46px',
-                      fontSize: '16px',
-                      fontWeight: 600,
+                      fontSize: '15px',
+                      fontWeight: 400,
                       borderRadius: '6px',
                       cursor: 'pointer',
                       color: 'var(--text-primary)',
@@ -1324,7 +1646,7 @@ export default function FileManager({
               alignItems: 'center',
               justifyContent: 'space-between'
             }}>
-              <h3 style={{ fontSize: '19px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 400, margin: 0, color: 'var(--text-primary)' }}>
                 연결 일정 설정
               </h3>
               <button
@@ -1338,7 +1660,7 @@ export default function FileManager({
 
             <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ fontSize: '15px', color: 'var(--text-muted)' }}>
-                파일: <strong style={{ color: 'var(--text-primary)' }}>{linkModalFile.name}</strong>
+                파일: <span style={{ color: 'var(--text-primary)' }}>{linkModalFile.name}</span>
               </div>
 
               <div style={{
@@ -1352,7 +1674,7 @@ export default function FileManager({
                 gap: '0.75rem'
               }}>
                 {meetingSchedules.length === 0 ? (
-                  <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>연결 가능한 일정이 없습니다.</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '14.5px' }}>연결 가능한 일정이 없습니다.</div>
                 ) : (
                   meetingSchedules.map(sch => {
                     const isChecked = targetLinkScheduleIds.includes(sch.id);
@@ -1385,7 +1707,7 @@ export default function FileManager({
                 type="button"
                 className="btn btn-secondary"
                 onClick={() => setLinkModalFile(null)}
-                style={{ height: '40px', padding: '0 1.25rem', fontSize: '14px', borderRadius: 0 }}
+                style={{ height: '40px', padding: '0 1.25rem', fontSize: '14.5px', fontWeight: 400, borderRadius: 0 }}
               >
                 취소
               </button>
@@ -1394,7 +1716,7 @@ export default function FileManager({
                 className="btn btn-primary"
                 onClick={handleSaveScheduleLinks}
                 disabled={isSavingLinks}
-                style={{ height: '40px', padding: '0 1.5rem', fontSize: '14px', borderRadius: 0, fontWeight: 600 }}
+                style={{ height: '40px', padding: '0 1.5rem', fontSize: '14.5px', borderRadius: 0, fontWeight: 400 }}
               >
                 {isSavingLinks ? '저장 중...' : '연결 저장'}
               </button>

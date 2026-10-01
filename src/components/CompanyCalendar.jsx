@@ -445,7 +445,7 @@ export default function CompanyCalendar({
     const dayOfWeek = (firstDayIndex + i - 1) % 7;
     days.push({ day: i, dayOfWeek, isCurrentMonth: true, dateStr: dStr });
   }
-  const remaining = 42 - days.length;
+  const remaining = days.length % 7 === 0 ? 0 : 7 - (days.length % 7);
   for (let i = 1; i <= remaining; i++) {
     const nextMonthNum = month === 11 ? 1 : month + 2;
     const nextYearNum = month === 11 ? year + 1 : year;
@@ -533,11 +533,14 @@ export default function CompanyCalendar({
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
-  // Group 42 calendar days into 6 weeks of 7 days each
+  // Group calendar days into 7-day weeks, only including weeks containing current month days
   const weeks = useMemo(() => {
     const result = [];
     for (let i = 0; i < days.length; i += 7) {
-      result.push(days.slice(i, i + 7));
+      const week = days.slice(i, i + 7);
+      if (week.some(d => d.isCurrentMonth)) {
+        result.push(week);
+      }
     }
     return result;
   }, [days]);
@@ -568,7 +571,8 @@ export default function CompanyCalendar({
       return startD <= weekEnd && endD >= weekStart;
     });
 
-    const spans = weekMultiSchedules.map(s => {
+    const spans = [];
+    weekMultiSchedules.forEach(s => {
       const { startD, endD } = getScheduleDates(s);
       let startCol = weekDays.findIndex(d => d.dateStr === startD);
       let isContinuationFromPrev = false;
@@ -590,20 +594,63 @@ export default function CompanyCalendar({
       const isLeaveOrPending = isLeave || isPending;
       const cleanTitle = (s.title || '').replace(/^(\[[^\]]+\]\s*)+/, '').trim();
 
-      return {
-        sch: s,
-        startCol,
-        endCol,
-        startD,
-        endD,
-        isContinuationFromPrev,
-        isContinuationToNext,
-        dotColor,
-        isLeave,
-        isPending,
-        isLeaveOrPending,
-        cleanTitle
-      };
+      // Check if span crosses month boundary in this week
+      let splitCol = -1;
+      for (let c = startCol; c < endCol; c++) {
+        if (weekDays[c].isCurrentMonth !== weekDays[c + 1].isCurrentMonth) {
+          splitCol = c + 1;
+          break;
+        }
+      }
+
+      if (splitCol !== -1) {
+        spans.push({
+          sch: s,
+          startCol,
+          endCol: splitCol - 1,
+          startD,
+          endD,
+          isContinuationFromPrev,
+          isContinuationToNext: true,
+          dotColor,
+          isLeave,
+          isPending,
+          isLeaveOrPending,
+          cleanTitle,
+          isCurrentMonth: weekDays[startCol].isCurrentMonth
+        });
+        spans.push({
+          sch: s,
+          startCol: splitCol,
+          endCol,
+          startD,
+          endD,
+          isContinuationFromPrev: true,
+          isContinuationToNext,
+          dotColor,
+          isLeave,
+          isPending,
+          isLeaveOrPending,
+          cleanTitle,
+          isCurrentMonth: weekDays[endCol].isCurrentMonth
+        });
+      } else {
+        spans.push({
+          sch: s,
+          startCol,
+          endCol,
+          startD,
+          endD,
+          isContinuationFromPrev,
+          isContinuationToNext,
+          dotColor,
+          isLeave,
+          isPending,
+          isLeaveOrPending,
+          cleanTitle,
+          isCurrentMonth: weekDays[startCol].isCurrentMonth
+        });
+      }
     });
 
     // Sort by startCol ascending, then by longer duration first
@@ -1754,8 +1801,7 @@ export default function CompanyCalendar({
                           outline: isToday ? '2px solid var(--text-primary, #ffffff)' : 'none',
                           outlineOffset: '-2px',
                           position: isToday ? 'relative' : 'static',
-                          zIndex: isToday ? 5 : 0,
-                          opacity: item.isCurrentMonth ? 1 : 0.35
+                          zIndex: isToday ? 5 : 0
                         }}
                       />
                     );
@@ -1831,10 +1877,11 @@ export default function CompanyCalendar({
                         const dotColor = span.dotColor;
                         const bg = dotColor;
                         const border = 'none';
+                        const isOtherMonth = span.isCurrentMonth === false;
 
                         return (
                           <div
-                            key={`${span.sch.id}-${weekIdx}`}
+                            key={`${span.sch.id}-${weekIdx}-${span.startCol}`}
                             onClick={() => setSelectedSchedule(span.sch)}
                             style={{
                               gridColumn: `${span.startCol + 1} / ${span.endCol + 2}`,
@@ -1849,25 +1896,26 @@ export default function CompanyCalendar({
                               border: border,
                               borderRadius: `${span.isContinuationFromPrev ? 0 : 4}px ${span.isContinuationToNext ? 0 : 4}px ${span.isContinuationToNext ? 0 : 4}px ${span.isContinuationFromPrev ? 0 : 4}px`,
                               color: '#ffffff',
-                              fontSize: '16px',
-                              fontWeight: 600,
+                              fontSize: '15px',
+                              fontWeight: 400,
                               cursor: 'pointer',
                               minWidth: 0,
                               overflow: 'hidden',
                               whiteSpace: 'nowrap',
                               transition: 'all 0.15s ease',
-                              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)'
+                              boxShadow: isOtherMonth ? 'none' : '0 1px 3px rgba(0, 0, 0, 0.12)',
+                              opacity: isOtherMonth ? 0.35 : 1
                             }}
                             title={span.cleanTitle}
-                            onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
+                            onMouseEnter={(e) => e.currentTarget.style.filter = isOtherMonth ? 'brightness(1.2)' : 'brightness(1.1)'}
                             onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
                           >
                             <span style={{
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
-                              fontSize: '16px',
-                              fontWeight: 600,
+                              fontSize: '15px',
+                              fontWeight: 400,
                               color: '#ffffff'
                             }}>
                               {span.cleanTitle}
@@ -1900,14 +1948,62 @@ export default function CompanyCalendar({
                           gap: '0.45rem',
                           padding: '0 14px',
                           minWidth: 0,
-                          opacity: item.isCurrentMonth ? 1 : 0.4
+                          opacity: item.isCurrentMonth ? 1 : 0.35
                         }}
                       >
                         {singleSchedules.map(sch => {
                           const dotColor = getScheduleDotColor(sch);
-                          // ONLY schedules that need approval get the filled rectangular background!
                           const isPending = getScheduleEffectiveStatus(sch) === 'PENDING';
                           const cleanTitle = (sch.title || '').replace(/^(\[[^\]]+\]\s*)+/, '').trim();
+
+                          // 이전 달 및 다음 달: 모든 일정을 단정한 점(dot) + 텍스트 형태로 통일하여 진한 박스 없이 다같이 연하게 표시
+                          if (!item.isCurrentMonth) {
+                            return (
+                              <div
+                                key={`${sch.id}-${item.dateStr}`}
+                                onClick={() => setSelectedSchedule(sch)}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.55rem',
+                                  padding: '0.35rem 0',
+                                  fontSize: '15px',
+                                  fontWeight: 400,
+                                  color: 'var(--text-primary)',
+                                  minWidth: 0,
+                                  lineHeight: 1.4,
+                                  cursor: 'pointer',
+                                  borderRadius: '4px',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                title={cleanTitle}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.opacity = '0.75';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.opacity = '1';
+                                }}
+                              >
+                                <span style={{
+                                  width: '7px',
+                                  height: '7px',
+                                  borderRadius: '50%',
+                                  backgroundColor: dotColor,
+                                  flexShrink: 0
+                                }} />
+                                <span style={{
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  fontWeight: 400,
+                                  fontSize: '15px',
+                                  color: 'var(--text-primary)'
+                                }}>
+                                  {cleanTitle}
+                                </span>
+                              </div>
+                            );
+                          }
 
                           if (isPending) {
                             const bg = dotColor;
@@ -1926,8 +2022,8 @@ export default function CompanyCalendar({
                                   border: border,
                                   borderRadius: '4px',
                                   color: '#ffffff',
-                                  fontSize: '16px',
-                                  fontWeight: 600,
+                                  fontSize: '15px',
+                                  fontWeight: 400,
                                   lineHeight: 1.35,
                                   cursor: 'pointer',
                                   minWidth: 0,
@@ -1945,8 +2041,8 @@ export default function CompanyCalendar({
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
                                   whiteSpace: 'nowrap',
-                                  fontSize: '16px',
-                                  fontWeight: 600,
+                                  fontSize: '15px',
+                                  fontWeight: 400,
                                   color: '#ffffff'
                                 }}>
                                   {cleanTitle}
@@ -1965,7 +2061,8 @@ export default function CompanyCalendar({
                                 alignItems: 'center',
                                 gap: '0.55rem',
                                 padding: '0.35rem 0',
-                                fontSize: '16px',
+                                fontSize: '15px',
+                                fontWeight: 400,
                                 color: 'var(--text-primary)',
                                 minWidth: 0,
                                 lineHeight: 1.4,
@@ -1992,8 +2089,8 @@ export default function CompanyCalendar({
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
-                                fontWeight: 500,
-                                fontSize: '16px',
+                                fontWeight: 400,
+                                fontSize: '15px',
                                 color: 'var(--text-primary)'
                               }}>
                                 {cleanTitle}

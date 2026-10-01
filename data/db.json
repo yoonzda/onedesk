@@ -37,6 +37,195 @@
       "annualSalary": 84000000,
       "accessLogs": [
         {
+          "id": "log-1790829809377-h4t",
+          "sessionId": "sess-1790829809377-x8la0",
+          "timestamp": "2026-10-01 13:43:29",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790829201848-xm1",
+          "sessionId": "sess-1790813054998-e4lou",
+          "timestamp": "2026-10-01 13:33:21",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790813054998-hsi",
+          "sessionId": "sess-1790813054998-e4lou",
+          "timestamp": "2026-10-01 09:04:14",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790812418996-bbg",
+          "sessionId": "sess-1790812274744-1ydub",
+          "timestamp": "2026-10-01 08:53:38",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812274744-bsc",
+          "sessionId": "sess-1790812274744-1ydub",
+          "timestamp": "2026-10-01 08:51:14",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790812169952-gxu",
+          "sessionId": "sess-1790812165941-xyhbu",
+          "timestamp": "2026-10-01 08:49:29",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812165941-o3r",
+          "sessionId": "sess-1790812165941-xyhbu",
+          "timestamp": "2026-10-01 08:49:25",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790757857272-egx",
+          "sessionId": "sess-1790757857272-5eso0",
+          "timestamp": "2026-09-30 17:44:17",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790757442424-upr",
+          "sessionId": null,
+          "timestamp": "2026-09-30 17:37:22",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790726910493-fw9",
+          "sessionId": "sess-1790726910493-zkh8o",
+          "timestamp": "2026-09-30 09:08:30",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790726143333-5hi",
+          "sessionId": "sess-1790726140301-wsa8f",
+          "timestamp": "2026-09-30 08:55:43",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790726140301-7yg",
+          "sessionId": "sess-1790726140301-wsa8f",
+          "timestamp": "2026-09-30 08:55:40",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790668073519-5ox",
+          "sessionId": "sess-1790668073519-hqtpm",
+          "timestamp": "2026-09-29 16:47:53",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790663877816-x9u",
+          "sessionId": "sess-1790663867922-s4pb9",
+          "timestamp": "2026-09-29 15:37:57",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790663867922-9y5",
+          "sessionId": "sess-1790663867922-s4pb9",
+          "timestamp": "2026-09-29 15:37:47",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790663630380-bwz",
+          "sessionId": "sess-1790663617761-zbwtt",
+          "timestamp": "2026-09-29 15:33:50",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790663617761-z8r",
+          "sessionId": "sess-1790663617761-zbwtt",
+          "timestamp": "2026-09-29 15:33:37",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790645872856-h0s",
+          "sessionId": "sess-1790641963334-ll39y",
+          "timestamp": "2026-09-29 10:37:52",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790641963334-2z2",
+          "sessionId": "sess-1790641963334-ll39y",
+          "timestamp": "2026-09-29 09:32:43",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790641257978-7kh",
+          "sessionId": "sess-1790641253503-0kxnv",
+          "timestamp": "2026-09-29 09:20:57",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790641253503-maa",
+          "sessionId": "sess-1790641253503-0kxnv",
+          "timestamp": "2026-09-29 09:20:53",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
           "id": "log-1790582292034-29f",
           "sessionId": "sess-1790582292034-2abnm",
           "timestamp": "2026-09-28 16:58:12",
@@ -296,118 +485,6 @@
           "device": "웹 브라우저 (Chrome)",
           "ip": "::1",
           "note": "로그아웃"
-        },
-        {
-          "id": "log-1790041701780-rat",
-          "sessionId": "sess-1790041701780-rusl1",
-          "timestamp": "2026-09-22 10:48:21",
-          "type": "LOGIN",
-          "device": "웹 브라우저 (Chrome)",
-          "ip": "::1",
-          "note": "로그인"
-        },
-        {
-          "id": "log-1790037534022-w5z",
-          "sessionId": "sess-1790037534022-8dz1m",
-          "timestamp": "2026-09-22 09:38:54",
-          "type": "LOGIN",
-          "device": "웹 브라우저 (Chrome)",
-          "ip": "::1",
-          "note": "로그인"
-        },
-        {
-          "id": "log-1790035156879-7tw",
-          "sessionId": "sess-1790035154509-sxm9v",
-          "timestamp": "2026-09-22 08:59:16",
-          "type": "LOGOUT",
-          "device": "웹 브라우저 (Chrome)",
-          "ip": "::1",
-          "note": "로그아웃"
-        },
-        {
-          "id": "log-1790035154509-l5o",
-          "sessionId": "sess-1790035154509-sxm9v",
-          "timestamp": "2026-09-22 08:59:14",
-          "type": "LOGIN",
-          "device": "웹 브라우저 (Chrome)",
-          "ip": "::1",
-          "note": "로그인"
-        },
-        {
-          "id": "log-1789979364702-ng4",
-          "sessionId": "sess-1789979364702-rfckj",
-          "timestamp": "2026-09-21 17:29:24",
-          "type": "LOGIN",
-          "device": "웹 브라우저 (Chrome)",
-          "ip": "::1",
-          "note": "로그인"
-        },
-        {
-          "id": "log-1789979360516-7vs",
-          "sessionId": "sess-1789979080159-c6ki9",
-          "timestamp": "2026-09-21 17:29:20",
-          "type": "LOGOUT",
-          "device": "웹 브라우저 (Chrome)",
-          "ip": "::1",
-          "note": "로그아웃"
-        },
-        {
-          "id": "log-1789979080159-g37",
-          "sessionId": "sess-1789979080159-c6ki9",
-          "timestamp": "2026-09-21 17:24:40",
-          "type": "LOGIN",
-          "device": "웹 브라우저 (Chrome)",
-          "ip": "::1",
-          "note": "로그인"
-        },
-        {
-          "id": "log-1789979076701-jm2",
-          "sessionId": null,
-          "timestamp": "2026-09-21 17:24:36",
-          "type": "LOGOUT",
-          "device": "웹 브라우저 (Chrome)",
-          "ip": "::1",
-          "note": "로그아웃"
-        },
-        {
-          "id": "log-1",
-          "timestamp": "2026-09-21 09:12:45",
-          "type": "LOGIN",
-          "device": "Chrome / Windows",
-          "ip": "192.168.1.15",
-          "note": "로그인"
-        },
-        {
-          "id": "log-2",
-          "timestamp": "2026-09-20 18:32:10",
-          "type": "LOGOUT",
-          "device": "Chrome / Windows",
-          "ip": "192.168.1.15",
-          "note": "로그아웃"
-        },
-        {
-          "id": "log-3",
-          "timestamp": "2026-09-19 09:05:22",
-          "type": "LOGIN",
-          "device": "모바일 (Safari / iOS)",
-          "ip": "211.34.89.12",
-          "note": "로그인"
-        },
-        {
-          "id": "log-4",
-          "timestamp": "2026-09-18 08:58:44",
-          "type": "LOGIN",
-          "device": "Chrome / Windows",
-          "ip": "192.168.1.15",
-          "note": "로그인"
-        },
-        {
-          "id": "log-5",
-          "timestamp": "2026-09-17 09:10:02",
-          "type": "LOGIN",
-          "device": "Edge / Windows",
-          "ip": "192.168.1.15",
-          "note": "로그인"
         }
       ],
       "createdAt": "2026-01-01"
@@ -435,6 +512,96 @@
       "accountNumber": "",
       "createdAt": "2026-01-01",
       "accessLogs": [
+        {
+          "id": "log-1790812176363-qlv",
+          "sessionId": "sess-1790812173574-b2qrz",
+          "timestamp": "2026-10-01 08:49:36",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812173574-i6x",
+          "sessionId": "sess-1790812173574-b2qrz",
+          "timestamp": "2026-10-01 08:49:33",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790726151096-dbv",
+          "sessionId": "sess-1790726148618-euilt",
+          "timestamp": "2026-09-30 08:55:51",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790726148618-87m",
+          "sessionId": "sess-1790726148618-euilt",
+          "timestamp": "2026-09-30 08:55:48",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790667329896-snh",
+          "sessionId": "sess-1790664707893-72o7c",
+          "timestamp": "2026-09-29 16:35:29",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790664707893-xvp",
+          "sessionId": "sess-1790664707893-72o7c",
+          "timestamp": "2026-09-29 15:51:47",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790663613603-72s",
+          "sessionId": "sess-1790645878794-8qain",
+          "timestamp": "2026-09-29 15:33:33",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790645878794-gzj",
+          "sessionId": "sess-1790645878794-8qain",
+          "timestamp": "2026-09-29 10:37:58",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790641960770-obp",
+          "sessionId": "sess-1790641261784-xft6a",
+          "timestamp": "2026-09-29 09:32:40",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790641261784-e4c",
+          "sessionId": "sess-1790641261784-xft6a",
+          "timestamp": "2026-09-29 09:21:01",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
         {
           "id": "log-1790570174569-s6v",
           "sessionId": "sess-1790558546505-agfpy",
@@ -527,6 +694,42 @@
       "createdAt": "2026-01-01",
       "accessLogs": [
         {
+          "id": "log-1790812184404-jb7",
+          "sessionId": "sess-1790812181472-xkgqt",
+          "timestamp": "2026-10-01 08:49:44",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812181472-fj9",
+          "sessionId": "sess-1790812181472-xkgqt",
+          "timestamp": "2026-10-01 08:49:41",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790726156882-ipt",
+          "sessionId": "sess-1790726154355-4q5nz",
+          "timestamp": "2026-09-30 08:55:56",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790726154355-eq4",
+          "sessionId": "sess-1790726154355-4q5nz",
+          "timestamp": "2026-09-30 08:55:54",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
           "id": "log-1790570700539-e09",
           "sessionId": "sess-1790570178378-r6cti",
           "timestamp": "2026-09-28 13:45:00",
@@ -600,6 +803,42 @@
       "createdAt": "2026-01-01",
       "accessLogs": [
         {
+          "id": "log-1790812190413-hw5",
+          "sessionId": "sess-1790812188145-fwpp2",
+          "timestamp": "2026-10-01 08:49:50",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812188145-gcf",
+          "sessionId": "sess-1790812188145-fwpp2",
+          "timestamp": "2026-10-01 08:49:48",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790726163483-8jf",
+          "sessionId": "sess-1790726160435-kqf2k",
+          "timestamp": "2026-09-30 08:56:03",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790726160435-ov1",
+          "sessionId": "sess-1790726160435-kqf2k",
+          "timestamp": "2026-09-30 08:56:00",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
           "id": "log-1790574514441-4qa",
           "sessionId": "sess-1790574080717-xcopg",
           "timestamp": "2026-09-28 14:48:34",
@@ -661,6 +900,42 @@
       },
       "annualSalary": 66000000,
       "accessLogs": [
+        {
+          "id": "log-1790812195777-ciu",
+          "sessionId": "sess-1790812193346-q15ut",
+          "timestamp": "2026-10-01 08:49:55",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812193346-bir",
+          "sessionId": "sess-1790812193346-q15ut",
+          "timestamp": "2026-10-01 08:49:53",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790726170135-6w7",
+          "sessionId": "sess-1790726167411-hi3st",
+          "timestamp": "2026-09-30 08:56:10",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790726167411-u3v",
+          "sessionId": "sess-1790726167411-hi3st",
+          "timestamp": "2026-09-30 08:56:07",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
         {
           "id": "log-1790121461742-v2x",
           "sessionId": "sess-1790121459670-y09lk",
@@ -740,6 +1015,24 @@
       "createdAt": "2026-01-01",
       "accessLogs": [
         {
+          "id": "log-1790812201565-ofq",
+          "sessionId": "sess-1790812199384-i87kp",
+          "timestamp": "2026-10-01 08:50:01",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812199384-6c7",
+          "sessionId": "sess-1790812199384-i87kp",
+          "timestamp": "2026-10-01 08:49:59",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
           "id": "log-1790121468099-adt",
           "sessionId": "sess-1790121466006-1fs2y",
           "timestamp": "2026-09-23 08:57:48",
@@ -776,6 +1069,24 @@
       "annualSalary": 40800000,
       "createdAt": "2026-01-01",
       "accessLogs": [
+        {
+          "id": "log-1790812207539-nvq",
+          "sessionId": "sess-1790812205391-dfzmf",
+          "timestamp": "2026-10-01 08:50:07",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812205391-31o",
+          "sessionId": "sess-1790812205391-dfzmf",
+          "timestamp": "2026-10-01 08:50:05",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
         {
           "id": "log-1790121474683-wby",
           "sessionId": "sess-1790121472082-t1gvj",
@@ -816,6 +1127,42 @@
       },
       "annualSalary": 64800000,
       "accessLogs": [
+        {
+          "id": "log-1790812212668-j18",
+          "sessionId": "sess-1790812210402-4e9rv",
+          "timestamp": "2026-10-01 08:50:12",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812210402-6nf",
+          "sessionId": "sess-1790812210402-4e9rv",
+          "timestamp": "2026-10-01 08:50:10",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790726176856-fn6",
+          "sessionId": "sess-1790726174253-n76oo",
+          "timestamp": "2026-09-30 08:56:16",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790726174253-a5m",
+          "sessionId": "sess-1790726174253-n76oo",
+          "timestamp": "2026-09-30 08:56:14",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
         {
           "id": "log-1790121480540-5fb",
           "sessionId": "sess-1790121478370-ggnyw",
@@ -892,7 +1239,27 @@
       "manualLeaveAdjustment": 0,
       "usedLeave": 0,
       "annualSalary": 46800000,
-      "createdAt": "2026-01-01"
+      "createdAt": "2026-01-01",
+      "accessLogs": [
+        {
+          "id": "log-1790812220300-r7u",
+          "sessionId": "sess-1790812217521-2zr62",
+          "timestamp": "2026-10-01 08:50:20",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812217521-r87",
+          "sessionId": "sess-1790812217521-2zr62",
+          "timestamp": "2026-10-01 08:50:17",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        }
+      ]
     },
     {
       "id": "usr-team23",
@@ -909,7 +1276,27 @@
       "manualLeaveAdjustment": 0,
       "usedLeave": 0,
       "annualSalary": 41040000,
-      "createdAt": "2026-01-01"
+      "createdAt": "2026-01-01",
+      "accessLogs": [
+        {
+          "id": "log-1790812226965-k1e",
+          "sessionId": "sess-1790812224485-ucxbb",
+          "timestamp": "2026-10-01 08:50:26",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812224485-w6d",
+          "sessionId": "sess-1790812224485-ucxbb",
+          "timestamp": "2026-10-01 08:50:24",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        }
+      ]
     },
     {
       "id": "usr-team31",
@@ -931,6 +1318,60 @@
       },
       "annualSalary": 61200000,
       "accessLogs": [
+        {
+          "id": "log-1790812237314-tf9",
+          "sessionId": "sess-1790812235249-zqio2",
+          "timestamp": "2026-10-01 08:50:37",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812235249-p1z",
+          "sessionId": "sess-1790812235249-zqio2",
+          "timestamp": "2026-10-01 08:50:35",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790726182457-5oe",
+          "sessionId": "sess-1790726179683-hhtbh",
+          "timestamp": "2026-09-30 08:56:22",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790726179683-3rq",
+          "sessionId": "sess-1790726179683-hhtbh",
+          "timestamp": "2026-09-30 08:56:19",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790664701267-qcm",
+          "sessionId": "sess-1790663882447-a82kz",
+          "timestamp": "2026-09-29 15:51:41",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790663882447-3m2",
+          "sessionId": "sess-1790663882447-a82kz",
+          "timestamp": "2026-09-29 15:38:02",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
         {
           "id": "log-1",
           "timestamp": "2026-09-21 09:12:45",
@@ -990,6 +1431,24 @@
       "usedLeave": 1,
       "annualSalary": 45600000,
       "accessLogs": [
+        {
+          "id": "log-1790812242675-3ly",
+          "sessionId": "sess-1790812240415-qcdhm",
+          "timestamp": "2026-10-01 08:50:42",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812240415-4sb",
+          "sessionId": "sess-1790812240415-qcdhm",
+          "timestamp": "2026-10-01 08:50:40",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
         {
           "id": "log-1",
           "timestamp": "2026-09-21 09:12:45",
@@ -1055,6 +1514,42 @@
       "createdAt": "2026-01-01",
       "accessLogs": [
         {
+          "id": "log-1790812247379-btn",
+          "sessionId": "sess-1790812245180-8mhh9",
+          "timestamp": "2026-10-01 08:50:47",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812245180-q6r",
+          "sessionId": "sess-1790812245180-8mhh9",
+          "timestamp": "2026-10-01 08:50:45",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790663863135-rdk",
+          "sessionId": "sess-1790663634401-ssow8",
+          "timestamp": "2026-09-29 15:37:43",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790663634401-5f1",
+          "sessionId": "sess-1790663634401-ssow8",
+          "timestamp": "2026-09-29 15:33:54",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
           "id": "log-1790121486772-3w2",
           "sessionId": "sess-1790121484724-1c650",
           "timestamp": "2026-09-23 08:58:06",
@@ -1095,6 +1590,42 @@
       "annualSalary": 49200000,
       "createdAt": "2026-01-01",
       "accessLogs": [
+        {
+          "id": "log-1790812253108-be4",
+          "sessionId": "sess-1790812250746-0yin8",
+          "timestamp": "2026-10-01 08:50:53",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812250746-2tu",
+          "sessionId": "sess-1790812250746-0yin8",
+          "timestamp": "2026-10-01 08:50:50",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790726188161-czi",
+          "sessionId": "sess-1790726185666-djn09",
+          "timestamp": "2026-09-30 08:56:28",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790726185666-bj9",
+          "sessionId": "sess-1790726185666-djn09",
+          "timestamp": "2026-09-30 08:56:25",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
         {
           "id": "log-1790121449637-88q",
           "sessionId": "sess-1790121447345-9wd74",
@@ -1154,6 +1685,42 @@
       "annualSalary": 34000000,
       "createdAt": "2026-01-01",
       "accessLogs": [
+        {
+          "id": "log-1790812271706-5d2",
+          "sessionId": "sess-1790812259589-1lolk",
+          "timestamp": "2026-10-01 08:51:11",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812259589-32y",
+          "sessionId": "sess-1790812259589-1lolk",
+          "timestamp": "2026-10-01 08:50:59",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790726433466-m6u",
+          "sessionId": "sess-1790726192462-ohh2s",
+          "timestamp": "2026-09-30 09:00:33",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790726192463-4r8",
+          "sessionId": "sess-1790726192462-ohh2s",
+          "timestamp": "2026-09-30 08:56:32",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
         {
           "id": "log-1790573671619-5a7",
           "sessionId": "sess-1790573237894-qf8e3",
@@ -1243,6 +1810,96 @@
       "createdAt": "2026-01-10",
       "accessLogs": [
         {
+          "id": "log-1790829806350-p49",
+          "sessionId": "sess-1790829208209-5l64z",
+          "timestamp": "2026-10-01 13:43:26",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790829208209-ro4",
+          "sessionId": "sess-1790829208209-5l64z",
+          "timestamp": "2026-10-01 13:33:28",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790813051832-u2l",
+          "sessionId": "sess-1790812422141-btynp",
+          "timestamp": "2026-10-01 09:04:11",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790812422141-p0y",
+          "sessionId": "sess-1790812422141-btynp",
+          "timestamp": "2026-10-01 08:53:42",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790757854905-kyy",
+          "sessionId": "sess-1790757445435-0cn2h",
+          "timestamp": "2026-09-30 17:44:14",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790757445435-rgc",
+          "sessionId": "sess-1790757445435-0cn2h",
+          "timestamp": "2026-09-30 17:37:25",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790726907740-lbg",
+          "sessionId": "sess-1790726436236-3jn94",
+          "timestamp": "2026-09-30 09:08:27",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790726436236-mw5",
+          "sessionId": "sess-1790726436236-3jn94",
+          "timestamp": "2026-09-30 09:00:36",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1790668069647-g81",
+          "sessionId": "sess-1790667333481-40aln",
+          "timestamp": "2026-09-29 16:47:49",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1790667333481-2cw",
+          "sessionId": "sess-1790667333481-40aln",
+          "timestamp": "2026-09-29 16:35:33",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
           "id": "log-1790582177716-qjf",
           "sessionId": "sess-1790581624927-1hy3h",
           "timestamp": "2026-09-28 16:56:17",
@@ -1331,6 +1988,462 @@
     }
   ],
   "attendances": [
+    {
+      "id": "att-1790812261061",
+      "userId": "usr-insa2",
+      "userName": "이지은",
+      "dept": "인사총무팀",
+      "date": "2026-10-01",
+      "checkIn": "08:51:01",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790812251868",
+      "userId": "usr-insa",
+      "userName": "김인사",
+      "dept": "인사총무팀",
+      "date": "2026-10-01",
+      "checkIn": "08:50:51",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790812246491",
+      "userId": "usr-team33",
+      "userName": "안지호",
+      "dept": "디자인기획팀",
+      "date": "2026-10-01",
+      "checkIn": "08:50:46",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790812241755",
+      "userId": "usr-team32",
+      "userName": "임서우",
+      "dept": "디자인기획팀",
+      "date": "2026-10-01",
+      "checkIn": "08:50:41",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790812236530",
+      "userId": "usr-team31",
+      "userName": "오세훈",
+      "dept": "디자인기획팀",
+      "date": "2026-10-01",
+      "checkIn": "08:50:36",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790812225637",
+      "userId": "usr-team23",
+      "userName": "배준형",
+      "dept": "개발2팀",
+      "date": "2026-10-01",
+      "checkIn": "08:50:25",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790812218980",
+      "userId": "usr-team22",
+      "userName": "한예진",
+      "dept": "개발2팀",
+      "date": "2026-10-01",
+      "checkIn": "08:50:18",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790812211523",
+      "userId": "usr-team21",
+      "userName": "윤성호",
+      "dept": "개발2팀",
+      "date": "2026-10-01",
+      "checkIn": "08:50:11",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790812206522",
+      "userId": "usr-team13",
+      "userName": "송하은",
+      "dept": "개발1팀",
+      "date": "2026-10-01",
+      "checkIn": "08:50:06",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790812200717",
+      "userId": "usr-team12",
+      "userName": "정수빈",
+      "dept": "개발1팀",
+      "date": "2026-10-01",
+      "checkIn": "08:50:00",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790812194689",
+      "userId": "usr-team11",
+      "userName": "강동원",
+      "dept": "개발1팀",
+      "date": "2026-10-01",
+      "checkIn": "08:49:54",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790812189340",
+      "userId": "usr-emp3",
+      "userName": "최동욱",
+      "dept": "경영지원본부",
+      "date": "2026-10-01",
+      "checkIn": "08:49:49",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790812183300",
+      "userId": "usr-emp2",
+      "userName": "박지현",
+      "dept": "경영지원본부",
+      "date": "2026-10-01",
+      "checkIn": "08:49:43",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790812175283",
+      "userId": "usr-emp1",
+      "userName": "이민수",
+      "dept": "경영지원본부",
+      "date": "2026-10-01",
+      "checkIn": "08:49:35",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790812167287",
+      "userId": "usr-admin",
+      "userName": "김관리",
+      "dept": "경영지원본부",
+      "date": "2026-10-01",
+      "checkIn": "08:49:27",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790726194009",
+      "userId": "usr-insa2",
+      "userName": "이지은",
+      "dept": "인사총무팀",
+      "date": "2026-09-30",
+      "checkIn": "08:56:34",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790726187089",
+      "userId": "usr-insa",
+      "userName": "김인사",
+      "dept": "인사총무팀",
+      "date": "2026-09-30",
+      "checkIn": "08:56:27",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790726181296",
+      "userId": "usr-team31",
+      "userName": "오세훈",
+      "dept": "디자인기획팀",
+      "date": "2026-09-30",
+      "checkIn": "08:56:21",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790726176087",
+      "userId": "usr-team21",
+      "userName": "윤성호",
+      "dept": "개발2팀",
+      "date": "2026-09-30",
+      "checkIn": "08:56:16",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790726169254",
+      "userId": "usr-team11",
+      "userName": "강동원",
+      "dept": "개발1팀",
+      "date": "2026-09-30",
+      "checkIn": "08:56:09",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790726161915",
+      "userId": "usr-emp3",
+      "userName": "최동욱",
+      "dept": "경영지원본부",
+      "date": "2026-09-30",
+      "checkIn": "08:56:01",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790726155757",
+      "userId": "usr-emp2",
+      "userName": "박지현",
+      "dept": "경영지원본부",
+      "date": "2026-09-30",
+      "checkIn": "08:55:55",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790726150301",
+      "userId": "usr-emp1",
+      "userName": "이민수",
+      "dept": "경영지원본부",
+      "date": "2026-09-30",
+      "checkIn": "08:55:50",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": false,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
+    {
+      "id": "att-1790641263245",
+      "userId": "usr-emp1",
+      "userName": "이민수",
+      "dept": "경영지원본부",
+      "date": "2026-09-29",
+      "checkIn": "09:21:03",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": true,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
     {
       "id": "att-1790574082113",
       "userId": "usr-emp3",
@@ -1795,7 +2908,7 @@
       "date": "2026-09-17",
       "checkIn": "09:39:05",
       "checkOut": "17:55:54",
-      "workHours": 8.3,
+      "workHours": 7.3,
       "status": "COMPLETED",
       "workType": "OFFICE",
       "ipAddress": "::1",
@@ -1804,7 +2917,8 @@
       "isLate": true,
       "isHalfDay": false,
       "halfDaySlot": null,
-      "overtimeHours": 0.3
+      "overtimeHours": 0,
+      "isEarlyLeave": true
     },
     {
       "id": "att-1789533947763",
@@ -1833,7 +2947,7 @@
       "date": "2026-09-16",
       "checkIn": "10:14:33",
       "checkOut": "13:39:50",
-      "workHours": 7.4,
+      "workHours": 6.4,
       "status": "COMPLETED",
       "workType": "OFFICE",
       "ipAddress": "::1",
@@ -1842,7 +2956,8 @@
       "isLate": true,
       "isHalfDay": true,
       "halfDaySlot": "PM",
-      "overtimeHours": 0
+      "overtimeHours": 0,
+      "isEarlyLeave": true
     },
     {
       "id": "att-1789521245533",
@@ -1852,7 +2967,7 @@
       "date": "2026-09-16",
       "checkIn": "10:14:05",
       "checkOut": "17:55:36",
-      "workHours": 7.7,
+      "workHours": 6.7,
       "status": "COMPLETED",
       "workType": "OFFICE",
       "ipAddress": "::1",
@@ -1861,7 +2976,8 @@
       "isLate": true,
       "isHalfDay": false,
       "halfDaySlot": null,
-      "overtimeHours": 0
+      "overtimeHours": 0,
+      "isEarlyLeave": true
     },
     {
       "id": "att-1789430489520",
@@ -2099,7 +3215,7 @@
       "date": "2026-09-14",
       "checkIn": "10:49:38",
       "checkOut": "17:54:29",
-      "workHours": 7.1,
+      "workHours": 6.1,
       "status": "COMPLETED",
       "workType": "OFFICE",
       "ipAddress": "::1",
@@ -2108,7 +3224,8 @@
       "isLate": true,
       "isHalfDay": false,
       "halfDaySlot": null,
-      "overtimeHours": 0
+      "overtimeHours": 0,
+      "isEarlyLeave": true
     },
     {
       "id": "att-1789350206906",
@@ -2118,7 +3235,7 @@
       "date": "2026-09-14",
       "checkIn": "10:43:26",
       "checkOut": "17:54:03",
-      "workHours": 7.2,
+      "workHours": 6.2,
       "status": "COMPLETED",
       "workType": "OFFICE",
       "ipAddress": "::1",
@@ -2127,7 +3244,8 @@
       "isLate": true,
       "isHalfDay": false,
       "halfDaySlot": null,
-      "overtimeHours": 0
+      "overtimeHours": 0,
+      "isEarlyLeave": true
     },
     {
       "id": "att-1789343687572",
@@ -2156,7 +3274,7 @@
       "date": "2026-09-14",
       "checkIn": "08:54:41",
       "checkOut": "17:53:52",
-      "workHours": 9,
+      "workHours": 7.9,
       "status": "COMPLETED",
       "workType": "OFFICE",
       "ipAddress": "::1",
@@ -2165,7 +3283,8 @@
       "isLate": true,
       "isHalfDay": false,
       "halfDaySlot": null,
-      "overtimeHours": 1
+      "overtimeHours": 0,
+      "isEarlyLeave": true
     },
     {
       "id": "att-1789343675491",
@@ -2175,7 +3294,7 @@
       "date": "2026-09-14",
       "checkIn": "08:54:35",
       "checkOut": "13:12:34",
-      "workHours": 8.3,
+      "workHours": 7.2,
       "status": "COMPLETED",
       "workType": "OFFICE",
       "ipAddress": "::1",
@@ -2184,7 +3303,8 @@
       "isLate": false,
       "isHalfDay": true,
       "halfDaySlot": "PM",
-      "overtimeHours": 0.3
+      "overtimeHours": 0,
+      "isEarlyLeave": true
     },
     {
       "id": "att-1789343658687",
@@ -2213,7 +3333,7 @@
       "date": "2026-09-11",
       "checkIn": "13:20:24",
       "checkOut": "18:00:03",
-      "workHours": 8.7,
+      "workHours": 8,
       "status": "COMPLETED",
       "workType": "OFFICE",
       "ipAddress": "::1",
@@ -2222,7 +3342,8 @@
       "isLate": false,
       "isHalfDay": true,
       "halfDaySlot": "AM",
-      "overtimeHours": 0.7
+      "overtimeHours": 0,
+      "isEarlyLeave": false
     },
     {
       "id": "att-1789085802956",
@@ -2232,14 +3353,15 @@
       "date": "2026-09-11",
       "checkIn": "09:16:42",
       "checkOut": "17:00:01",
-      "workHours": 7.7,
+      "workHours": 6.7,
       "status": "COMPLETED",
       "workType": "OFFICE",
       "ipAddress": "::1",
       "isCompanyNetwork": true,
       "reason": "",
       "isLate": true,
-      "overtimeHours": 0
+      "overtimeHours": 0,
+      "isEarlyLeave": true
     },
     {
       "id": "att-1789085785882",
@@ -2368,14 +3490,15 @@
       "date": "2026-09-09",
       "checkIn": "08:52:23",
       "checkOut": "17:04:34",
-      "workHours": 8.2,
+      "workHours": 7.1,
       "status": "COMPLETED",
       "workType": "OFFICE",
       "ipAddress": "::1",
       "isCompanyNetwork": true,
       "reason": "",
       "isLate": false,
-      "overtimeHours": 0.2
+      "overtimeHours": 0,
+      "isEarlyLeave": true
     },
     {
       "id": "att-1788827801757",
@@ -2572,14 +3695,15 @@
       "date": "2026-09-01",
       "checkIn": "08:45:10",
       "checkOut": "18:15:20",
-      "workHours": 8.5,
+      "workHours": 8,
       "status": "COMPLETED",
       "workType": "OFFICE",
       "ipAddress": "127.0.0.1",
       "isCompanyNetwork": true,
       "reason": "",
       "isLate": false,
-      "overtimeHours": 0.5
+      "overtimeHours": 0,
+      "isEarlyLeave": false
     },
     {
       "id": "att-2",
@@ -2589,14 +3713,15 @@
       "date": "2026-09-01",
       "checkIn": "08:52:00",
       "checkOut": "19:00:00",
-      "workHours": 9,
+      "workHours": 8,
       "status": "COMPLETED",
       "workType": "OFFICE",
       "ipAddress": "127.0.0.1",
       "isCompanyNetwork": true,
       "reason": "",
       "isLate": false,
-      "overtimeHours": 1
+      "overtimeHours": 0,
+      "isEarlyLeave": false
     },
     {
       "id": "att-3",
@@ -4496,10 +5621,47 @@
       "content": "요청합니다&nbsp;<br><br>홈페이지 내용 중에 <b><u>신청 목록</u></b>이 너무 보기 어렵습니다<br><br>어떻게 수정할지 계획서 보내드려요&nbsp;<br><ol><li>감사합니다</li></ol>",
       "priority": "NORMAL",
       "desiredDate": "",
-      "status": "REQUESTED",
+      "status": "DONE",
       "assigneeId": null,
-      "assigneeName": "담당자 배정 대기",
-      "assignedTasks": [],
+      "assigneeName": "안지호(기타) · 이민수(개발) · 오세훈(퍼블)",
+      "assignedTasks": [
+        {
+          "id": "task-1790645782658-662",
+          "category": "ETC",
+          "categoryLabel": "기타",
+          "assigneeId": "usr-team33",
+          "assigneeName": "안지호",
+          "status": "COMPLETED",
+          "spentHours": 1,
+          "note": "",
+          "startedAt": "2026-09-29 06:35:24",
+          "completedAt": "2026-09-29 06:35:28"
+        },
+        {
+          "id": "task-1790645793687-60",
+          "category": "DEV",
+          "categoryLabel": "개발",
+          "assigneeId": "usr-emp1",
+          "assigneeName": "이민수",
+          "status": "COMPLETED",
+          "spentHours": 5,
+          "note": "",
+          "startedAt": "2026-09-29 01:38:50",
+          "completedAt": "2026-09-29 07:34:21"
+        },
+        {
+          "id": "task-1790645948842-810",
+          "category": "PUBLISH",
+          "categoryLabel": "퍼블",
+          "assigneeId": "usr-team31",
+          "assigneeName": "오세훈",
+          "status": "COMPLETED",
+          "spentHours": 1,
+          "note": "",
+          "startedAt": null,
+          "completedAt": "2026-09-29 06:51:32"
+        }
+      ],
       "approverId": null,
       "approverName": null,
       "history": [
@@ -4509,13 +5671,91 @@
           "actorName": "(주)알파솔루션",
           "action": "요청 등록",
           "detail": "신규 유지보수 요청이 등록되었습니다."
+        },
+        {
+          "id": "hist-1790645782662-7058",
+          "timestamp": "2026-09-29 01:36:22",
+          "actorName": "김관리",
+          "action": "업무 배정",
+          "detail": "안지호 (기타)"
+        },
+        {
+          "id": "hist-1790645793691-63582",
+          "timestamp": "2026-09-29 01:36:33",
+          "actorName": "김관리",
+          "action": "업무 배정",
+          "detail": "이민수 (개발)"
+        },
+        {
+          "id": "hist-1790645930574-65753",
+          "timestamp": "2026-09-29 01:38:50",
+          "actorName": "이민수",
+          "action": "작업 착수",
+          "detail": "이민수 (개발)"
+        },
+        {
+          "id": "hist-1790645948846-28455",
+          "timestamp": "2026-09-29 01:39:08",
+          "actorName": "이민수",
+          "action": "업무 배정",
+          "detail": "오세훈 (퍼블)"
+        },
+        {
+          "id": "hist-1790663717417-17430",
+          "timestamp": "2026-09-29 06:35:17",
+          "actorName": "안지호",
+          "action": "작업 완료",
+          "detail": "안지호 (1h)"
+        },
+        {
+          "id": "hist-1790663724045-15180",
+          "timestamp": "2026-09-29 06:35:24",
+          "actorName": "안지호",
+          "action": "작업 진행",
+          "detail": "안지호 (기타)"
+        },
+        {
+          "id": "hist-1790663728349-79916",
+          "timestamp": "2026-09-29 06:35:28",
+          "actorName": "안지호",
+          "action": "작업 완료",
+          "detail": "안지호 (1h)"
+        },
+        {
+          "id": "hist-1790664692782-83164",
+          "timestamp": "2026-09-29 06:51:32",
+          "actorName": "오세훈",
+          "action": "작업 완료",
+          "detail": "오세훈 (1h)"
+        },
+        {
+          "id": "hist-1790667261979-62521",
+          "timestamp": "2026-09-29 07:34:21",
+          "actorName": "이민수",
+          "action": "작업 완료",
+          "detail": "이민수 (5h)"
+        },
+        {
+          "id": "hist-1790667261979-47595",
+          "timestamp": "2026-09-29 07:34:21",
+          "actorName": "시스템",
+          "action": "최종 완료",
+          "detail": "작업 완료"
         }
       ],
       "attachments": [],
-      "spentHours": 0,
-      "completedAt": null,
-      "completionSummary": "",
-      "createdAt": "2026-09-28 05:54:22"
+      "spentHours": 7,
+      "completedAt": "2026-09-29 07:34:21",
+      "completionSummary": "신청 목록 페이지 UI 수정 및 API 연동 조치 완료",
+      "createdAt": "2026-09-28 05:54:22",
+      "startedAt": "2026-09-29 01:36:22",
+      "spentHoursBreakdown": {
+        "design": 0,
+        "publish": 1,
+        "dev": 5,
+        "etc": 1
+      },
+      "clientConfirmed": false
     },
     {
       "id": "req-1788745990708",
@@ -4531,7 +5771,7 @@
       "attachments": [],
       "spentHours": 4,
       "completedAt": "2026-09-17 06:53:03",
-      "completionSummary": "배정 업무 전원 완료에 따른 자동 완료 (총 4h)",
+      "completionSummary": "요청하신 수정 작업을 완료하였습니다.",
       "createdAt": "2026-09-07 01:53:10",
       "startedAt": "2026-09-17 06:22:27",
       "assignedTasks": [
@@ -4808,7 +6048,7 @@
           "categoryLabel": "개발",
           "assigneeId": "usr-admin",
           "assigneeName": "김관리",
-          "status": "PENDING",
+          "status": "REQUESTED",
           "spentHours": 0,
           "note": "",
           "startedAt": null,
@@ -4820,7 +6060,7 @@
           "categoryLabel": "개발",
           "assigneeId": "usr-team32",
           "assigneeName": "임서우",
-          "status": "PENDING",
+          "status": "REQUESTED",
           "spentHours": 0,
           "note": "",
           "startedAt": null,
@@ -4882,7 +6122,7 @@
       "attachments": [],
       "spentHours": 2.5,
       "completedAt": "2026-09-17 07:08:41",
-      "completionSummary": "배정 업무 전원 완료에 따른 자동 완료 (총 2.5h)",
+      "completionSummary": "요청하신 유지보수 작업을 완료하였습니다.",
       "createdAt": "2026-09-02 14:10:00",
       "assignedTasks": [
         {
@@ -4979,7 +6219,7 @@
           "categoryLabel": "디자인",
           "assigneeId": "usr-team32",
           "assigneeName": "임서우",
-          "status": "PENDING",
+          "status": "REQUESTED",
           "spentHours": 0,
           "note": "",
           "startedAt": null,
@@ -4991,7 +6231,7 @@
           "categoryLabel": "퍼블",
           "assigneeId": "usr-team13",
           "assigneeName": "송하은",
-          "status": "PENDING",
+          "status": "REQUESTED",
           "spentHours": 0,
           "note": "",
           "startedAt": null,
@@ -5003,7 +6243,7 @@
           "categoryLabel": "기획",
           "assigneeId": "usr-team31",
           "assigneeName": "오세훈",
-          "status": "PENDING",
+          "status": "REQUESTED",
           "spentHours": 0,
           "note": "",
           "startedAt": null,
@@ -6055,7 +7295,7 @@
       "id": "comm-1",
       "requestId": "req-1",
       "authorId": "usr-emp1",
-      "authorName": "이민수 팀장 (개발사)",
+      "authorName": "이민수 팀장",
       "authorRole": "EMPLOYEE",
       "content": "요청 확인하였습니다. 모바일 뷰포트 기준 자동 그리드 레이아웃으로 변경 작업 진행 중이며, 9월 4일까지 1차 반영 예정입니다.",
       "attachments": [],
@@ -6065,7 +7305,7 @@
       "id": "comm-2",
       "requestId": "req-1",
       "authorId": "cli-001",
-      "authorName": "정우성 부장 ((주)알파솔루션)",
+      "authorName": "정우성 부장",
       "authorRole": "CLIENT",
       "content": "빠른 확인 감사드립니다. 확인 후 추가 피드백 드리겠습니다.",
       "attachments": [],
@@ -6075,7 +7315,7 @@
       "id": "comm-3",
       "requestId": "req-2",
       "authorId": "usr-emp1",
-      "authorName": "이민수 팀장 (개발사)",
+      "authorName": "이민수 팀장",
       "authorRole": "EMPLOYEE",
       "content": "검수 확인 완료되었으며, 작업 공수 4.5시간 등록 후 완료 처리하였습니다.",
       "attachments": [],
@@ -6085,7 +7325,7 @@
       "id": "comm-1788422280657",
       "requestId": "req-24",
       "authorId": "cli-001",
-      "authorName": "정우성 부장 ((주)알파솔루션)",
+      "authorName": "정우성 부장",
       "authorRole": "CLIENT",
       "content": "Test comment - Thank you!",
       "attachments": [],
@@ -6095,7 +7335,7 @@
       "id": "comm-1788496982768",
       "requestId": "req-5",
       "authorId": "cli-001",
-      "authorName": "정우성 부장 ((주)알파솔루션)",
+      "authorName": "정우성 부장",
       "authorRole": "CLIENT",
       "content": "이렇게 해주세요",
       "attachments": [
@@ -6113,7 +7353,7 @@
       "id": "comm-1788497512928",
       "requestId": "req-5",
       "authorId": "cli-001",
-      "authorName": "정우성 부장 ((주)알파솔루션)",
+      "authorName": "정우성 부장",
       "authorRole": "CLIENT",
       "content": "Test reply content from client.",
       "attachments": [],
@@ -6123,7 +7363,7 @@
       "id": "comm-1788498951233",
       "requestId": "req-2",
       "authorId": "cli-001",
-      "authorName": "정우성 부장 ((주)알파솔루션)",
+      "authorName": "정우성 부장",
       "authorRole": "CLIENT",
       "content": "Confirmation completed. Thank you.",
       "attachments": [],
@@ -6133,7 +7373,7 @@
       "id": "comm-1790574896278",
       "requestId": "req-1790574862915",
       "authorId": "cli-001",
-      "authorName": "정우성 부장 ((주)알파솔루션)",
+      "authorName": "정우성 부장",
       "authorRole": "CLIENT",
       "content": "그리고 다음 주 까지 완료 되는지 확인 부탁드려요",
       "attachments": [],
@@ -6151,12 +7391,64 @@
   ],
   "notifications": [
     {
+      "id": "notif-1790667261979",
+      "targetRole": "CLIENT",
+      "targetClientId": "cli-001",
+      "title": "작업 완료 안내",
+      "message": "[신청 목록 수정 요청] 요청의 모든 작업이 완료되었습니다. 작업 내역 및 공수를 확인해 주세요.",
+      "type": "REQUEST_COMPLETED",
+      "requestId": "req-1790574862915",
+      "isRead": false,
+      "createdAt": "2026-09-29 07:34:21"
+    },
+    {
+      "id": "notif-1790645948846-4256",
+      "targetRole": "STAFF",
+      "targetUserId": "usr-team31",
+      "title": "업무 배정 안내",
+      "message": "[신청 목록 수정 요청] 요청의 [퍼블] 담당자로 배정되었습니다.",
+      "type": "TASK_ASSIGNED",
+      "requestId": "req-1790574862915",
+      "targetId": "req-1790574862915",
+      "link": "client_requests",
+      "isRead": true,
+      "createdAt": "2026-09-29 01:39:08"
+    },
+    {
+      "id": "notif-1790645793691-248",
+      "targetRole": "STAFF",
+      "targetUserId": "usr-emp1",
+      "title": "업무 배정 안내",
+      "message": "[신청 목록 수정 요청] 요청의 [개발] 담당자로 배정되었습니다.",
+      "type": "TASK_ASSIGNED",
+      "requestId": "req-1790574862915",
+      "targetId": "req-1790574862915",
+      "link": "client_requests",
+      "isRead": true,
+      "createdAt": "2026-09-29 01:36:33"
+    },
+    {
+      "id": "notif-1790645782662-7515",
+      "targetRole": "STAFF",
+      "targetUserId": "usr-team33",
+      "title": "업무 배정 안내",
+      "message": "[신청 목록 수정 요청] 요청의 [기타] 담당자로 배정되었습니다.",
+      "type": "TASK_ASSIGNED",
+      "requestId": "req-1790574862915",
+      "targetId": "req-1790574862915",
+      "link": "client_requests",
+      "isRead": true,
+      "createdAt": "2026-09-29 01:36:22"
+    },
+    {
       "id": "notif-1790574896278",
       "targetRole": "ALL_STAFF",
       "title": "고객사 댓글 등록",
       "message": "[(주)알파솔루션]에서 [신청 목록 수정 요청]에 새 댓글을 남겼습니다.",
       "type": "COMMENT_ADDED",
-      "isRead": false,
+      "requestId": "req-1790574862915",
+      "targetId": "req-1790574862915",
+      "isRead": true,
       "link": "client_requests",
       "createdAt": "2026-09-28 05:54:56"
     },
@@ -6168,7 +7460,7 @@
       "type": "CLIENT_REQUEST",
       "requestId": "req-1790574862915",
       "targetId": "req-1790574862915",
-      "isRead": false,
+      "isRead": true,
       "link": "client_requests",
       "createdAt": "2026-09-28 05:54:22"
     },
@@ -7491,7 +8783,7 @@
       "overtimePay": 0,
       "bonus": 0,
       "totalPay": 4500000,
-      "lateCount": 5,
+      "lateCount": 6,
       "lateDeduction": 150000,
       "monthlyLeaveUsed": 1,
       "totalLeave": 17,
@@ -8424,9 +9716,9 @@
       "lateCount": 2,
       "lateDeduction": 60000,
       "monthlyLeaveUsed": 0,
-      "totalLeave": 3,
+      "totalLeave": 4,
       "usedLeave": 0,
-      "remainingLeave": 3,
+      "remainingLeave": 4,
       "status": "PAID",
       "paymentDate": "2026-09-25",
       "bankName": "국민은행",
@@ -10401,7 +11693,11 @@
     "halfDayAmWorkStart": "14:00",
     "halfDayAmWorkEnd": "18:00",
     "halfDayPmWorkStart": "09:00",
-    "halfDayPmWorkEnd": "14:00"
+    "halfDayPmWorkEnd": "14:00",
+    "standardWorkStart": "09:00",
+    "standardWorkEnd": "18:00",
+    "lunchStart": "12:00",
+    "lunchEnd": "13:00"
   },
   "departments": [
     "경영지원본부",

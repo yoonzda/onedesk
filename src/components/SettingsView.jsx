@@ -114,6 +114,10 @@ export default function SettingsView({
     earlyLeaveDeductionPerCase: 10000,
     absenceDeductionType: 'DAILY_PRORATED',
     absenceDeductionFixed: 100000,
+    standardWorkStart: '09:00',
+    standardWorkEnd: '18:00',
+    lunchStart: '12:00',
+    lunchEnd: '13:00',
     halfDayAmWorkStart: '14:00',
     halfDayAmWorkEnd: '18:00',
     halfDayPmWorkStart: '09:00',
@@ -144,6 +148,10 @@ export default function SettingsView({
         body: JSON.stringify({
           ...companyPolicy,
           salaryPaymentDay: Math.min(31, Math.max(1, Number(companyPolicy.salaryPaymentDay) || 25)),
+          standardWorkStart: companyPolicy.standardWorkStart || '09:00',
+          standardWorkEnd: companyPolicy.standardWorkEnd || '18:00',
+          lunchStart: companyPolicy.lunchStart || '12:00',
+          lunchEnd: companyPolicy.lunchEnd || '13:00',
           halfDayAmWorkStart: companyPolicy.halfDayAmWorkStart || '14:00',
           halfDayAmWorkEnd: companyPolicy.halfDayAmWorkEnd || '18:00',
           halfDayPmWorkStart: companyPolicy.halfDayPmWorkStart || '09:00',
@@ -156,7 +164,7 @@ export default function SettingsView({
         setCompanyPolicy(data.policy);
         onShowToast?.(
           '전사 정책 저장 완료',
-          `정기 급여 지급일(매월 ${data.policy.salaryPaymentDay}일) 및 반차 출퇴근 기준 정책이 저장되었습니다.`,
+          `정규 출퇴근 시간 및 반차/급여 기준 정책이 저장되었습니다.`,
           'success'
         );
       } else {
@@ -1021,7 +1029,99 @@ export default function SettingsView({
               </div>
             </div>
 
-            {/* 2. 오전 반차 근무 기준 시간 */}
+            {/* 2. 정규 근무 시간 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.9rem 0',
+              borderBottom: '1px solid var(--border-color)',
+              gap: '2.5rem'
+            }}>
+              <div style={{
+                width: '200px',
+                height: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '16px',
+                color: 'var(--text-secondary)',
+                fontWeight: 400,
+                flexShrink: 0
+              }}>
+                정규 근무 시간
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>출근</span>
+                <CustomTimePicker
+                  value={companyPolicy.standardWorkStart || '09:00'}
+                  onChange={(val) => setCompanyPolicy({
+                    ...companyPolicy,
+                    standardWorkStart: val
+                  })}
+                  width="125px"
+                  height="44px"
+                />
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400, margin: '0 0.25rem' }}>~</span>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>퇴근</span>
+                <CustomTimePicker
+                  value={companyPolicy.standardWorkEnd || '18:00'}
+                  onChange={(val) => setCompanyPolicy({
+                    ...companyPolicy,
+                    standardWorkEnd: val
+                  })}
+                  width="125px"
+                  height="44px"
+                />
+                <TooltipHelp text="사내 표준 정규 출퇴근 기준 시각입니다. 출근 기준 시각 이후 출근 시 지각 처리되며, 사전 승인된 야근 신청 시 퇴근 기준 시각 이후 근무가 연장근로로 인정됩니다." />
+              </div>
+            </div>
+
+            {/* 3. 점심 휴게 시간 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.9rem 0',
+              borderBottom: '1px solid var(--border-color)',
+              gap: '2.5rem'
+            }}>
+              <div style={{
+                width: '200px',
+                height: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '16px',
+                color: 'var(--text-secondary)',
+                fontWeight: 400,
+                flexShrink: 0
+              }}>
+                점심 휴게 시간
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>시작</span>
+                <CustomTimePicker
+                  value={companyPolicy.lunchStart || '12:00'}
+                  onChange={(val) => setCompanyPolicy({
+                    ...companyPolicy,
+                    lunchStart: val
+                  })}
+                  width="125px"
+                  height="44px"
+                />
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400, margin: '0 0.25rem' }}>~</span>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>종료</span>
+                <CustomTimePicker
+                  value={companyPolicy.lunchEnd || '13:00'}
+                  onChange={(val) => setCompanyPolicy({
+                    ...companyPolicy,
+                    lunchEnd: val
+                  })}
+                  width="125px"
+                  height="44px"
+                />
+                <TooltipHelp text="법정 의무 휴게시간으로 일간 정규 근무 시간 산정 시 자동 공제됩니다." />
+              </div>
+            </div>
+
+            {/* 4. 오전 반차 근무 기준 시간 */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -1067,7 +1167,7 @@ export default function SettingsView({
               </div>
             </div>
 
-            {/* 3. 오후 반차 근무 기준 시간 */}
+            {/* 5. 오후 반차 근무 기준 시간 */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -1082,13 +1182,13 @@ export default function SettingsView({
                 alignItems: 'center',
                 fontSize: '16px',
                 color: 'var(--text-secondary)',
-                fontWeight: 600,
+                fontWeight: 400,
                 flexShrink: 0
               }}>
                 오후 반차 근무 시간
               </div>
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 500 }}>출근</span>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>출근</span>
                 <CustomTimePicker
                   value={companyPolicy.halfDayPmWorkStart || '09:00'}
                   onChange={(val) => setCompanyPolicy({
@@ -1098,8 +1198,8 @@ export default function SettingsView({
                   width="125px"
                   height="44px"
                 />
-                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 500, margin: '0 0.25rem' }}>~</span>
-                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 500 }}>퇴근</span>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400, margin: '0 0.25rem' }}>~</span>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>퇴근</span>
                 <CustomTimePicker
                   value={companyPolicy.halfDayPmWorkEnd || '14:00'}
                   onChange={(val) => setCompanyPolicy({
@@ -1113,7 +1213,7 @@ export default function SettingsView({
               </div>
             </div>
 
-            {/* 4. 비과세 식대 기본액 */}
+            {/* 6. 비과세 식대 기본액 */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -1128,7 +1228,7 @@ export default function SettingsView({
                 alignItems: 'center',
                 fontSize: '16px',
                 color: 'var(--text-secondary)',
-                fontWeight: 600,
+                fontWeight: 400,
                 flexShrink: 0
               }}>
                 비과세 식대 기본액
@@ -1148,7 +1248,7 @@ export default function SettingsView({
                     height: '44px',
                     padding: '0 1rem',
                     fontSize: '16px',
-                    fontWeight: 600,
+                    fontWeight: 400,
                     borderRadius: 0,
                     border: '1px solid var(--border-color)',
                     background: 'var(--bg-input)',
@@ -1161,7 +1261,7 @@ export default function SettingsView({
               </div>
             </div>
 
-            {/* 5. 지각 1회당 근태 차감액 */}
+            {/* 7. 지각 1회당 근태 차감액 */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -1176,7 +1276,7 @@ export default function SettingsView({
                 alignItems: 'center',
                 fontSize: '16px',
                 color: 'var(--text-secondary)',
-                fontWeight: 600,
+                fontWeight: 400,
                 flexShrink: 0
               }}>
                 지각 1회당 차감액
@@ -1196,7 +1296,7 @@ export default function SettingsView({
                     height: '44px',
                     padding: '0 1rem',
                     fontSize: '16px',
-                    fontWeight: 600,
+                    fontWeight: 400,
                     borderRadius: 0,
                     border: '1px solid var(--border-color)',
                     background: 'var(--bg-input)',
@@ -1209,7 +1309,7 @@ export default function SettingsView({
               </div>
             </div>
 
-            {/* 6. 조퇴 1회당 근태 차감액 */}
+            {/* 8. 조퇴 1회당 근태 차감액 */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -1224,7 +1324,7 @@ export default function SettingsView({
                 alignItems: 'center',
                 fontSize: '16px',
                 color: 'var(--text-secondary)',
-                fontWeight: 600,
+                fontWeight: 400,
                 flexShrink: 0
               }}>
                 조퇴 1회당 차감액
@@ -1244,7 +1344,7 @@ export default function SettingsView({
                     height: '44px',
                     padding: '0 1rem',
                     fontSize: '16px',
-                    fontWeight: 600,
+                    fontWeight: 400,
                     borderRadius: 0,
                     border: '1px solid var(--border-color)',
                     background: 'var(--bg-input)',
@@ -1257,7 +1357,7 @@ export default function SettingsView({
               </div>
             </div>
 
-            {/* 7. 정책 저장 버튼 */}
+            {/* 9. 정책 저장 버튼 */}
             <div style={{
               display: 'flex',
               alignItems: 'center',

@@ -87,12 +87,21 @@ export default function AdminPortal({
   const resolveInitialTab = (tab) => {
     if (user?.role === 'ADMIN') {
       if (!tab || tab === 'approvals' || tab === 'admin') return 'accounts';
+      if (tab === 'teams') return 'accounts';
+      if (tab === 'attendances') return 'internal';
+      if (tab === 'announcements') return 'onedesk';
       return tab;
     }
     return tab || 'approvals';
   };
 
-  const [activeTab, setActiveTab] = useState(() => resolveInitialTab(initialTab)); // accounts, teams, clients, announcements
+  const [activeTab, setActiveTab] = useState(() => resolveInitialTab(initialTab)); // accounts, internal, clients, onedesk, etc
+  const [accountSubTab, setAccountSubTab] = useState(() => {
+    if (initialTab === 'teams') {
+      return 'teams';
+    }
+    return 'accounts';
+  });
   const [employees, setEmployees] = useState([]);
   const [clients, setClients] = useState([]);
   const [networks, setNetworks] = useState([]);
@@ -822,7 +831,12 @@ export default function AdminPortal({
 
   useEffect(() => {
     if (initialTab) {
-      setActiveTab(resolveInitialTab(initialTab));
+      if (initialTab === 'teams') {
+        setActiveTab('accounts');
+        setAccountSubTab('teams');
+      } else {
+        setActiveTab(resolveInitialTab(initialTab));
+      }
     }
   }, [initialTab, user?.role]);
 
@@ -1293,36 +1307,7 @@ export default function AdminPortal({
 
   return (
     <div>
-      {/* Top Banner & Excel Action (Clean minimal typography, no card box) */}
-      <div style={{
-        marginBottom: '1.75rem',
-        paddingBottom: '1rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '1rem',
-        borderBottom: '1px solid var(--border-color)'
-      }}>
-        <h2 style={{ fontSize: '24px', fontWeight: 700, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-          {user?.role === 'ADMIN' ? '관리자' : '팀장 관리'}
-        </h2>
-
-        {user?.role === 'ADMIN' && (
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <button 
-              type="button"
-              className="btn btn-secondary"
-              onClick={handleDownloadExcel}
-              style={{ height: '42px', padding: '0 1.4rem', fontSize: '16px', fontWeight: 600, borderRadius: 0 }}
-            >
-              통합 4개 시트 엑셀 다운로드 (.xlsx)
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Subtab Navigation + Search & Action */}
+      {/* Subtab Navigation (5 Main Tabs for Admin) */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -1334,7 +1319,7 @@ export default function AdminPortal({
         position: 'relative',
         zIndex: 20
       }}>
-        {/* Left: Subtabs (4 Essential Tabs for Admin) */}
+        {/* Left: Subtabs (계정관리, 사내관리, 고객사 관리, 원데스크 설정, 기타) */}
         <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto' }}>
           {user?.role === 'ADMIN' ? (
             <>
@@ -1343,14 +1328,14 @@ export default function AdminPortal({
                 className={`tab-btn tab-btn-lg ${activeTab === 'accounts' ? 'active' : ''}`}
                 onClick={() => { setActiveTab('accounts'); setSearchTerm(''); setAccountCategory('ALL'); }}
               >
-                계정 관리
+                계정관리
               </button>
               <button 
                 type="button"
-                className={`tab-btn tab-btn-lg ${activeTab === 'teams' ? 'active' : ''}`}
-                onClick={() => { setActiveTab('teams'); setSearchTerm(''); }}
+                className={`tab-btn tab-btn-lg ${activeTab === 'internal' ? 'active' : ''}`}
+                onClick={() => { setActiveTab('internal'); setSearchTerm(''); }}
               >
-                사내 조직도
+                사내관리
               </button>
               <button 
                 type="button"
@@ -1361,10 +1346,17 @@ export default function AdminPortal({
               </button>
               <button 
                 type="button"
-                className={`tab-btn tab-btn-lg ${activeTab === 'announcements' ? 'active' : ''}`}
-                onClick={() => { setActiveTab('announcements'); setSearchTerm(''); }}
+                className={`tab-btn tab-btn-lg ${activeTab === 'onedesk' ? 'active' : ''}`}
+                onClick={() => { setActiveTab('onedesk'); setSearchTerm(''); }}
               >
-                배너 관리
+                원데스크 설정
+              </button>
+              <button 
+                type="button"
+                className={`tab-btn tab-btn-lg ${activeTab === 'etc' ? 'active' : ''}`}
+                onClick={() => { setActiveTab('etc'); setSearchTerm(''); }}
+              >
+                기타
               </button>
             </>
           ) : (
@@ -1379,7 +1371,7 @@ export default function AdminPortal({
         </div>
 
         {/* Right: Search & Action Button (Only for legacy tabs if any) */}
-        {activeTab !== 'approvals' && activeTab !== 'teams' && activeTab !== 'accounts' && activeTab !== 'clients' && activeTab !== 'announcements' && (
+        {activeTab !== 'approvals' && activeTab !== 'teams' && activeTab !== 'accounts' && activeTab !== 'internal' && activeTab !== 'clients' && activeTab !== 'onedesk' && activeTab !== 'etc' && activeTab !== 'announcements' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', paddingBottom: '0.5rem' }}>
             {activeTab === 'attendances' && (
               <CustomDatePicker
@@ -1430,8 +1422,53 @@ export default function AdminPortal({
         )}
       </div>
 
-      {/* TAB 0: UNIFIED ACCOUNTS (통합 계정 관리 - 사내 임직원 및 고객사 계정 전체 노출) */}
-      {activeTab === 'accounts' && (() => {
+      {/* Sub Navigation Bar for 계정관리 (계정 목록, 사내 조직도) */}
+      {activeTab === 'accounts' && (
+        <div style={{
+          display: 'flex',
+          gap: '1.5rem',
+          borderBottom: '1px solid var(--border-color)',
+          marginBottom: '1.25rem'
+        }}>
+          <button
+            type="button"
+            onClick={() => { setAccountSubTab('accounts'); setSearchTerm(''); }}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '0.65rem 0.25rem',
+              fontSize: '16px',
+              color: accountSubTab === 'accounts' ? 'var(--text-primary)' : 'var(--text-muted)',
+              borderBottom: accountSubTab === 'accounts' ? '2px solid var(--text-primary)' : '2px solid transparent',
+              cursor: 'pointer',
+              marginBottom: '-1px',
+              outline: 'none'
+            }}
+          >
+            계정 목록
+          </button>
+          <button
+            type="button"
+            onClick={() => { setAccountSubTab('teams'); setSearchTerm(''); }}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '0.65rem 0.25rem',
+              fontSize: '16px',
+              color: accountSubTab === 'teams' ? 'var(--text-primary)' : 'var(--text-muted)',
+              borderBottom: accountSubTab === 'teams' ? '2px solid var(--text-primary)' : '2px solid transparent',
+              cursor: 'pointer',
+              marginBottom: '-1px',
+              outline: 'none'
+            }}
+          >
+            사내 조직도
+          </button>
+        </div>
+      )}
+
+      {/* TAB 0-1: UNIFIED ACCOUNTS (통합 계정 관리 - 사내 임직원 및 고객사 계정 전체 노출) */}
+      {activeTab === 'accounts' && accountSubTab === 'accounts' && (() => {
         const allAccounts = [
           ...employees.map(emp => ({
             rawType: 'EMPLOYEE',
@@ -1497,7 +1534,6 @@ export default function AdminPortal({
                         border: 'none',
                         padding: '6px 0',
                         fontSize: '20px',
-                        fontWeight: isSelected ? 700 : (isHovered ? 600 : 500),
                         color: isSelected ? 'var(--text-primary)' : (isHovered ? (cat.color || 'var(--text-primary)') : 'var(--text-muted)'),
                         borderBottom: isSelected ? '2px solid var(--text-primary)' : '2px solid transparent',
                         cursor: 'pointer',
@@ -1629,7 +1665,6 @@ export default function AdminPortal({
                           >
                             <span style={{
                               fontSize: '22px',
-                              fontWeight: 700,
                               fontFamily: 'monospace',
                               color: copiedUsername === acc.username ? '#22c55e' : 'var(--text-primary)',
                               letterSpacing: '-0.02em',
@@ -1653,7 +1688,7 @@ export default function AdminPortal({
                           </button>
 
                           {!isActive && (
-                            <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)', flexShrink: 0 }}>
+                            <span style={{ fontSize: '14px', color: 'var(--text-muted)', flexShrink: 0 }}>
                               [사용 중지]
                             </span>
                           )}
@@ -1662,7 +1697,6 @@ export default function AdminPortal({
                         {/* Middle Row: Name / Company */}
                         <div style={{
                           fontSize: '15px',
-                          fontWeight: 500,
                           color: 'var(--text-secondary)',
                           letterSpacing: '-0.01em',
                           overflow: 'hidden',
@@ -1678,7 +1712,7 @@ export default function AdminPortal({
                         marginTop: '1.25rem',
                         paddingTop: '0.75rem',
                         borderTop: '1px solid var(--border-color)',
-                        fontSize: '12.5px',
+                        fontSize: '14px',
                         color: 'var(--text-muted)',
                         fontFamily: 'monospace',
                         textAlign: 'right'
@@ -1694,139 +1728,19 @@ export default function AdminPortal({
         );
       })()}
 
-      {/* TAB 1: EMPLOYEES (고객사 포털과 100% 동일한 목록 스타일, 뱃지 일체 배제) */}
-      {activeTab === 'employees' && (() => {
-        const filteredEmployees = employees.filter(emp => {
-          if (!searchTerm.trim()) return true;
-          const term = searchTerm.toLowerCase().trim();
-          return (emp.name && emp.name.toLowerCase().includes(term)) ||
-            (emp.empNo && emp.empNo.toLowerCase().includes(term)) ||
-            (emp.username && emp.username.toLowerCase().includes(term)) ||
-            (emp.dept && emp.dept.toLowerCase().includes(term));
-        });
+      {/* TAB 1: INTERNAL MANAGEMENT (사내관리 - 오늘 출근율 및 근태 요약 통계) */}
+      {activeTab === 'internal' && (
+        <AdminAttendanceSection
+          user={user}
+          employees={employees}
+          onShowToast={onShowToast}
+          onRefresh={loadData}
+          hideHeader={true}
+        />
+      )}
 
-        return (
-          <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 0 }}>
-            {/* Table Header */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: '1.05rem 1.25rem',
-              background: 'var(--bg-card-hover)',
-              borderBottom: '2px solid var(--border-color)',
-              fontSize: '16px',
-              fontWeight: 600,
-              color: 'var(--text-primary)',
-              letterSpacing: '-0.01em'
-            }}>
-              <span style={{ width: '42px', flexShrink: 0, textAlign: 'center' }}>번호</span>
-              <span style={{ width: '200px', flexShrink: 0, paddingLeft: '0.5rem' }}>사원명 / 사번</span>
-              <span style={{ width: '180px', flexShrink: 0 }}>부서 / 직급</span>
-              <span style={{ width: '120px', flexShrink: 0, textAlign: 'center' }}>입사일자</span>
-              <span style={{ width: '110px', flexShrink: 0, textAlign: 'center' }}>법정 연차</span>
-              <span style={{ width: '110px', flexShrink: 0, textAlign: 'center' }}>관리자 조정</span>
-              <span style={{ width: '100px', flexShrink: 0, textAlign: 'center' }}>총 부여</span>
-              <span style={{ flex: 1, minWidth: 0, paddingLeft: '0.5rem', textAlign: 'center' }}>사용 / 잔여 연차</span>
-              <span style={{ width: '100px', flexShrink: 0, textAlign: 'center' }}>관리</span>
-            </div>
-
-            {filteredEmployees.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '4rem 1.5rem', color: 'var(--text-muted)' }}>
-                <p style={{ fontSize: '16px' }}>{searchTerm ? '검색 조건과 일치하는 사원이 없습니다.' : '등록된 사원이 없습니다.'}</p>
-              </div>
-            ) : (
-              <div>
-                {filteredEmployees.map((emp, idx) => {
-                  const isLast = idx === filteredEmployees.length - 1;
-                  return (
-                    <div
-                      key={emp.id}
-                      className="client-req-item"
-                      onClick={() => {
-                        setSelectedEmp(emp);
-                        setAdjustValue(emp.manualLeaveAdjustment || 0);
-                        setIsEmpDetailClosing(false);
-                      }}
-                      style={{
-                        padding: '1.1rem 1.25rem',
-                        borderBottom: isLast ? 'none' : '1px solid var(--border-color)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        transition: 'var(--transition)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {/* 1. 번호 */}
-                      <span style={{ width: '42px', flexShrink: 0, textAlign: 'center', fontSize: '16px', fontWeight: 500, color: 'var(--text-secondary)' }}>
-                        {filteredEmployees.length - idx}
-                      </span>
-
-                      {/* 2. 사원명 / 사번 */}
-                      <div style={{ width: '200px', flexShrink: 0, paddingLeft: '0.5rem' }}>
-                        <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>{emp.name}</div>
-                        <div style={{ fontSize: '16px', color: 'var(--text-muted)' }}>{emp.empNo} · {emp.username}</div>
-                      </div>
-
-                      {/* 3. 부서 / 직급 */}
-                      <div style={{ width: '180px', flexShrink: 0 }}>
-                        <div style={{ fontSize: '16px', color: 'var(--text-primary)' }}>{emp.dept}</div>
-                        <div style={{ fontSize: '16px', color: 'var(--text-muted)' }}>{emp.position}</div>
-                      </div>
-
-                      {/* 4. 입사일자 */}
-                      <span style={{ width: '120px', flexShrink: 0, textAlign: 'center', fontSize: '16px', color: 'var(--text-secondary)' }}>
-                        {emp.hireDate}
-                      </span>
-
-                      {/* 5. 법정 연차 (뱃지 없이 순수 텍스트) */}
-                      <span style={{ width: '110px', flexShrink: 0, textAlign: 'center', fontSize: '16px', color: 'var(--text-primary)' }}>
-                        {emp.legalLeave}일
-                      </span>
-
-                      {/* 6. 관리자 조정 (뱃지 없이 순수 텍스트) */}
-                      <span style={{ width: '110px', flexShrink: 0, textAlign: 'center', fontSize: '16px', color: emp.manualLeaveAdjustment !== 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                        {emp.manualLeaveAdjustment > 0 ? `+${emp.manualLeaveAdjustment}일` : (emp.manualLeaveAdjustment < 0 ? `${emp.manualLeaveAdjustment}일` : '0일')}
-                      </span>
-
-                      {/* 7. 총 부여 */}
-                      <span style={{ width: '100px', flexShrink: 0, textAlign: 'center', fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {emp.totalLeave}일
-                      </span>
-
-                      {/* 8. 사용 / 잔여 연차 (구분자 ·, 순수 텍스트) */}
-                      <div style={{ flex: 1, minWidth: 0, paddingLeft: '0.5rem', textAlign: 'center', fontSize: '16px' }}>
-                        <span>사용 {emp.usedLeave || 0}일</span>
-                        <span style={{ margin: '0 0.5rem', color: 'var(--text-muted)' }}>·</span>
-                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>잔여 {emp.remainingLeave}일</span>
-                      </div>
-
-                      {/* 9. 관리 */}
-                      <div style={{ width: '100px', flexShrink: 0, textAlign: 'center' }}>
-                        <button 
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedEmp(emp);
-                            setAdjustValue(emp.manualLeaveAdjustment || 0);
-                            setIsEmpDetailClosing(false);
-                          }}
-                          style={{ padding: '0.35rem 0.75rem', fontSize: '16px' }}
-                        >
-                          연차 조정
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* TAB: TEAMS / ORGANIZATIONS (정통 계층형 폴더 트리 및 구성원 명부 테이블 구조) */}
-      {activeTab === 'teams' && (() => {
+      {/* TAB 0-3: TEAMS / ORGANIZATIONS (정통 계층형 폴더 트리 및 구성원 명부 테이블 구조) */}
+      {((activeTab === 'accounts' && accountSubTab === 'teams') || activeTab === 'teams') && (() => {
         const allDepts = Array.from(new Set([
           ...departments,
           ...employees.map(e => e.dept).filter(Boolean)
@@ -1901,10 +1815,40 @@ export default function AdminPortal({
                   flexDirection: 'column',
                   gap: '0.35rem'
                 }}>
+                  {/* All Employees Item */}
+                  <div
+                    onClick={() => {
+                      setSelectedDept('ALL');
+                      setSelectedEmpId(null);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0.55rem 0.65rem',
+                      cursor: 'pointer',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      color: selectedDept === 'ALL' && !selectedEmpId ? 'var(--text-primary)' : 'var(--text-muted)',
+                      transition: 'color 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!(selectedDept === 'ALL' && !selectedEmpId)) e.currentTarget.style.color = 'var(--text-primary)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!(selectedDept === 'ALL' && !selectedEmpId)) e.currentTarget.style.color = 'var(--text-muted)';
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0, flex: 1 }}>
+                      <span style={{ fontSize: '16px', fontWeight: 400, color: 'inherit' }}>
+                        전체 사원 ({employees.length})
+                      </span>
+                    </div>
+                  </div>
+
                   {filteredDepts.map((deptName) => {
                     const deptMembers = employees.filter(e => e.dept === deptName);
                     const isExpanded = Boolean(expandedDepts[deptName]);
-                    const isSelected = selectedDept === deptName;
+                    const isSelected = selectedDept === deptName && !selectedEmpId;
 
                     return (
                       <div key={deptName} style={{ display: 'flex', flexDirection: 'column' }}>
@@ -1912,6 +1856,7 @@ export default function AdminPortal({
                         <div
                           onClick={() => {
                             setSelectedDept(deptName);
+                            setSelectedEmpId(null);
                             toggleDeptExpand(deptName);
                           }}
                           style={{
@@ -1961,7 +1906,7 @@ export default function AdminPortal({
 
                             <span style={{
                               fontSize: '16px',
-                              fontWeight: isSelected ? 700 : 500,
+                              fontWeight: 400,
                               color: 'inherit',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
@@ -1993,7 +1938,7 @@ export default function AdminPortal({
                             gap: '0.15rem'
                           }}>
                             {deptMembers.length === 0 ? (
-                              <div style={{ fontSize: '15.5px', fontWeight: 500, color: 'var(--text-muted)', padding: '0.45rem 0.5rem' }}>
+                              <div style={{ fontSize: '15px', fontWeight: 400, color: 'var(--text-muted)', padding: '0.45rem 0.5rem' }}>
                                 소속 사원 없음
                               </div>
                             ) : (
@@ -2010,8 +1955,8 @@ export default function AdminPortal({
                                       display: 'flex',
                                       alignItems: 'center',
                                       padding: '0.4rem 0.5rem',
-                                      fontSize: '15.5px',
-                                      fontWeight: isEmpActive ? 700 : 400,
+                                      fontSize: '15px',
+                                      fontWeight: 400,
                                       color: isEmpActive ? 'var(--text-primary)' : 'var(--text-muted)',
                                       backgroundColor: 'transparent',
                                       border: 'none',
@@ -2074,7 +2019,7 @@ export default function AdminPortal({
 
                       <span style={{
                         fontSize: '16px',
-                        fontWeight: 500,
+                        fontWeight: 400,
                         color: 'inherit',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -2087,13 +2032,13 @@ export default function AdminPortal({
                 </div>
               </div>
 
-              {/* Right Column: Employee Detail (When person clicked) OR Department Member Roster */}
+              {/* Right Column: 1:1 Department View OR 1:1 Employee Profile View (Zero Tables) */}
               <div style={{
                 flex: 1,
                 minWidth: 0,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '1rem'
+                gap: '1.25rem'
               }}>
                 {(() => {
                   const targetEmp = employees.find(e => e.id === selectedEmpId);
@@ -2105,7 +2050,7 @@ export default function AdminPortal({
 
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {/* Selected Employee Top Header Section (Open seamless, name on left, action buttons on right) */}
+                        {/* Selected Employee Top Header Section */}
                         <div style={{
                           paddingBottom: '1.25rem',
                           borderBottom: '1px solid var(--border-color)',
@@ -2116,7 +2061,7 @@ export default function AdminPortal({
                           flexWrap: 'wrap',
                           gap: '1.25rem'
                         }}>
-                          <h2 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
+                          <h2 style={{ fontSize: '24px', fontWeight: 400, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
                             {targetEmp.name}
                           </h2>
 
@@ -2129,7 +2074,7 @@ export default function AdminPortal({
                                 setAdjustValue(targetEmp.manualLeaveAdjustment || 0);
                                 setIsEmpDetailClosing(false);
                               }}
-                              style={{ height: '40px', padding: '0 1.25rem', fontSize: '15px', fontWeight: 500 }}
+                              style={{ height: '40px', padding: '0 1.25rem', fontSize: '15px', fontWeight: 400 }}
                             >
                               연차 조정
                             </button>
@@ -2137,7 +2082,7 @@ export default function AdminPortal({
                               type="button"
                               className="btn btn-secondary btn-sm"
                               onClick={() => setSelectedEmpId(null)}
-                              style={{ height: '40px', padding: '0 1.25rem', fontSize: '15px', fontWeight: 500 }}
+                              style={{ height: '40px', padding: '0 1.25rem', fontSize: '15px', fontWeight: 400 }}
                             >
                               부서 사원 목록
                             </button>
@@ -2147,58 +2092,78 @@ export default function AdminPortal({
                         {/* All Employee Information Rows Flowing Down Vertically */}
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.95rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                            <span style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: 500 }}>성명</span>
-                            <span style={{ fontSize: '16.5px', fontWeight: 600, color: 'var(--text-primary)' }}>{targetEmp.name}</span>
+                            <span style={{ fontSize: '15.5px', color: 'var(--text-muted)', fontWeight: 400 }}>성명</span>
+                            <span style={{ fontSize: '16px', fontWeight: 400, color: 'var(--text-primary)' }}>{targetEmp.name}</span>
                           </div>
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.95rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                            <span style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: 500 }}>소속 부서</span>
-                            <span style={{ fontSize: '16.5px', color: 'var(--text-primary)', fontWeight: 500 }}>{targetEmp.dept || '미지정'}</span>
+                            <span style={{ fontSize: '15.5px', color: 'var(--text-muted)', fontWeight: 400 }}>소속 부서</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <select
+                                value={targetEmp.dept || ''}
+                                onChange={(e) => handleMoveEmployeeDept(targetEmp.id, e.target.value)}
+                                style={{
+                                  height: '38px',
+                                  fontSize: '15px',
+                                  padding: '0 0.75rem',
+                                  backgroundColor: 'var(--bg-input)',
+                                  color: 'var(--text-primary)',
+                                  border: '1px solid var(--border-color)',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer'
+                                }}
+                                title="소속 부서 변경"
+                              >
+                                {allDepts.map(d => (
+                                  <option key={d} value={d}>{d}</option>
+                                ))}
+                              </select>
+                            </div>
                           </div>
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.95rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                            <span style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: 500 }}>직급 / 직책</span>
-                            <span style={{ fontSize: '16.5px', color: 'var(--text-primary)' }}>{targetEmp.position || '사원'}</span>
+                            <span style={{ fontSize: '15.5px', color: 'var(--text-muted)', fontWeight: 400 }}>직급 / 직책</span>
+                            <span style={{ fontSize: '16px', color: 'var(--text-primary)', fontWeight: 400 }}>{targetEmp.position || '사원'}</span>
                           </div>
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.95rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                            <span style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: 500 }}>사번</span>
-                            <span style={{ fontSize: '16.5px', color: 'var(--text-primary)' }}>{targetEmp.empNo || '-'}</span>
+                            <span style={{ fontSize: '15.5px', color: 'var(--text-muted)', fontWeight: 400 }}>사번</span>
+                            <span style={{ fontSize: '16px', color: 'var(--text-primary)', fontWeight: 400 }}>{targetEmp.empNo || '-'}</span>
                           </div>
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.95rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                            <span style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: 500 }}>계정 아이디</span>
-                            <span style={{ fontSize: '16.5px', fontFamily: 'monospace', fontWeight: 600, color: 'var(--text-primary)' }}>@{targetEmp.username}</span>
+                            <span style={{ fontSize: '15.5px', color: 'var(--text-muted)', fontWeight: 400 }}>계정 아이디</span>
+                            <span style={{ fontSize: '16px', fontFamily: 'monospace', fontWeight: 400, color: 'var(--text-primary)' }}>@{targetEmp.username}</span>
                           </div>
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.95rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                            <span style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: 500 }}>연락처</span>
-                            <span style={{ fontSize: '16.5px', color: 'var(--text-primary)' }}>{targetEmp.phone || '-'}</span>
+                            <span style={{ fontSize: '15.5px', color: 'var(--text-muted)', fontWeight: 400 }}>연락처</span>
+                            <span style={{ fontSize: '16px', color: 'var(--text-primary)', fontWeight: 400 }}>{targetEmp.phone || '-'}</span>
                           </div>
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.95rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                            <span style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: 500 }}>이메일</span>
-                            <span style={{ fontSize: '16.5px', color: 'var(--text-primary)' }}>{targetEmp.email || '-'}</span>
+                            <span style={{ fontSize: '15.5px', color: 'var(--text-muted)', fontWeight: 400 }}>이메일</span>
+                            <span style={{ fontSize: '16px', color: 'var(--text-primary)', fontWeight: 400 }}>{targetEmp.email || '-'}</span>
                           </div>
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.95rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                            <span style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: 500 }}>입사일자</span>
-                            <span style={{ fontSize: '16.5px', color: 'var(--text-primary)' }}>{targetEmp.hireDate || '-'}</span>
+                            <span style={{ fontSize: '15.5px', color: 'var(--text-muted)', fontWeight: 400 }}>입사일자</span>
+                            <span style={{ fontSize: '16px', color: 'var(--text-primary)', fontWeight: 400 }}>{targetEmp.hireDate || targetEmp.joinDate || '-'}</span>
                           </div>
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.95rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                            <span style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: 500 }}>시스템 권한</span>
-                            <span style={{ fontSize: '16.5px', color: 'var(--text-primary)', fontWeight: 500 }}>
+                            <span style={{ fontSize: '15.5px', color: 'var(--text-muted)', fontWeight: 400 }}>시스템 권한</span>
+                            <span style={{ fontSize: '16px', color: 'var(--text-primary)', fontWeight: 400 }}>
                               {targetEmp.role === 'ADMIN' ? '최고 관리자' : (targetEmp.role === 'TEAM_LEADER' ? '부서 책임자' : '일반 임직원')}
                             </span>
                           </div>
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.95rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                            <span style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: 500 }}>당일 출퇴근 상태</span>
+                            <span style={{ fontSize: '15.5px', color: 'var(--text-muted)', fontWeight: 400 }}>당일 출퇴근 상태</span>
                             {(() => {
-                              if (!todayAtt) return <span style={{ fontSize: '16.5px', color: 'var(--text-muted)' }}>미출근</span>;
+                              if (!todayAtt) return <span style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: 400 }}>미출근</span>;
                               return (
-                                <span style={{ fontSize: '16.5px', color: 'var(--text-primary)', fontWeight: 600 }}>
+                                <span style={{ fontSize: '16px', color: 'var(--text-primary)', fontWeight: 400 }}>
                                   {todayAtt.checkIn ? `${todayAtt.checkIn} 출근` : ''} 
                                   {todayAtt.checkOut ? ` · ${todayAtt.checkOut} 퇴근` : (todayAtt.status === 'WORKING' ? ' · 근무중' : '')}
                                 </span>
@@ -2207,20 +2172,20 @@ export default function AdminPortal({
                           </div>
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.95rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                            <span style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: 500 }}>총 부여 연차</span>
-                            <span style={{ fontSize: '16.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                            <span style={{ fontSize: '15.5px', color: 'var(--text-muted)', fontWeight: 400 }}>총 부여 연차</span>
+                            <span style={{ fontSize: '16px', fontWeight: 400, color: 'var(--text-primary)' }}>
                               {totalLeave}일
                             </span>
                           </div>
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.95rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                            <span style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: 500 }}>사용 연차</span>
-                            <span style={{ fontSize: '16.5px', color: 'var(--text-secondary)' }}>{usedLeave}일</span>
+                            <span style={{ fontSize: '15.5px', color: 'var(--text-muted)', fontWeight: 400 }}>사용 연차</span>
+                            <span style={{ fontSize: '16px', color: 'var(--text-secondary)', fontWeight: 400 }}>{usedLeave}일</span>
                           </div>
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.95rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                            <span style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: 500 }}>잔여 연차</span>
-                            <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                            <span style={{ fontSize: '15.5px', color: 'var(--text-muted)', fontWeight: 400 }}>잔여 연차</span>
+                            <span style={{ fontSize: '16px', fontWeight: 400, color: 'var(--text-primary)' }}>
                               {remainingLeave}일
                             </span>
                           </div>
@@ -2229,288 +2194,290 @@ export default function AdminPortal({
                     );
                   }
 
-                  // Default: Department Summary & Member Table
-                    return (
-                      <>
-                        {/* Department Detail Header (Open seamless, no breadcrumb, no card box) */}
-                        <div style={{
-                          paddingBottom: '1.25rem',
-                          borderBottom: '1px solid var(--border-color)',
-                          marginBottom: '1.5rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          flexWrap: 'wrap',
-                          gap: '1.25rem'
-                        }}>
-                          {/* Left: Title & Count */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                            <span style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                              {selectedDept === 'ALL' ? '전체 임직원 명부' : selectedDept}
-                            </span>
-                            <span style={{ fontSize: '16px', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                              총 {currentMembers.length}명
-                            </span>
-                          </div>
-
-                          {/* Right: Actions */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-                            {selectedDept !== 'ALL' && (
-                              <>
-                                {editingDeptName === selectedDept ? (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                    <input
-                                      type="text"
-                                      autoFocus
-                                      value={deptNameInputValue}
-                                      onChange={(e) => setDeptNameInputValue(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') handleRenameDept(selectedDept, deptNameInputValue);
-                                        if (e.key === 'Escape') { setEditingDeptName(null); setDeptNameInputValue(''); }
-                                      }}
-                                      className="form-control"
-                                      style={{ height: '32px', fontSize: '13px', width: '160px', padding: '0 0.5rem' }}
-                                    />
-                                    <button
-                                      type="button"
-                                      className="btn btn-primary btn-sm"
-                                      onClick={() => handleRenameDept(selectedDept, deptNameInputValue)}
-                                      style={{ height: '32px', padding: '0 0.65rem', fontSize: '12.5px' }}
-                                    >
-                                      저장
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="btn btn-secondary btn-sm"
-                                      onClick={() => { setEditingDeptName(null); setDeptNameInputValue(''); }}
-                                      style={{ height: '32px', padding: '0 0.5rem', fontSize: '12.5px' }}
-                                    >
-                                      취소
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    className="btn btn-secondary btn-sm"
-                                    onClick={() => {
-                                      setEditingDeptName(selectedDept);
-                                      setDeptNameInputValue(selectedDept);
-                                    }}
-                                    style={{ height: '36px', padding: '0 0.85rem', fontSize: '14px', fontWeight: 500 }}
-                                  >
-                                    부서명 수정
-                                  </button>
-                                )}
-
-                                {currentMembers.length === 0 && (
-                                  <button
-                                    type="button"
-                                    className="btn btn-secondary btn-sm"
-                                    onClick={() => handleDeleteDept(selectedDept)}
-                                    style={{ height: '36px', padding: '0 0.85rem', fontSize: '14px', fontWeight: 500, color: '#ef4444' }}
-                                  >
-                                    부서 삭제
-                                  </button>
-                                )}
-                              </>
-                            )}
-
-                            {/* Quick Assign Dropdown for other employees */}
-                            {selectedDept !== 'ALL' && otherEmployees.length > 0 && (
-                              <select
-                                defaultValue=""
-                                onChange={(e) => {
-                                  if (e.target.value) {
-                                    handleMoveEmployeeDept(e.target.value, selectedDept);
-                                    e.target.value = '';
-                                  }
-                                }}
-                                style={{
-                                  height: '36px',
-                                  fontSize: '14px',
-                                  padding: '0 0.6rem',
-                                  backgroundColor: 'var(--bg-input)',
-                                  color: 'var(--text-primary)',
-                                  border: '1px solid var(--border-color)',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                <option value="">타 부서 사원 빠른 배치...</option>
-                                {otherEmployees.map(oe => (
-                                  <option key={oe.id} value={oe.id}>
-                                    {oe.name} ({oe.username}) · 현재 {oe.dept}
-                                  </option>
-                                ))}
-                              </select>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Sub-info: Leader & Scope */}
-                        {selectedDept !== 'ALL' && (
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            paddingTop: '0.75rem',
-                            borderTop: '1px dashed var(--border-color)',
-                            fontSize: '15px',
-                            color: 'var(--text-secondary)'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                              <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{isSelectedHq ? '총괄 책임자:' : '부서 책임자(팀장):'}</span>
-                              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
-                                {currentLeader ? `${currentLeader.name} (${currentLeader.position || currentLeader.role})` : '책임자 미지정'}
-                              </span>
-                              {currentLeader?.username && (
-                                <span style={{ fontFamily: 'monospace', color: 'var(--text-muted)', fontSize: '14px' }}>
-                                  [@{currentLeader.username}]
-                                </span>
-                              )}
-                            </div>
-
-                            {!isSelectedHq && currentLeader && (
-                              <button
-                                type="button"
-                                className="btn btn-secondary btn-sm"
-                                onClick={() => handleOpenTeamPerm(currentLeader)}
-                                style={{ height: '36px', padding: '0 0.85rem', fontSize: '14px', fontWeight: 500 }}
-                              >
-                                결재 권한 설정
-                              </button>
-                            )}
-                          </div>
-                        )}
-
-                      {/* Member Directory Table Card */}
+                  // Department Summary & Member List (Clean 1:1 view, NO Table)
+                  return (
+                    <>
+                      {/* Department Detail Header */}
                       <div style={{
-                        border: '1px solid var(--border-color)',
-                        backgroundColor: 'var(--bg-card)',
-                        borderRadius: '4px',
-                        overflow: 'hidden'
+                        paddingBottom: '1.25rem',
+                        borderBottom: '1px solid var(--border-color)',
+                        marginBottom: '1.25rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '1.25rem'
                       }}>
-                        <div style={{
-                          padding: '1rem 1.25rem',
-                          borderBottom: '1px solid var(--border-color)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          backgroundColor: 'var(--bg-card-hover)'
-                        }}>
-                          <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                            {selectedDept === 'ALL' ? '전체 부서 사원 명부' : `${selectedDept} 소속 사원 명부`}
+                        {/* Left: Title & Count */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                          <span style={{ fontSize: '24px', fontWeight: 400, color: 'var(--text-primary)' }}>
+                            {selectedDept === 'ALL' ? '전체 사원' : selectedDept}
+                          </span>
+                          <span style={{ fontSize: '16px', color: 'var(--text-secondary)', fontWeight: 400 }}>
+                            총 {currentMembers.length}명
                           </span>
                         </div>
 
-                        <div style={{ overflowX: 'auto' }}>
-                          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '980px' }}>
-                            <thead>
-                              <tr style={{
-                                borderBottom: '1px solid var(--border-color)',
-                                fontSize: '15px',
-                                fontWeight: 700,
-                                color: 'var(--text-primary)',
-                                backgroundColor: 'transparent'
-                              }}>
-                                <th style={{ width: '90px', padding: '0.85rem 1rem', fontWeight: 700, whiteSpace: 'nowrap' }}>성명</th>
-                                <th style={{ width: '110px', padding: '0.85rem 1rem', fontWeight: 700, whiteSpace: 'nowrap' }}>아이디</th>
-                                <th style={{ width: '135px', padding: '0.85rem 1rem', fontWeight: 700, whiteSpace: 'nowrap' }}>사번</th>
-                                <th style={{ width: '135px', padding: '0.85rem 1rem', fontWeight: 700, whiteSpace: 'nowrap' }}>소속 부서</th>
-                                <th style={{ width: '135px', padding: '0.85rem 1rem', fontWeight: 700, whiteSpace: 'nowrap' }}>직급/직책</th>
-                                <th style={{ minWidth: '220px', padding: '0.85rem 1rem', fontWeight: 700, whiteSpace: 'nowrap' }}>연락처 / 이메일</th>
-                                <th style={{ width: '115px', padding: '0.85rem 1rem', fontWeight: 700, whiteSpace: 'nowrap' }}>입사일자</th>
-                                <th style={{ width: '150px', padding: '0.85rem 1rem', fontWeight: 700, textAlign: 'center', whiteSpace: 'nowrap' }}>소속 이동</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {currentMembers.length === 0 ? (
-                                <tr>
-                                  <td colSpan={8} style={{ padding: '3.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '15px' }}>
-                                    소속된 사원이 없습니다.
-                                  </td>
-                                </tr>
+                        {/* Right: Actions */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                          {selectedDept !== 'ALL' && (
+                            <>
+                              {editingDeptName === selectedDept ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    value={deptNameInputValue}
+                                    onChange={(e) => setDeptNameInputValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleRenameDept(selectedDept, deptNameInputValue);
+                                      if (e.key === 'Escape') { setEditingDeptName(null); setDeptNameInputValue(''); }
+                                    }}
+                                    className="form-control"
+                                    style={{ height: '36px', fontSize: '14.5px', width: '170px', padding: '0 0.65rem' }}
+                                  />
+                                  <button
+                                    type="button"
+                                    className="btn btn-primary btn-sm"
+                                    onClick={() => handleRenameDept(selectedDept, deptNameInputValue)}
+                                    style={{ height: '36px', padding: '0 0.85rem', fontSize: '14.5px', fontWeight: 400 }}
+                                  >
+                                    저장
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={() => { setEditingDeptName(null); setDeptNameInputValue(''); }}
+                                    style={{ height: '36px', padding: '0 0.75rem', fontSize: '14.5px', fontWeight: 400 }}
+                                  >
+                                    취소
+                                  </button>
+                                </div>
                               ) : (
-                                currentMembers.map((m) => {
-                                  return (
-                                    <tr
-                                      key={m.id}
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={() => {
+                                    setEditingDeptName(selectedDept);
+                                    setDeptNameInputValue(selectedDept);
+                                  }}
+                                  style={{ height: '38px', padding: '0 1rem', fontSize: '15px', fontWeight: 400 }}
+                                >
+                                  부서명 수정
+                                </button>
+                              )}
+
+                              {currentMembers.length === 0 && (
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={() => handleDeleteDept(selectedDept)}
+                                  style={{ height: '38px', padding: '0 1rem', fontSize: '15px', fontWeight: 400, color: '#ef4444' }}
+                                >
+                                  부서 삭제
+                                </button>
+                              )}
+                            </>
+                          )}
+
+                          {/* Quick Assign Dropdown for other employees */}
+                          {selectedDept !== 'ALL' && otherEmployees.length > 0 && (
+                            <select
+                              defaultValue=""
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  handleMoveEmployeeDept(e.target.value, selectedDept);
+                                  e.target.value = '';
+                                }
+                              }}
+                              style={{
+                                height: '38px',
+                                fontSize: '15px',
+                                padding: '0 0.75rem',
+                                backgroundColor: 'var(--bg-input)',
+                                color: 'var(--text-primary)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <option value="">타 부서 사원 빠른 배치...</option>
+                              {otherEmployees.map(oe => (
+                                <option key={oe.id} value={oe.id}>
+                                  {oe.name} ({oe.username}) · 현재 {oe.dept}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Sub-info: Leader & Scope */}
+                      {selectedDept !== 'ALL' && (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          paddingBottom: '1rem',
+                          borderBottom: '1px solid var(--border-color)',
+                          marginBottom: '1.25rem',
+                          fontSize: '15px',
+                          color: 'var(--text-secondary)'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>{isSelectedHq ? '총괄 책임자:' : '부서 책임자(팀장):'}</span>
+                            <span style={{ fontWeight: 400, color: 'var(--text-primary)' }}>
+                              {currentLeader ? `${currentLeader.name} (${currentLeader.position || currentLeader.role})` : '책임자 미지정'}
+                            </span>
+                            {currentLeader?.username && (
+                              <span style={{ fontFamily: 'monospace', color: 'var(--text-muted)', fontSize: '14.5px', fontWeight: 400 }}>
+                                [@{currentLeader.username}]
+                              </span>
+                            )}
+                          </div>
+
+                          {!isSelectedHq && currentLeader && (
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => handleOpenTeamPerm(currentLeader)}
+                              style={{ height: '36px', padding: '0 0.85rem', fontSize: '14.5px', fontWeight: 400 }}
+                            >
+                              결재 권한 설정
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Member List (Clean 1:1 list view replacing table) */}
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div style={{
+                          paddingBottom: '0.85rem',
+                          borderBottom: '1px solid var(--border-color)',
+                          marginBottom: '0.75rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between'
+                        }}>
+                          <span style={{ fontSize: '17px', fontWeight: 400, color: 'var(--text-primary)' }}>
+                            {selectedDept === 'ALL' ? '전체 사원 명부' : `${selectedDept} 소속 사원`}
+                          </span>
+                          <span style={{ fontSize: '14.5px', color: 'var(--text-muted)', fontWeight: 400 }}>
+                            총 {currentMembers.length}명
+                          </span>
+                        </div>
+
+                        {currentMembers.length === 0 ? (
+                          <div style={{
+                            padding: '3rem 1.5rem',
+                            textAlign: 'center',
+                            color: 'var(--text-muted)',
+                            fontSize: '15.5px',
+                            fontWeight: 400,
+                            border: '1px dashed var(--border-color)',
+                            borderRadius: '4px'
+                          }}>
+                            소속된 사원이 없습니다. 상단의 '타 부서 사원 빠른 배치' 또는 '사원 등록'을 통해 사원을 배정할 수 있습니다.
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                            {currentMembers.map((m) => (
+                              <div
+                                key={m.id}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  padding: '1rem 1.25rem',
+                                  border: '1px solid var(--border-color)',
+                                  backgroundColor: 'var(--bg-card)',
+                                  borderRadius: '4px',
+                                  gap: '1rem'
+                                }}
+                              >
+                                {/* Left: Member Identity & Metadata */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', minWidth: 0 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                                    <button
+                                      type="button"
                                       onClick={() => setSelectedEmpId(m.id)}
                                       style={{
-                                        borderBottom: '1px solid var(--border-color)',
-                                        transition: 'background-color 0.15s ease',
+                                        background: 'none',
+                                        border: 'none',
+                                        padding: 0,
+                                        cursor: 'pointer',
+                                        fontSize: '16.5px',
+                                        fontWeight: 400,
+                                        color: 'var(--text-primary)',
+                                        textAlign: 'left'
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                                      onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                                    >
+                                      {m.name}
+                                    </button>
+                                    <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>
+                                      {m.position || (m.role === 'ADMIN' ? '관리자' : m.role === 'TEAM_LEADER' ? '팀장' : '사원')}
+                                    </span>
+                                    <span style={{ fontSize: '14px', fontFamily: 'monospace', color: 'var(--text-muted)', fontWeight: 400 }}>
+                                      @{m.username}
+                                    </span>
+                                    {selectedDept === 'ALL' && (
+                                      <span style={{ fontSize: '14.5px', color: 'var(--text-secondary)', fontWeight: 400 }}>
+                                        · {m.dept || '소속 미지정'}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div style={{ fontSize: '14.5px', color: 'var(--text-secondary)', fontWeight: 400, display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                                    {m.empNo && <span>사번 {m.empNo}</span>}
+                                    {m.empNo && <span>·</span>}
+                                    <span>{m.phone || '연락처 미등록'}</span>
+                                    {m.email && <span>·</span>}
+                                    <span>{m.email}</span>
+                                    {(m.joinDate || m.hireDate) && <span>·</span>}
+                                    {(m.joinDate || m.hireDate) && <span>입사 {m.joinDate || m.hireDate}</span>}
+                                  </div>
+                                </div>
+
+                                {/* Right: Quick Dept Move + Detail Button */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexShrink: 0 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                                    <span style={{ fontSize: '14.5px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontWeight: 400 }}>소속 이동</span>
+                                    <select
+                                      value={m.dept || ''}
+                                      onChange={(e) => handleMoveEmployeeDept(m.id, e.target.value)}
+                                      style={{
+                                        height: '36px',
+                                        fontSize: '14.5px',
+                                        padding: '0 0.65rem',
+                                        backgroundColor: 'var(--bg-input)',
+                                        color: 'var(--text-primary)',
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: '4px',
                                         cursor: 'pointer'
                                       }}
-                                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)'}
-                                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                      title="소속 부서 재배치"
                                     >
-                                      {/* 성명 */}
-                                      <td style={{ width: '90px', padding: '0.95rem 1rem', fontSize: '15.5px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-                                        {m.name}
-                                      </td>
+                                      {allDepts.map(d => (
+                                        <option key={d} value={d}>{d}</option>
+                                      ))}
+                                    </select>
+                                  </div>
 
-                                      {/* 아이디 */}
-                                      <td style={{ width: '110px', padding: '0.95rem 1rem', fontSize: '15px', color: 'var(--text-secondary)', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-                                        @{m.username}
-                                      </td>
-
-                                      {/* 사번 */}
-                                      <td style={{ width: '135px', padding: '0.95rem 1rem', fontSize: '15px', color: 'var(--text-secondary)', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-                                        {m.empNo || '-'}
-                                      </td>
-
-                                      {/* 소속 부서 */}
-                                      <td style={{ width: '135px', padding: '0.95rem 1rem', fontSize: '15px', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-                                        {m.dept || '소속 미지정'}
-                                      </td>
-
-                                      {/* 직급/직책 */}
-                                      <td style={{ width: '135px', padding: '0.95rem 1rem', fontSize: '15px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                                        {m.position || (m.role === 'ADMIN' ? '관리자' : m.role === 'TEAM_LEADER' ? '팀장' : '사원')}
-                                      </td>
-
-                                      {/* 연락처 / 이메일 */}
-                                      <td style={{ minWidth: '220px', padding: '0.95rem 1rem', fontSize: '15px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                                        {m.phone || '-'}{m.email ? ` · ${m.email}` : ''}
-                                      </td>
-
-                                      {/* 입사일자 */}
-                                      <td style={{ width: '115px', padding: '0.95rem 1rem', fontSize: '15px', color: 'var(--text-secondary)', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-                                        {m.joinDate || m.hireDate || '-'}
-                                      </td>
-
-                                      {/* 소속 이동 Dropdown */}
-                                      <td style={{ width: '150px', padding: '0.75rem 1rem', textAlign: 'center', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
-                                        <select
-                                          value={m.dept || ''}
-                                          onChange={(e) => handleMoveEmployeeDept(m.id, e.target.value)}
-                                          style={{
-                                            height: '36px',
-                                            fontSize: '14px',
-                                            padding: '0 0.6rem',
-                                            backgroundColor: 'var(--bg-input)',
-                                            color: 'var(--text-primary)',
-                                            border: '1px solid var(--border-color)',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer',
-                                            width: '100%'
-                                          }}
-                                          title="소속 부서 재배치"
-                                        >
-                                          {allDepts.map(d => (
-                                            <option key={d} value={d}>
-                                              {d}
-                                            </option>
-                                          ))}
-                                        </select>
-                                      </td>
-                                    </tr>
-                                  );
-                                })
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
+                                  <button
+                                    type="button"
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={() => setSelectedEmpId(m.id)}
+                                    style={{ height: '36px', padding: '0 0.85rem', fontSize: '14.5px', fontWeight: 400 }}
+                                  >
+                                    상세보기
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </>
                   );
@@ -2521,8 +2488,23 @@ export default function AdminPortal({
         );
       })()}
 
-      {/* TAB 2: CLIENTS (고객사 관리 - 초성 그룹 폴더 탐색기 및 고객사 상세 / 요청 내역) */}
-      {activeTab === 'clients' && (() => {
+      {/* TAB 2: CLIENTS (고객사 관리 - 아직 비워둠) */}
+      {activeTab === 'clients' && (
+        <div style={{
+          textAlign: 'center',
+          padding: '5rem 1.5rem',
+          border: '1px solid var(--border-color)',
+          backgroundColor: 'var(--bg-card)',
+          color: 'var(--text-muted)'
+        }}>
+          <p style={{ fontSize: '16px', margin: 0 }}>
+            고객사 관리 기능 준비 중입니다.
+          </p>
+        </div>
+      )}
+
+      {/* LEGACY CLIENTS DETAIL VIEW (필요 시 유지) */}
+      {activeTab === 'clients_legacy' && (() => {
         const CONSONANT_GROUPS = [
           'ㄱ - ㄷ',
           'ㄹ - ㅂ',
@@ -3295,100 +3277,7 @@ export default function AdminPortal({
       );
       })()}
 
-      {/* TAB 3: NETWORKS (고객사 포털과 100% 동일한 목록 스타일, 뱃지 일체 배제) */}
-      {activeTab === 'networks' && (() => {
-        const filteredNetworks = networks.filter(net => {
-          if (!searchTerm.trim()) return true;
-          const term = searchTerm.toLowerCase().trim();
-          return (net.name && net.name.toLowerCase().includes(term)) ||
-            (net.value && net.value.toLowerCase().includes(term));
-        });
 
-        return (
-          <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 0 }}>
-            {/* Table Header */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: '1.05rem 1.25rem',
-              background: 'var(--bg-card-hover)',
-              borderBottom: '2px solid var(--border-color)',
-              fontSize: '16px',
-              fontWeight: 600,
-              color: 'var(--text-primary)',
-              letterSpacing: '-0.01em'
-            }}>
-              <span style={{ width: '42px', flexShrink: 0, textAlign: 'center' }}>번호</span>
-              <span style={{ width: '140px', flexShrink: 0, paddingLeft: '0.5rem' }}>구분</span>
-              <span style={{ width: '240px', flexShrink: 0 }}>네트워크 식별명</span>
-              <span style={{ flex: 1, minWidth: 0, paddingLeft: '0.5rem' }}>Wi-Fi SSID / IP 대역</span>
-              <span style={{ width: '130px', flexShrink: 0, textAlign: 'center' }}>등록일자</span>
-              <span style={{ width: '80px', flexShrink: 0, textAlign: 'center' }}>관리</span>
-            </div>
-
-            {filteredNetworks.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '4rem 1.5rem', color: 'var(--text-muted)' }}>
-                <p style={{ fontSize: '16px' }}>{searchTerm ? '검색 조건과 일치하는 네트워크가 없습니다.' : '등록된 허용 네트워크가 없습니다.'}</p>
-              </div>
-            ) : (
-              <div>
-                {filteredNetworks.map((net, idx) => {
-                  const isLast = idx === filteredNetworks.length - 1;
-                  return (
-                    <div
-                      key={net.id}
-                      className="client-req-item"
-                      onClick={() => {
-                        setSelectedNet(net);
-                        setIsNetDetailClosing(false);
-                      }}
-                      style={{
-                        padding: '1.1rem 1.25rem',
-                        borderBottom: isLast ? 'none' : '1px solid var(--border-color)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        transition: 'var(--transition)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <span style={{ width: '42px', flexShrink: 0, textAlign: 'center', fontSize: '16px', fontWeight: 500, color: 'var(--text-secondary)' }}>
-                        {filteredNetworks.length - idx}
-                      </span>
-                      <span style={{ width: '140px', flexShrink: 0, paddingLeft: '0.5rem', fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {net.type === 'WIFI' ? '사내 Wi-Fi' : '공인 IP 대역'}
-                      </span>
-                      <span style={{ width: '240px', flexShrink: 0, fontSize: '16px', color: 'var(--text-primary)' }}>
-                        {net.name}
-                      </span>
-                      <div style={{ flex: 1, minWidth: 0, paddingLeft: '0.5rem' }}>
-                        <span style={{ fontSize: '16px', fontFamily: 'monospace', color: 'var(--text-secondary)' }}>
-                          {net.value}
-                        </span>
-                      </div>
-                      <span style={{ width: '130px', flexShrink: 0, textAlign: 'center', fontSize: '16px', color: 'var(--text-secondary)' }}>
-                        {net.createdAt}
-                      </span>
-                      <div style={{ width: '80px', flexShrink: 0, textAlign: 'center' }}>
-                        <button 
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteNetwork(net.id);
-                          }}
-                          style={{ padding: '0.35rem 0.75rem', fontSize: '16px' }}
-                        >
-                          삭제
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })()}
 
       {/* TAB 4: ATTENDANCES (고객사 포털과 100% 동일한 목록 스타일, 뱃지 일체 배제) */}
       {activeTab === 'attendances' && (() => {
@@ -3492,8 +3381,8 @@ export default function AdminPortal({
         );
       })()}
 
-      {/* TAB 5: ANNOUNCEMENTS (사내 공지 배너 관리, 뱃지 일체 배제, 순수 텍스트 타이포그래피) */}
-      {activeTab === 'announcements' && (() => {
+      {/* TAB 4: ONEDESK SETTINGS - ANNOUNCEMENTS (원데스크 설정 - 사내 공지 배너 관리) */}
+      {(activeTab === 'onedesk' || activeTab === 'announcements') && (() => {
         const filteredAnnouncements = announcements.filter(anno => {
           if (!searchTerm.trim()) return true;
           const term = searchTerm.toLowerCase().trim();
@@ -3620,6 +3509,21 @@ export default function AdminPortal({
         </div>
       );
       })()}
+
+      {/* TAB 5: ETC (기타 설정) */}
+      {activeTab === 'etc' && (
+        <div style={{
+          textAlign: 'center',
+          padding: '5rem 1.5rem',
+          border: '1px solid var(--border-color)',
+          backgroundColor: 'var(--bg-card)',
+          color: 'var(--text-muted)'
+        }}>
+          <p style={{ fontSize: '16px', margin: 0 }}>
+            기타 설정 기능 준비 중입니다.
+          </p>
+        </div>
+      )}
 
       {/* DRAWER 1: UNIFIED ACCOUNT REGISTRATION (신규 계정 등록 슬라이드 패널) */}
       {(showAccountRegDrawer || showEmpDrawer || showClientDrawer) && (

@@ -52,19 +52,38 @@ export default function CustomCheckbox({
         userSelect: 'none',
         color: checked ? 'var(--text-primary)' : 'var(--text-secondary)',
         fontSize: '15px',
-        fontWeight: checked ? 600 : 400,
+        fontWeight: 400,
         opacity: disabled ? 0.5 : 1,
         outline: 'none',
+        transition: 'color 0.15s ease',
         ...style
       }}
+      onMouseEnter={e => {
+        if (!disabled && !checked) {
+          e.currentTarget.style.color = 'var(--text-primary)';
+          const iconSpan = e.currentTarget.querySelector('.custom-checkbox-icon');
+          if (iconSpan) iconSpan.style.color = 'var(--text-primary)';
+        }
+      }}
+      onMouseLeave={e => {
+        if (!disabled && !checked) {
+          e.currentTarget.style.color = 'var(--text-secondary)';
+          const iconSpan = e.currentTarget.querySelector('.custom-checkbox-icon');
+          if (iconSpan) iconSpan.style.color = 'var(--text-secondary)';
+        }
+      }}
     >
-      <span style={{ 
-        display: 'inline-flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        flexShrink: 0, 
-        color: checked ? 'var(--text-primary)' : 'var(--text-secondary)' 
-      }}>
+      <span 
+        className="custom-checkbox-icon"
+        style={{ 
+          display: 'inline-flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          flexShrink: 0, 
+          color: checked ? 'var(--text-primary)' : 'var(--text-secondary)',
+          transition: 'color 0.15s ease'
+        }}
+      >
         {checked ? (
           <CheckSquare size={size} strokeWidth={2} />
         ) : (

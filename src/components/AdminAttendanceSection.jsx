@@ -3,7 +3,7 @@ import CustomDatePicker from './CustomDatePicker';
 import CustomCheckbox from './CustomCheckbox';
 import { getHoliday } from '../utils/holidays';
 
-export default function AdminAttendanceSection({ user, employees = [], onShowToast, onRefresh }) {
+export default function AdminAttendanceSection({ user, employees = [], onShowToast, onRefresh, hideHeader = false }) {
   const [attendances, setAttendances] = useState([]);
   const [leaves, setLeaves] = useState([]);
   const [usersList, setUsersList] = useState([]);
@@ -124,20 +124,205 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
     const actualLeaves = dateLeaves.filter(l => l.leaveType !== 'REMOTE' && l.leaveType !== 'FIELD');
     const leaveCount = actualLeaves.length;
 
+    // Late count (지각: isLate 플래그 또는 09:00 초과 출근)
+    const lateCount = dateAtts.filter(a => {
+      if (a.isLate) return true;
+      if (a.checkIn) {
+        const [h, m] = a.checkIn.slice(0, 5).split(':').map(Number);
+        if (!isNaN(h) && !isNaN(m)) {
+          return (h * 60 + m) > 9 * 60;
+        }
+      }
+      return false;
+    }).length;
+
     // Unrecorded (출퇴근 기록도 없고 휴가/재택/외근도 아닌 사원 수)
     const attendedUserIds = new Set(dateAtts.map(a => a.userId));
     const allApprovedUserIds = new Set(dateLeaves.map(l => l.userId));
     const unrecordedCount = Math.max(0, usersList.filter(u => !attendedUserIds.has(u.id) && !allApprovedUserIds.has(u.id)).length);
 
+    // Attended count (근무중 + 퇴근완료 + 외근/재택)
+    const attendedCount = workingCount + completedCount + remoteFieldCount;
+    // Attendance rate (%)
+    const attendanceRate = totalStaff > 0 ? Math.round((attendedCount / totalStaff) * 100) : 0;
+
     return {
       totalStaff,
+      attendedCount,
+      attendanceRate,
       workingCount,
       completedCount,
       remoteFieldCount,
       leaveCount,
+      lateCount,
       unrecordedCount
     };
   }, [usersList, attendances, leaves, metricTargetDate]);
+
+  // Detailed Statistical Insights (Department breakdown, check-in arrival analysis, 5-day trend)
+  const detailedStats = useMemo(() => {
+    const totalStaff = usersList.length;
+    const dateAtts = attendances.filter(a => a.date === metricTargetDate);
+    const dateLeaves = leaves.filter(l => 
+      l.status === 'APPROVED' && 
+      metricTargetDate >= l.startDate && 
+      metricTargetDate <= (l.endDate || l.startDate)
+    );
+
+    // 1. Department Attendance Breakdown
+    const deptStats = departments.map(deptName => {
+      const deptUsers = usersList.filter(u => u.dept === deptName);
+      const deptTotal = deptUsers.length;
+      if (deptTotal === 0) return null;
+
+      const deptUserIds = new Set(deptUsers.map(u => u.id));
+      const deptAttList = dateAtts.filter(a => deptUserIds.has(a.userId) || a.dept === deptName);
+      const deptLeaveList = dateLeaves.filter(l => deptUserIds.has(l.userId) || l.dept === deptName);
+
+      const working = deptAttList.filter(a => a.checkIn && !a.checkOut && (a.workType === 'OFFICE' || !a.workType)).length;
+      const completed = deptAttList.filter(a => a.checkOut).length;
+      const remoteField = new Set([
+        ...deptAttList.filter(a => a.workType === 'REMOTE' || a.workType === 'FIELD').map(a => a.userId),
+        ...deptLeaveList.filter(l => l.leaveType === 'REMOTE' || l.leaveType === 'FIELD').map(l => l.userId)
+      ]).size;
+      const leave = deptLeaveList.filter(l => l.leaveType !== 'REMOTE' && l.leaveType !== 'FIELD').length;
+
+      const attended = working + completed + remoteField;
+      const rate = deptTotal > 0 ? Math.round((attended / deptTotal) * 100) : 0;
+      const unrecorded = Math.max(0, deptTotal - attended - leave);
+
+      return {
+        deptName,
+        total: deptTotal,
+        attended,
+        rate,
+        working,
+        completed,
+        remoteField,
+        leave,
+        unrecorded
+      };
+    }).filter(Boolean);
+
+    deptStats.sort((a, b) => b.total - a.total);
+
+    // 2. Arrival Highlights
+    const checkInTimes = dateAtts
+      .filter(a => a.checkIn)
+      .map(a => a.checkIn.slice(0, 5));
+
+    let avgCheckIn = '-';
+    let onTimeCount = 0;
+    let lateCount = 0;
+    let before830 = 0;
+    let between830and9 = 0;
+
+    if (checkInTimes.length > 0) {
+      let totalMinutes = 0;
+      checkInTimes.forEach(t => {
+        const [h, m] = t.split(':').map(Number);
+        if (!isNaN(h) && !isNaN(m)) {
+          const mins = h * 60 + m;
+          totalMinutes += mins;
+          if (mins <= 9 * 60) {
+            onTimeCount++;
+          } else {
+            lateCount++;
+          }
+          if (mins <= 8 * 60 + 30) {
+            before830++;
+          } else if (mins <= 9 * 60) {
+            between830and9++;
+          }
+        }
+      });
+      const avgMins = Math.round(totalMinutes / checkInTimes.length);
+      const avgH = String(Math.floor(avgMins / 60)).padStart(2, '0');
+      const avgM = String(avgMins % 60).padStart(2, '0');
+      avgCheckIn = `${avgH}:${avgM}`;
+    }
+
+    const onTimeRate = checkInTimes.length > 0 ? Math.round((onTimeCount / checkInTimes.length) * 100) : 0;
+    const networkVerifiedCount = dateAtts.filter(a => a.isCompanyNetwork).length;
+    const networkRate = dateAtts.length > 0 ? Math.round((networkVerifiedCount / dateAtts.length) * 100) : 0;
+
+    // 2-2. Arrival Time Distribution Buckets (5 time slots)
+    const timeBuckets = [
+      { label: '~08:30', count: 0 },
+      { label: '08:30~45', count: 0 },
+      { label: '08:45~09:00', count: 0 },
+      { label: '09:00~30', count: 0 },
+      { label: '09:30~', count: 0 }
+    ];
+    checkInTimes.forEach(t => {
+      const [h, m] = t.split(':').map(Number);
+      if (!isNaN(h) && !isNaN(m)) {
+        const mins = h * 60 + m;
+        if (mins <= 8 * 60 + 30) timeBuckets[0].count++;
+        else if (mins <= 8 * 60 + 45) timeBuckets[1].count++;
+        else if (mins <= 9 * 60) timeBuckets[2].count++;
+        else if (mins <= 9 * 60 + 30) timeBuckets[3].count++;
+        else timeBuckets[4].count++;
+      }
+    });
+    const maxTimeBucketCount = Math.max(1, ...timeBuckets.map(b => b.count));
+
+    // 3. Last 5 Weekdays Trend
+    const trendDays = [];
+    const baseDate = new Date(metricTargetDate);
+    if (!isNaN(baseDate.getTime())) {
+      let d = new Date(baseDate);
+      let count = 0;
+      while (count < 5) {
+        const dayOfWeek = d.getDay();
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const dateStr = `${y}-${m}-${day}`;
+
+          const dAtts = attendances.filter(a => a.date === dateStr);
+          const dLeaves = leaves.filter(l => l.status === 'APPROVED' && dateStr >= l.startDate && dateStr <= (l.endDate || l.startDate));
+          const w = dAtts.filter(a => a.checkIn && !a.checkOut && (a.workType === 'OFFICE' || !a.workType)).length;
+          const c = dAtts.filter(a => a.checkOut).length;
+          const r = new Set([
+            ...dAtts.filter(a => a.workType === 'REMOTE' || a.workType === 'FIELD').map(a => a.userId),
+            ...dLeaves.filter(l => l.leaveType === 'REMOTE' || l.leaveType === 'FIELD').map(l => l.userId)
+          ]).size;
+          const attCount = w + c + r;
+          const attRate = totalStaff > 0 ? Math.round((attCount / totalStaff) * 100) : 0;
+
+          const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+          trendDays.unshift({
+            dateStr,
+            displayDate: `${m}.${day}`,
+            dayName: dayNames[dayOfWeek],
+            attRate,
+            attCount,
+            totalStaff,
+            isTargetDate: dateStr === metricTargetDate
+          });
+          count++;
+        }
+        d.setDate(d.getDate() - 1);
+      }
+    }
+
+    return {
+      deptStats,
+      avgCheckIn,
+      onTimeRate,
+      onTimeCount,
+      lateCount,
+      before830,
+      between830and9,
+      networkRate,
+      networkVerifiedCount,
+      trendDays,
+      timeBuckets,
+      maxTimeBucketCount
+    };
+  }, [usersList, attendances, leaves, departments, metricTargetDate]);
 
   // ===================== CALENDAR VIEW LOGIC =====================
   const calYear = calCurrentDate.getFullYear();
@@ -582,115 +767,161 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
     }
   };
 
+
+
   return (
     <div style={{ paddingTop: '0.5rem' }}>
       
-      {/* 1. SECTION HEADER (Strictly NO descriptive subtitle! Rule 3) */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '1.25rem',
-        marginBottom: '2.5rem'
-      }}>
-        <h2 style={{
-          fontSize: '24px',
-          fontWeight: 700,
-          color: 'var(--text-primary)',
-          letterSpacing: '-0.02em',
-          margin: 0
+      {/* 1. SECTION HEADER (Shown only when hideHeader is false) */}
+      {!hideHeader && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1.25rem',
+          marginBottom: '2rem',
+          paddingBottom: '1rem',
+          borderBottom: '1px solid var(--border-color)'
         }}>
-          관리자 설정 및 근태 관리
-        </h2>
+          <h2 style={{
+            fontSize: '22px',
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.02em',
+            margin: 0
+          }}>
+            사내 근태 현황
+          </h2>
 
-        {/* Action Button: Excel Download */}
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => { window.location.href = '/api/export/excel'; }}
-            style={{
-              padding: '0.75rem 1.4rem',
-              fontSize: '15px',
-              fontWeight: 600,
-              borderRadius: 0
-            }}
-          >
-            전체 근태 엑셀 다운로드 (.xlsx)
-          </button>
+          {/* Action Button: Excel Download */}
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => { window.location.href = '/api/export/excel'; }}
+              style={{
+                padding: '0.75rem 1.4rem',
+                fontSize: '15px',
+                borderRadius: 0
+              }}
+            >
+              전체 근태 엑셀 다운로드 (.xlsx)
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* 2. REAL-TIME SUMMARY METRICS (Balanced Typography, NO Badges, NO Boxed Rectangles) */}
+      {/* 2. REAL-TIME SUMMARY METRICS (4x2 완전 대칭 그리드, 강조된 대형 숫자 타이포그래피) */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-        gap: '2rem',
-        marginBottom: '2rem'
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        columnGap: '2.5rem',
+        rowGap: '2.25rem',
+        marginBottom: '2.5rem',
+        padding: '1.25rem 0 2rem 0',
+        borderBottom: '1px solid var(--border-color)'
       }}>
-        {/* Metric 1: 전체 임직원 */}
+        {/* Metric 0: 오늘 출근율 */}
         <div>
-          <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 500 }}>
-            전체 임직원
+          <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
+            오늘 출근율
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem' }}>
+            <span style={{ fontSize: '36px', color: 'var(--text-primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+              {summaryMetrics.attendanceRate}
+            </span>
+            <span style={{ fontSize: '20px', color: 'var(--text-secondary)' }}>%</span>
+          </div>
+        </div>
+
+        {/* Metric 1: 전체 */}
+        <div>
+          <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
+            전체
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-            <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+            <span style={{ fontSize: '36px', color: 'var(--text-primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>
               {summaryMetrics.totalStaff}
             </span>
-            <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-secondary)' }}>명</span>
+            <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>명</span>
           </div>
         </div>
 
-        {/* Metric 2: 사내 정상 근무 */}
+        {/* Metric 2: 근무 중 */}
         <div>
-          <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 500 }}>
-            사내 정상 근무
+          <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
+            근무 중
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-            <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+            <span style={{ fontSize: '36px', color: 'var(--text-primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>
               {summaryMetrics.workingCount}
             </span>
-            <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-secondary)' }}>명</span>
+            <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>명</span>
           </div>
         </div>
 
-        {/* Metric 3: 퇴근 완료 */}
+        {/* Metric 3: 퇴근 */}
         <div>
-          <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 500 }}>
-            퇴근 완료
+          <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
+            퇴근
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-            <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-secondary)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+            <span style={{ fontSize: '36px', color: 'var(--text-primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>
               {summaryMetrics.completedCount}
             </span>
-            <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-secondary)' }}>명</span>
+            <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>명</span>
           </div>
         </div>
 
-        {/* Metric 4: 외근 · 재택근무 */}
+        {/* Metric 4: 외근 · 재택 */}
         <div>
-          <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 500 }}>
-            외근 · 재택근무
+          <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
+            외근 · 재택
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-            <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+            <span style={{ fontSize: '36px', color: 'var(--text-primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>
               {summaryMetrics.remoteFieldCount}
             </span>
-            <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-secondary)' }}>명</span>
+            <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>명</span>
           </div>
         </div>
 
-        {/* Metric 5: 휴가 · 미출근 */}
+        {/* Metric 5: 휴가 */}
         <div>
-          <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 500 }}>
-            휴가 · 미출근
+          <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
+            휴가
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-            <span style={{ fontSize: '28px', fontWeight: 700, color: summaryMetrics.unrecordedCount > 0 ? 'var(--text-primary)' : 'var(--text-muted)', lineHeight: 1, letterSpacing: '-0.02em' }}>
-              {summaryMetrics.leaveCount + summaryMetrics.unrecordedCount}
+            <span style={{ fontSize: '36px', color: 'var(--text-primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+              {summaryMetrics.leaveCount}
             </span>
-            <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-secondary)' }}>명</span>
+            <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>명</span>
+          </div>
+        </div>
+
+        {/* Metric 6: 지각 */}
+        <div>
+          <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
+            지각
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
+            <span style={{ fontSize: '36px', color: summaryMetrics.lateCount > 0 ? 'var(--text-primary)' : 'var(--text-muted)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+              {summaryMetrics.lateCount}
+            </span>
+            <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>명</span>
+          </div>
+        </div>
+
+        {/* Metric 7: 미출근 */}
+        <div>
+          <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
+            미출근
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
+            <span style={{ fontSize: '36px', color: summaryMetrics.unrecordedCount > 0 ? 'var(--text-primary)' : 'var(--text-muted)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+              {summaryMetrics.unrecordedCount}
+            </span>
+            <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>명</span>
           </div>
         </div>
       </div>
@@ -710,7 +941,6 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
             border: 'none',
             padding: '0.75rem 0.25rem',
             fontSize: '16px',
-            fontWeight: viewMode === 'CALENDAR' ? 700 : 500,
             color: viewMode === 'CALENDAR' ? 'var(--text-primary)' : 'var(--text-muted)',
             borderBottom: viewMode === 'CALENDAR' ? '2px solid var(--text-primary)' : '2px solid transparent',
             cursor: 'pointer',
@@ -728,7 +958,6 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
             border: 'none',
             padding: '0.75rem 0.25rem',
             fontSize: '16px',
-            fontWeight: viewMode === 'DAILY' ? 700 : 500,
             color: viewMode === 'DAILY' ? 'var(--text-primary)' : 'var(--text-muted)',
             borderBottom: viewMode === 'DAILY' ? '2px solid var(--text-primary)' : '2px solid transparent',
             cursor: 'pointer',

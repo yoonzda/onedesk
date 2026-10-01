@@ -1,92 +1,121 @@
-import React, { useState } from 'react';
-import { Calendar, Clock, Building2, Bell, FileText, ChevronRight } from 'lucide-react';
+import React from 'react';
 
-// Helper to determine category, icon, and signature color matching user's reference
-function getCategoryInfo(notif) {
+// Helper to determine category label in pure typography
+function getCategoryLabel(notif) {
   const type = notif.type?.toUpperCase() || '';
   const link = notif.link?.toLowerCase() || '';
 
   if (type.includes('SCHEDULE') || type.includes('MEETING') || link === 'calendar') {
-    return {
-      label: '회의 일정',
-      icon: Calendar,
-      color: '#3b82f6' // Blue
-    };
+    return '회의 일정';
   }
   if (type.includes('LEAVE') || type.includes('ATTEND') || link === 'commute' || link === 'admin_attendance') {
-    return {
-      label: '근태 · 결재',
-      icon: Clock,
-      color: '#10b981' // Green
-    };
+    return '근태 · 결재';
   }
   if (type.includes('CLIENT') || link === 'client_requests') {
-    return {
-      label: '고객사 요청',
-      icon: Building2,
-      color: '#f59e0b' // Amber
-    };
+    return '고객사 요청';
   }
   if (type.includes('ANNOUNCE') || link === 'settings') {
-    return {
-      label: '사내 공지',
-      icon: Bell,
-      color: '#8b5cf6' // Purple
-    };
+    return '사내 공지';
   }
-  return {
-    label: '업무 알림',
-    icon: FileText,
-    color: '#64748b' // Slate
-  };
+  return '업무 알림';
 }
 
-// Relative timestamp matching reference: "방금 전", "1일 전", "6월 12일"
-function formatRelativeTime(dateStr) {
+// Extract '누구' (발신자 / 요청자 / 고객사 / 관련 대상)
+function getNotificationActor(notif) {
+  if (notif.actorName) return notif.actorName;
+  if (notif.senderName) return notif.senderName;
+  if (notif.userName) return notif.userName;
+  if (notif.clientName) return notif.clientName;
+  if (notif.authorName) return notif.authorName;
+
+  const msg = notif.message || '';
+  
+  // 회사명 또는 대상 [대괄호] 추출
+  const bracketMatch = msg.match(/^\[(.*?)\]/);
+  if (bracketMatch && bracketMatch[1]) {
+    return bracketMatch[1];
+  }
+
+  // "XXX님이" 형태 추출
+  const nimMatch = msg.match(/([가-힣a-zA-Z0-9\s]+)님이/);
+  if (nimMatch && nimMatch[1]) {
+    return nimMatch[1].trim();
+  }
+
+  if (notif.clientCompanyName) return notif.clientCompanyName;
+  if (notif.companyName) return notif.companyName;
+
+  return getCategoryLabel(notif);
+}
+
+// Time grouping logic: 오늘, 어제, 이번 주, 이번 달, 지난 달, 오래된 알림
+function getNotificationGroup(dateStr) {
+  if (!dateStr) return '오래된 알림';
+  const normalized = dateStr.replace(' ', 'T');
+  const d = new Date(normalized);
+  if (isNaN(d.getTime())) return '오래된 알림';
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000);
+
+  // 이번 주 시작일 (월요일 기준)
+  const dayOfWeek = (startOfToday.getDay() + 6) % 7;
+  const startOfThisWeek = new Date(startOfToday.getTime() - dayOfWeek * 24 * 60 * 60 * 1000);
+
+  // 이번 달 및 지난 달 시작일
+  const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+  const itemTime = d.getTime();
+
+  if (itemTime >= startOfToday.getTime()) {
+    return '오늘';
+  }
+  if (itemTime >= startOfYesterday.getTime()) {
+    return '어제';
+  }
+  if (itemTime >= startOfThisWeek.getTime()) {
+    return '이번 주';
+  }
+  if (itemTime >= startOfThisMonth.getTime()) {
+    return '이번 달';
+  }
+  if (itemTime >= startOfLastMonth.getTime()) {
+    return '지난 달';
+  }
+  return '오래된 알림';
+}
+
+// Format numbers-only time (월/일 문자 완전 배제: 09.30 14:20)
+function formatNumbersOnlyTime(dateStr) {
   if (!dateStr) return '';
   const normalized = dateStr.replace(' ', 'T');
   const d = new Date(normalized);
-  if (isNaN(d.getTime())) {
-    return dateStr.slice(0, 16);
-  }
+  if (isNaN(d.getTime())) return dateStr.slice(0, 16);
+
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
 
   const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffMinutes = Math.floor(diffMs / (60 * 1000));
-  const diffHours = Math.floor(diffMs / (60 * 60 * 1000));
-  const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-
-  if (diffMinutes < 1) {
-    return '방금 전';
+  if (d.getFullYear() !== now.getFullYear()) {
+    return `${d.getFullYear()}.${mm}.${dd} ${hh}:${min}`;
   }
-  if (diffMinutes < 60) {
-    return `${diffMinutes}분 전`;
-  }
-  if (diffHours < 24 && now.getDate() === d.getDate()) {
-    return `${diffHours}시간 전`;
-  }
-  if (diffDays === 1) {
-    return '1일 전';
-  }
-  if (diffDays > 1 && diffDays < 7) {
-    return `${diffDays}일 전`;
-  }
-
-  if (d.getFullYear() === now.getFullYear()) {
-    return `${d.getMonth() + 1}월 ${d.getDate()}일`;
-  }
-
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+  return `${mm}.${dd} ${hh}:${min}`;
 }
+
+const GROUP_ORDER = ['오늘', '어제', '이번 주', '이번 달', '지난 달', '오래된 알림'];
 
 export default function NotificationsView({
   notifications = [],
   onReadNotification,
   onReadAllNotifications,
+  onDeleteNotification,
   onNavigate,
   onGoHome
 }) {
-  const [hoveredId, setHoveredId] = useState(null);
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const handleItemClick = (notif) => {
@@ -97,179 +126,234 @@ export default function NotificationsView({
     }
   };
 
+  const handleDeleteAll = () => {
+    if (!onDeleteNotification || notifications.length === 0) return;
+    if (window.confirm(`전체 알림 ${notifications.length}건을 모두 삭제하시겠습니까?`)) {
+      notifications.forEach(n => onDeleteNotification(n.id));
+    }
+  };
+
+  // Group notifications into defined time sections
+  const groupedNotifications = GROUP_ORDER.reduce((acc, groupName) => {
+    acc[groupName] = [];
+    return acc;
+  }, {});
+
+  notifications.forEach(notif => {
+    const group = getNotificationGroup(notif.createdAt);
+    if (!groupedNotifications[group]) {
+      groupedNotifications['오래된 알림'].push(notif);
+    } else {
+      groupedNotifications[group].push(notif);
+    }
+  });
+
   return (
-    <div style={{
-      width: '100%',
-      padding: '1.25rem 0 5rem 0'
-    }}>
-      {/* 1. Page Header Area */}
+    <div style={{ width: '100%', maxWidth: '860px', margin: '0 auto', paddingBottom: '3.5rem' }}>
+      
+      {/* 1. Header: 타이틀(알림) + 텍스트형 액션 버튼(모두 읽음 · 전체 삭제 · 돌아가기) */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '1rem',
-        marginBottom: '1.75rem',
+        marginBottom: '2rem',
         paddingBottom: '1rem',
         borderBottom: '1px solid var(--border-color)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
-          <h2 style={{
-            fontSize: '24px',
-            fontWeight: 700,
-            margin: 0,
-            color: 'var(--text-primary)',
-            letterSpacing: '-0.02em'
-          }}>
-            알림 센터
-          </h2>
-          <span style={{ fontSize: '16px', color: 'var(--text-muted)' }}>
-            미확인 {unreadCount}건 · 전체 {notifications.length}건
-          </span>
-        </div>
+        {/* 타이틀 (미확인 건수 텍스트 없이 오직 "알림"만 표기) */}
+        <h2 style={{
+          fontSize: '24px',
+          fontWeight: 400,
+          margin: 0,
+          color: 'var(--text-primary)',
+          letterSpacing: '-0.01em'
+        }}>
+          알림
+        </h2>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {/* 텍스트 전용 버튼 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {unreadCount > 0 && onReadAllNotifications && (
             <button
               type="button"
-              className="btn btn-secondary"
               onClick={onReadAllNotifications}
               style={{
-                height: '40px',
-                padding: '0 1.25rem',
-                fontSize: '16px',
-                fontWeight: 500,
-                borderRadius: '6px',
-                cursor: 'pointer'
+                background: 'none',
+                border: 'none',
+                padding: '6px 8px',
+                fontSize: '15px',
+                fontWeight: 400,
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                outline: 'none',
+                transition: 'opacity 0.15s ease'
               }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.6'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
             >
-              모두 읽음 처리
+              모두 읽음
             </button>
           )}
+
+          {notifications.length > 0 && onDeleteNotification && (
+            <>
+              {unreadCount > 0 && <span style={{ color: 'var(--border-color)', margin: '0 2px' }}>·</span>}
+              <button
+                type="button"
+                onClick={handleDeleteAll}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '6px 8px',
+                  fontSize: '15px',
+                  fontWeight: 400,
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  transition: 'color 0.15s ease'
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+              >
+                전체 삭제
+              </button>
+            </>
+          )}
+
           {onGoHome && (
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onGoHome}
-              style={{
-                height: '40px',
-                padding: '0 1.25rem',
-                fontSize: '16px',
-                fontWeight: 500,
-                borderRadius: '6px',
-                cursor: 'pointer'
-              }}
-            >
-              홈으로
-            </button>
+            <>
+              <span style={{ color: 'var(--border-color)', margin: '0 2px' }}>·</span>
+              <button
+                type="button"
+                onClick={onGoHome}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '6px 8px',
+                  fontSize: '15px',
+                  fontWeight: 400,
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  transition: 'color 0.15s ease'
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+              >
+                돌아가기
+              </button>
+            </>
           )}
         </div>
       </div>
 
-      {/* 2. Notification Center Card */}
+      {/* 2. Grouped Notifications Feed */}
       {notifications.length === 0 ? (
         <div style={{
-          padding: '5rem 2rem',
           textAlign: 'center',
+          padding: '5rem 1.5rem',
           color: 'var(--text-muted)',
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: '8px',
+          fontSize: '16px',
           border: '1px solid var(--border-color)',
-          fontSize: '16px'
+          backgroundColor: 'var(--bg-card)'
         }}>
           등록된 알림이 없습니다.
         </div>
       ) : (
-        <div style={{
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: '8px',
-          border: '1px solid var(--border-color)',
-          overflow: 'hidden'
-        }}>
-          {notifications.map((notif, index) => {
-            const isUnread = !notif.isRead;
-            const isHovered = hoveredId === notif.id;
-            const { label: categoryLabel, icon: IconComponent, color: categoryColor } = getCategoryInfo(notif);
-            const timeDisplay = formatRelativeTime(notif.createdAt);
+        <div>
+          {GROUP_ORDER.map((groupName, groupIdx) => {
+            const items = groupedNotifications[groupName] || [];
+            if (items.length === 0) return null;
 
             return (
-              <div
-                key={notif.id}
-                onClick={() => handleItemClick(notif)}
-                onMouseEnter={() => setHoveredId(notif.id)}
-                onMouseLeave={() => setHoveredId(null)}
-                style={{
-                  padding: '1.25rem 1.75rem',
-                  borderBottom: index === notifications.length - 1 ? 'none' : '1px solid var(--border-color)',
-                  backgroundColor: isUnread
-                    ? (isHovered ? 'rgba(59, 130, 246, 0.12)' : 'rgba(59, 130, 246, 0.05)')
-                    : (isHovered ? 'var(--bg-card-hover)' : 'transparent'),
-                  cursor: 'pointer',
-                  transition: 'background-color 0.15s ease'
-                }}
-              >
-                {/* Header Line: [Icon + Category] on Left, [Relative Time] on Right */}
+              <div key={groupName} style={{ marginBottom: '2.5rem' }}>
+                
+                {/* 기간 구분선 헤더 (크기 확대: 18px, 시원하고 선명한 타이틀) */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '0.5rem'
+                  gap: '1rem',
+                  marginBottom: '1.25rem',
+                  marginTop: groupIdx === 0 ? '0' : '2.75rem'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <IconComponent
-                      size={18}
-                      style={{
-                        color: categoryColor,
-                        flexShrink: 0
-                      }}
-                    />
-                    <span style={{
-                      fontSize: '16px',
-                      fontWeight: 600,
-                      color: isUnread ? 'var(--text-primary)' : 'var(--text-muted)',
-                      letterSpacing: '-0.01em'
-                    }}>
-                      {categoryLabel}
-                    </span>
-                  </div>
-
                   <span style={{
-                    fontSize: '16px',
-                    color: 'var(--text-muted)',
-                    fontVariantNumeric: 'tabular-nums'
+                    fontSize: '18px',
+                    fontWeight: 400,
+                    color: 'var(--text-primary)',
+                    whiteSpace: 'nowrap'
                   }}>
-                    {timeDisplay}
+                    {groupName}
                   </span>
+                  <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }} />
                 </div>
 
-                {/* Message Body (Bold Title + Description just like the reference screenshot) */}
-                <div style={{
-                  fontSize: '18px',
-                  fontWeight: 700,
-                  color: isUnread ? 'var(--text-primary)' : 'var(--text-secondary)',
-                  letterSpacing: '-0.015em',
-                  lineHeight: 1.45
-                }}>
-                  {notif.title}
+                {/* 개별 분리형 카드 (알림 제목 / 누구 / 시간 구조) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  {items.map((notif) => {
+                    const isUnread = !notif.isRead;
+                    const actor = getNotificationActor(notif);
+                    const timeDisplay = formatNumbersOnlyTime(notif.createdAt);
+
+                    return (
+                      <div
+                        key={notif.id}
+                        onClick={() => handleItemClick(notif)}
+                        style={{
+                          backgroundColor: isUnread ? 'var(--bg-card)' : 'transparent',
+                          border: isUnread ? '1px solid var(--border-color)' : '1px solid rgba(255, 255, 255, 0.06)',
+                          borderRadius: '8px',
+                          padding: '1.4rem 1.75rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.45rem',
+                          cursor: 'pointer',
+                          userSelect: 'none',
+                          opacity: isUnread ? 1 : 0.45,
+                          transition: 'opacity 0.15s ease'
+                        }}
+                      >
+                        {/* 1. 알림 제목 (크고 시원하게 확대: 20px) */}
+                        <div style={{
+                          fontSize: '20px',
+                          fontWeight: 400,
+                          color: isUnread ? 'var(--text-primary)' : 'var(--text-muted)',
+                          lineHeight: 1.4,
+                          wordBreak: 'keep-all'
+                        }}>
+                          {notif.title}
+                        </div>
+
+                        {/* 2. 누구 (16px) */}
+                        <div style={{
+                          fontSize: '16px',
+                          fontWeight: 400,
+                          color: isUnread ? 'var(--text-secondary)' : 'var(--text-muted)',
+                          lineHeight: 1.4
+                        }}>
+                          {actor}
+                        </div>
+
+                        {/* 3. 시간 (15px, 순수 숫자 표기) */}
+                        <div style={{
+                          fontSize: '15px',
+                          fontWeight: 400,
+                          color: 'var(--text-muted)',
+                          lineHeight: 1.4,
+                          fontVariantNumeric: 'tabular-nums'
+                        }}>
+                          {timeDisplay}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
-                {notif.message && notif.message !== notif.title && (
-                  <div style={{
-                    fontSize: '16px',
-                    color: isUnread ? 'var(--text-secondary)' : 'var(--text-muted)',
-                    lineHeight: 1.55,
-                    marginTop: '6px',
-                    wordBreak: 'keep-all',
-                    overflowWrap: 'break-word'
-                  }}>
-                    {notif.message}
-                  </div>
-                )}
               </div>
             );
           })}
         </div>
       )}
+
     </div>
   );
 }

@@ -12,8 +12,7 @@ import UserWorkCalendar from './UserWorkCalendar';
 import FileManager from './FileManager';
 import SettingsView from './SettingsView';
 import PayrollManager from './PayrollManager';
-import { isWeekendOrHoliday } from '../utils/holidays';
-import { Clock, Plus, X } from 'lucide-react';
+import { Clock, Plus, X, RotateCcw, ChevronLeft, ChevronRight, User, Search } from 'lucide-react';
 
 const TIME_OPTIONS = [];
 for (let h = 6; h <= 24; h++) {
@@ -120,6 +119,7 @@ export default function EmployeePortal({
   onClearTargetScheduleId = null,
   targetRequestId = null,
   onClearTargetRequestId = null,
+  initialClientRequests = [],
   openLeaveHistory = false,
   targetLeaveId = null,
   onCloseLeaveHistory = null,
@@ -145,6 +145,7 @@ export default function EmployeePortal({
               ? 'client_requests' 
               : (initialTab === 'admin_attendance' ? 'admin' : initialTab)))
   ); // commute, calendar, tasks, client_requests, files, settings, admin
+  const [internalTargetScheduleId, setInternalTargetScheduleId] = useState(null);
   
   useEffect(() => {
     if (openLeaveHistory) {
@@ -170,19 +171,32 @@ export default function EmployeePortal({
   const isAmHalfLocked = isAmHalfLeave && !attendance?.checkIn && nowMinutes < (13 * 60);
 
   const [clientReqTab, setClientReqTab] = useState('REQUESTED'); // REQUESTED (작업 요청), IN_PROGRESS (진행 중), REVIEW (확인 요청), DONE (작업 완료)
-  const [clientRequests, setClientRequests] = useState([]);
+  const [clientRequests, setClientRequests] = useState(initialClientRequests || []);
   const [selectedReq, setSelectedReq] = useState(null);
   const [selectedReqDate, setSelectedReqDate] = useState('');
   const [reqSearchTerm, setReqSearchTerm] = useState('');
+  const [isReqSearchOpen, setIsReqSearchOpen] = useState(false);
+  const reqSearchInputRef = useRef(null);
+
+  useEffect(() => {
+    if (isReqSearchOpen && reqSearchInputRef.current) {
+      const timer = setTimeout(() => {
+        reqSearchInputRef.current?.focus({ preventScroll: true });
+      }, 360);
+      return () => clearTimeout(timer);
+    }
+  }, [isReqSearchOpen]);
+
+  const [onlyMyReqTasks, setOnlyMyReqTasks] = useState(false);
+  const [reqCurrentPage, setReqCurrentPage] = useState(1);
   const [isDrawerClosing, setIsDrawerClosing] = useState(false);
   const [comments, setComments] = useState([]);
+  const [isWorkDetailsOpen, setIsWorkDetailsOpen] = useState(true);
   const [completingReq, setCompletingReq] = useState(null);
   const [isAddingTask, setIsAddingTask] = useState(false);
-  const [newTaskCategory, setNewTaskCategory] = useState('DEV');
   const [newTaskAssigneeId, setNewTaskAssigneeId] = useState('');
-  const [inlineCompletingTaskId, setInlineCompletingTaskId] = useState(null);
-  const [inlineCompleteHours, setInlineCompleteHours] = useState('');
-  const [inlineCompleteNote, setInlineCompleteNote] = useState('');
+  const [taskCompletionModal, setTaskCompletionModal] = useState(null); // { reqId, task, hours, note }
+  const [finalApproveModal, setFinalApproveModal] = useState(null); // { req, summary }
   const [activeStatusMenuTaskId, setActiveStatusMenuTaskId] = useState(null);
 
   const [showReqHistoryPanel, setShowReqHistoryPanel] = useState(false);
@@ -243,9 +257,10 @@ export default function EmployeePortal({
     setShowReqHistoryPanel(false);
     setIsReqTimelineClosing(false);
     setIsAddingTask(false);
-    setInlineCompletingTaskId(null);
+    setTaskCompletionModal(null);
     setActiveStatusMenuTaskId(null);
     setSelectedReq(req);
+    setIsWorkDetailsOpen(true);
     loadComments(req.id);
   };
 
@@ -253,7 +268,7 @@ export default function EmployeePortal({
     if (isDrawerClosing) return;
     setIsDrawerClosing(true);
     setIsAddingTask(false);
-    setInlineCompletingTaskId(null);
+    setTaskCompletionModal(null);
     setActiveStatusMenuTaskId(null);
     handledTargetRequestIdRef.current = targetRequestId;
     if (onClearTargetRequestId) {
@@ -389,6 +404,11 @@ export default function EmployeePortal({
   const teamLeaderApprovers = useMemo(() => {
     return (employees || []).filter(e => user && (e.role === 'ADMIN' || (e.role === 'TEAM_LEADER' && e.id !== user.id)));
   }, [employees, user]);
+
+  // 타 팀장 목록 (팀장 결재선 다중 선택용)
+  const otherTeamLeaders = useMemo(() => {
+    return (employees || []).filter(e => e.role === 'TEAM_LEADER' && e.id !== user?.id);
+  }, [employees, user?.id]);
 
   // 팀원일 때 직속 결재권자 (소속 부서 팀장/HR과장, 부서에 팀장이 없으면 최고 관리자)
   const myDirectApprover = useMemo(() => {
@@ -862,12 +882,14 @@ export default function EmployeePortal({
   };
 
   const loadComments = async (reqId) => {
+    if (!reqId) return;
     try {
       const res = await fetch(`/api/client-requests/${reqId}/comments`);
       const data = await res.json();
-      setComments(data);
+      setComments(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+      setComments([]);
     }
   };
 
@@ -884,25 +906,43 @@ export default function EmployeePortal({
   }, [selectedReq]);
 
   useEffect(() => {
-    if (targetRequestId && clientRequests.length > 0) {
-      if (handledTargetRequestIdRef.current === targetRequestId) {
-        return;
-      }
-      const found = clientRequests.find(r => r.id === targetRequestId);
-      if (found) {
-        handledTargetRequestIdRef.current = targetRequestId;
-        setSelectedReq(found);
-        setActiveTab('client_requests');
-        if (found.status === 'REQUESTED') setClientReqTab('REQUESTED');
-        else if (found.status === 'RECEIVED' || found.status === 'IN_PROGRESS' || found.status === 'REOPENED') setClientReqTab('IN_PROGRESS');
-        else if (found.status === 'DONE' && !found.clientConfirmed) setClientReqTab('REVIEW');
-        else if (found.status === 'DONE' && found.clientConfirmed) setClientReqTab('DONE');
-        if (onClearTargetRequestId) {
-          onClearTargetRequestId();
-        }
-      }
-    } else if (!targetRequestId) {
+    if (!targetRequestId) {
       handledTargetRequestIdRef.current = null;
+      return;
+    }
+    if (handledTargetRequestIdRef.current === targetRequestId) {
+      return;
+    }
+
+    const openTarget = (req) => {
+      handledTargetRequestIdRef.current = targetRequestId;
+      handleOpenDrawer(req);
+      setActiveTab('client_requests');
+      if (req.status === 'REQUESTED') setClientReqTab('REQUESTED');
+      else if (req.status === 'RECEIVED' || req.status === 'IN_PROGRESS' || req.status === 'REOPENED') setClientReqTab('IN_PROGRESS');
+      else if (req.status === 'DONE' && !req.clientConfirmed) setClientReqTab('REVIEW');
+      else if (req.status === 'DONE' && req.clientConfirmed) setClientReqTab('DONE');
+      if (onClearTargetRequestId) {
+        onClearTargetRequestId();
+      }
+    };
+
+    const found = clientRequests.find(r => r.id === targetRequestId);
+    if (found) {
+      openTarget(found);
+    } else {
+      fetch('/api/client-requests')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setClientRequests(data);
+            const req = data.find(r => r.id === targetRequestId);
+            if (req) {
+              openTarget(req);
+            }
+          }
+        })
+        .catch(console.error);
     }
   }, [targetRequestId, clientRequests]);
 
@@ -1158,16 +1198,18 @@ export default function EmployeePortal({
   const handleSendComment = async (e) => {
     e.preventDefault();
     if (!commentText.trim() && commentAttachments.length === 0) return;
+    if (!selectedReq?.id) return;
 
     try {
+      const authorDeptStr = user?.dept ? ` (${user.dept})` : '';
       const res = await fetch(`/api/client-requests/${selectedReq.id}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          authorId: user.id,
-          authorName: `${user.name} (${user.dept})`,
-          authorRole: 'EMPLOYEE',
-          content: commentText,
+          authorId: user?.id,
+          authorName: user?.name || '관리자',
+          authorRole: user?.role === 'ADMIN' ? 'ADMIN' : 'EMPLOYEE',
+          content: commentText.trim(),
           attachments: commentAttachments
         })
       });
@@ -1182,6 +1224,7 @@ export default function EmployeePortal({
       alert('댓글 작성 실패');
     }
   };
+  const handleAddComment = handleSendComment;
 
   // File Upload on Comment
   const handleFileUpload = async (e) => {
@@ -1342,20 +1385,11 @@ export default function EmployeePortal({
     }
   };
 
-  const handleCategoryChange = (newCat) => {
-    setNewTaskCategory(newCat);
-    const assignedEmpIds = (selectedReq?.assignedTasks || []).map(t => t.assigneeId);
-    const unassigned = (employees || []).filter(emp => !assignedEmpIds.includes(emp.id));
-    const matched = getMatchingEmployeesForCategory(unassigned, newCat);
-    setNewTaskAssigneeId(matched[0]?.id || unassigned[0]?.id || '');
-  };
-
   const handleAddInlineTask = () => {
     if (!selectedReq) return;
     const assignedEmpIds = (selectedReq.assignedTasks || []).map(t => t.assigneeId);
     const unassigned = (employees || []).filter(emp => !assignedEmpIds.includes(emp.id));
-    const matched = getMatchingEmployeesForCategory(unassigned, newTaskCategory);
-    const empId = newTaskAssigneeId || matched[0]?.id || unassigned[0]?.id;
+    const empId = newTaskAssigneeId || unassigned[0]?.id;
     if (!empId) {
       alert('추가할 수 있는 직원이 없습니다.');
       return;
@@ -1363,14 +1397,13 @@ export default function EmployeePortal({
     const emp = (employees || []).find(e => e.id === empId);
     if (!emp) return;
     
-    const categoryLabels = { DEV: '개발', DESIGN: '디자인', PUBLISH: '퍼블', PLAN: '기획', ETC: '기타' };
     const newTask = {
       id: 'task-' + Date.now() + '-' + Math.round(Math.random() * 1000),
-      category: newTaskCategory,
-      categoryLabel: categoryLabels[newTaskCategory] || '기타',
+      category: 'DEV',
+      categoryLabel: '',
       assigneeId: emp.id,
       assigneeName: emp.name,
-      status: 'PENDING',
+      status: 'REQUESTED',
       spentHours: 0,
       note: ''
     };
@@ -1385,7 +1418,7 @@ export default function EmployeePortal({
     const currentTasks = selectedReq.assignedTasks || [];
     const targetTask = currentTasks.find(t => t.id === taskId);
     if (!targetTask) return;
-    const ok = window.confirm(`[${targetTask.categoryLabel}] ${targetTask.assigneeName}님의 배정 업무를 삭제하시겠습니까?`);
+    const ok = window.confirm(`${targetTask.assigneeName}님의 배정을 취소하시겠습니까?`);
     if (!ok) return;
     const updated = currentTasks.filter(t => t.id !== taskId);
     updateRequestTasks(selectedReq.id, updated, undefined, { removedTask: targetTask });
@@ -1409,9 +1442,12 @@ export default function EmployeePortal({
     setActiveStatusMenuTaskId(null);
     if (newStatus === 'COMPLETED') {
       const targetTask = (selectedReq?.assignedTasks || []).find(t => t.id === taskId);
-      setInlineCompletingTaskId(taskId);
-      setInlineCompleteHours(targetTask?.spentHours ? String(targetTask.spentHours) : '');
-      setInlineCompleteNote(targetTask?.note || '');
+      setTaskCompletionModal({
+        reqId,
+        task: targetTask,
+        hours: targetTask?.spentHours ? String(targetTask.spentHours) : '1.0',
+        note: targetTask?.note || ''
+      });
       return;
     }
 
@@ -1427,7 +1463,14 @@ export default function EmployeePortal({
       });
       const data = await res.json();
       if (data.success) {
-        const label = newStatus === 'IN_PROGRESS' ? '진행 중' : '대기';
+        const labelMap = {
+          REQUESTED: '요청',
+          PENDING: '요청',
+          CONFIRMED: '확인',
+          IN_PROGRESS: '진행중',
+          COMPLETED: '완료'
+        };
+        const label = labelMap[newStatus] || newStatus;
         onShowToast('상태 변경', `업무 상태가 [${label}]으로 변경되었습니다.`);
         await loadClientRequests();
         if (selectedReq && selectedReq.id === reqId) {
@@ -1436,6 +1479,38 @@ export default function EmployeePortal({
       }
     } catch (err) {
       alert('상태 변경 처리 실패');
+    }
+  };
+
+  const handleReopenTask = async (reqId, taskId) => {
+    const targetTask = (selectedReq?.assignedTasks || []).find(t => t.id === taskId);
+    const reason = window.prompt(
+      `[${targetTask?.assigneeName || '담당자'}] 님의 업무를 진행중으로 재요청하시겠습니까?\n재요청 사유 또는 보완 요청 내용을 입력해주세요:`
+    );
+    if (reason === null) return;
+    try {
+      const res = await fetch(`/api/client-requests/${reqId}/tasks/${taskId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'IN_PROGRESS',
+          note: reason.trim() ? `[재요청] ${reason.trim()}` : (targetTask?.note || ''),
+          actorId: user?.id,
+          actorName: user?.name
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        onShowToast('업무 재요청', `${targetTask?.assigneeName || '담당자'}님의 업무가 진행중으로 재요청되었습니다.`);
+        await loadClientRequests();
+        if (selectedReq && selectedReq.id === reqId) {
+          setSelectedReq(data.request);
+        }
+      } else {
+        alert(data.message || '재요청 처리 실패');
+      }
+    } catch (err) {
+      alert('재요청 처리 오류');
     }
   };
 
@@ -1463,32 +1538,32 @@ export default function EmployeePortal({
     }
   };
 
-  const handleSaveInlineTaskCompletion = async (reqId, taskId) => {
-    const hoursNum = parseFloat(inlineCompleteHours);
+  const handleSaveTaskCompletionModal = async () => {
+    if (!taskCompletionModal) return;
+    const { reqId, task, hours, note } = taskCompletionModal;
+    const hoursNum = parseFloat(hours);
     if (isNaN(hoursNum) || hoursNum <= 0) {
       alert('실제 투입된 공수(시간)를 0보다 큰 숫자로 입력해주세요.');
       return;
     }
 
     // Check if unassigned approver AND this is the last unfinished task
-    const remainingTasks = (selectedReq?.assignedTasks || []).filter(t => t.id !== taskId && t.status !== 'COMPLETED');
+    const remainingTasks = (selectedReq?.assignedTasks || []).filter(t => t.id !== task.id && t.status !== 'COMPLETED');
     const isLastTask = remainingTasks.length === 0;
 
     if (!selectedReq?.approverId && isLastTask) {
-      const confirmed = window.confirm(
-        '최종 승인자가 미지정된 요청입니다.\n본 업무 완료 시 모든 업무가 완료되어 요청 건이 최종 완료(DONE) 상태로 전환되고 고객사에 통보됩니다.\n\n계속 진행하시겠습니까?'
-      );
+      const confirmed = window.confirm('고객사에 완료 처리됩니다. 계속 진행하시겠습니까?');
       if (!confirmed) return;
     }
 
     try {
-      const res = await fetch(`/api/client-requests/${reqId}/tasks/${taskId}/status`, {
+      const res = await fetch(`/api/client-requests/${reqId}/tasks/${task.id}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: 'COMPLETED',
           spentHours: hoursNum,
-          note: (inlineCompleteNote || '').trim(),
+          note: (note || '').trim(),
           actorId: user?.id,
           actorName: user?.name
         })
@@ -1496,17 +1571,15 @@ export default function EmployeePortal({
       const data = await res.json();
       if (data.success) {
         if (data.allCompleted) {
-          if (!selectedReq.approverId) {
+          if (!selectedReq?.approverId) {
             onShowToast('요청 최종 완료', '모든 업무가 완료되어 요청 건이 최종 완료 처리되었습니다.');
           } else {
             onShowToast('업무 완료 (승인 대기)', `모든 업무가 완료되어 최종 승인자(${selectedReq.approverName}) 승인을 대기합니다.`);
           }
         } else {
-          onShowToast('업무 완료 기록', `업무 완료 및 공수(${hoursNum}h)가 기록되었습니다.`);
+          onShowToast('업무 완료 기록', `${task.assigneeName}님의 업무 완료 및 공수(${hoursNum}h)가 기록되었습니다.`);
         }
-        setInlineCompletingTaskId(null);
-        setInlineCompleteHours('');
-        setInlineCompleteNote('');
+        setTaskCompletionModal(null);
         await loadClientRequests();
         if (selectedReq && selectedReq.id === reqId) {
           setSelectedReq(data.request);
@@ -1519,8 +1592,7 @@ export default function EmployeePortal({
     }
   };
 
-  const handleFinalApprove = async (req) => {
-    if (!window.confirm(`[${req.title}] 요청의 작업을 최종 승인하고 고객사로 완료 전달하시겠습니까?`)) return;
+  const handleFinalApprove = async (req, summary) => {
     try {
       const res = await fetch(`/api/client-requests/${req.id}/complete`, {
         method: 'POST',
@@ -1528,12 +1600,13 @@ export default function EmployeePortal({
         body: JSON.stringify({
           approverId: user?.id,
           approverName: user?.name,
-          completionSummary: req.completionSummary || '최종 검토 및 완료 승인되었습니다.'
+          completionSummary: (summary || '').trim() || '요청하신 작업이 완료되었습니다.'
         })
       });
       const data = await res.json();
       if (data.success) {
         onShowToast('최종 승인 완료', '작업이 최종 완료 처리되었으며 고객사에게 알림이 전달되었습니다.');
+        setFinalApproveModal(null);
         await loadClientRequests();
         if (selectedReq && selectedReq.id === req.id) {
           setSelectedReq(data.request);
@@ -2603,8 +2676,11 @@ export default function EmployeePortal({
             files={files}
             leaves={leavesList}
             employees={employees}
-            initialScheduleId={targetScheduleId}
-            onCloseDetail={onClearTargetScheduleId}
+            initialScheduleId={internalTargetScheduleId || targetScheduleId}
+            onCloseDetail={() => {
+              setInternalTargetScheduleId(null);
+              if (onClearTargetScheduleId) onClearTargetScheduleId();
+            }}
             onAddSchedule={onAddSchedule}
             onUpdateSchedule={onUpdateSchedule}
             onDeleteSchedule={onDeleteSchedule}
@@ -2636,44 +2712,51 @@ export default function EmployeePortal({
       {/* TAB 4: CLIENT REQUESTS & MAN-HOURS (고객사와 동일한 탭 & 목록 테이블 스타일) */}
       {activeTab === 'client_requests' && (
         <div>
-          {/* Toolbar: Sub-tabs (Left) + Search & Custom Date Filter (Right) */}
+          {/* Toolbar: Sub-tabs (Left) + Search & Custom Date Filter (Right) - 고객사와 동일한 100% Full-width Border-bottom 스타일 */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             gap: '1rem',
-            marginBottom: '1.25rem'
+            borderBottom: '1px solid var(--border-color)',
+            marginBottom: '0',
+            position: 'relative',
+            zIndex: 20
           }}>
-            {/* Sub-tabs for Worker Workflow: 4단계 (작업 요청 | 진행 중 | 확인 요청 | 작업 완료) */}
-            <div className="tabs-nav" style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', margin: 0 }}>
+            {/* Sub-tabs for Worker Workflow: 4단계 (작업 요청 | 진행 중 | 확인 요청 | 작업 완료) - 숫자 배제 */}
+            <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', marginBottom: '-1px' }}>
               <button 
+                type="button"
                 className={`tab-btn tab-btn-lg ${clientReqTab === 'REQUESTED' ? 'active' : ''}`}
-                onClick={() => { setClientReqTab('REQUESTED'); setSelectedReq(null); setSelectedReqDate(''); setReqSearchTerm(''); }}
+                onClick={() => { setClientReqTab('REQUESTED'); setSelectedReq(null); setSelectedReqDate(''); setReqSearchTerm(''); setReqCurrentPage(1); }}
               >
-                작업 요청 ({requestedClientRequests.length})
+                작업 요청
               </button>
               <button 
+                type="button"
                 className={`tab-btn tab-btn-lg ${clientReqTab === 'IN_PROGRESS' ? 'active' : ''}`}
-                onClick={() => { setClientReqTab('IN_PROGRESS'); setSelectedReq(null); setSelectedReqDate(''); setReqSearchTerm(''); }}
+                onClick={() => { setClientReqTab('IN_PROGRESS'); setSelectedReq(null); setSelectedReqDate(''); setReqSearchTerm(''); setReqCurrentPage(1); }}
               >
-                진행 중 ({inProgressClientRequests.length})
+                진행 중
               </button>
               <button 
+                type="button"
                 className={`tab-btn tab-btn-lg ${clientReqTab === 'REVIEW' ? 'active' : ''}`}
-                onClick={() => { setClientReqTab('REVIEW'); setSelectedReq(null); setSelectedReqDate(''); setReqSearchTerm(''); }}
+                onClick={() => { setClientReqTab('REVIEW'); setSelectedReq(null); setSelectedReqDate(''); setReqSearchTerm(''); setReqCurrentPage(1); }}
               >
-                확인 요청 ({reviewClientRequests.length})
+                확인 요청
               </button>
               <button 
+                type="button"
                 className={`tab-btn tab-btn-lg ${clientReqTab === 'DONE' ? 'active' : ''}`}
-                onClick={() => { setClientReqTab('DONE'); setSelectedReq(null); setSelectedReqDate(''); setReqSearchTerm(''); }}
+                onClick={() => { setClientReqTab('DONE'); setSelectedReq(null); setSelectedReqDate(''); setReqSearchTerm(''); setReqCurrentPage(1); }}
               >
-                작업 완료 ({doneClientRequests.length})
+                작업 완료
               </button>
             </div>
 
-            {/* Right: Search Input + Custom Date Filter (고객사 포털 등록일 검색 UI와 100% 동일한 셋팅) */}
+            {/* Right: Search Input + My Tasks Filter + Custom Date Filter (Icon Only) + Reset Icon */}
             {(() => {
               const baseList = clientReqTab === 'REQUESTED' ? requestedClientRequests
                 : clientReqTab === 'IN_PROGRESS' ? inProgressClientRequests
@@ -2681,37 +2764,240 @@ export default function EmployeePortal({
                 : doneClientRequests;
               const currentRequestDates = baseList.map(r => (clientReqTab === 'DONE' && r.completedAt) ? r.completedAt.slice(0, 10) : (r.requestDate || r.createdAt || '').slice(0, 10)).filter(Boolean);
 
+              const hasActiveFilter = Boolean(reqSearchTerm || selectedReqDate || onlyMyReqTasks);
+
               return (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingBottom: '0.4rem' }}>
+                  {/* 1. 검색 아이콘 버튼 (전폭 리본 바 토글) */}
+                  <button
+                    type="button"
+                    onClick={() => setIsReqSearchOpen(!isReqSearchOpen)}
+                    title="검색 (전폭 검색 바 토글)"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '6px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: (isReqSearchOpen || reqSearchTerm) ? 'var(--text-primary)' : 'var(--text-muted)',
+                      opacity: (isReqSearchOpen || reqSearchTerm) ? 1 : 0.45,
+                      outline: 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.color = 'var(--text-primary)';
+                      e.currentTarget.style.opacity = '0.9';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.color = (isReqSearchOpen || reqSearchTerm) ? 'var(--text-primary)' : 'var(--text-muted)';
+                      e.currentTarget.style.opacity = (isReqSearchOpen || reqSearchTerm) ? 1 : 0.45;
+                    }}
+                  >
+                    <Search size={22} strokeWidth={2} />
+                  </button>
+
+                  {/* 2. 담당 업무 토글 아이콘 버튼 (순수 사람 아이콘: 연하게/진하게 전환, 점 없음) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOnlyMyReqTasks(!onlyMyReqTasks);
+                      setReqCurrentPage(1);
+                    }}
+                    title={onlyMyReqTasks ? "내 담당 업무 필터 적용 중 (클릭하여 전체 보기)" : "내 담당 업무만 보기"}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '6px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: onlyMyReqTasks ? 'var(--text-primary)' : 'var(--text-muted)',
+                      opacity: onlyMyReqTasks ? 1 : 0.45,
+                      outline: 'none',
+                      userSelect: 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.color = 'var(--text-primary)';
+                      e.currentTarget.style.opacity = '0.9';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.color = onlyMyReqTasks ? 'var(--text-primary)' : 'var(--text-muted)';
+                      e.currentTarget.style.opacity = onlyMyReqTasks ? 1 : 0.45;
+                    }}
+                  >
+                    <User size={22} strokeWidth={2} />
+                  </button>
+
+                  {/* 3. 달력 아이콘 버튼 (순수 캘린더 아이콘 모드) */}
                   <CustomDatePicker 
                     value={selectedReqDate}
-                    onChange={(val) => setSelectedReqDate(val)}
+                    onChange={(val) => { setSelectedReqDate(val); setReqCurrentPage(1); }}
                     requestDates={currentRequestDates}
-                    placeholder={clientReqTab === 'DONE' ? '완료일 검색' : '등록일 검색'}
+                    placeholder={clientReqTab === 'DONE' ? '완료일 선택' : '등록일 선택'}
+                    iconOnly={true}
+                    align="right"
                   />
 
-                  <input 
-                    type="text"
-                    placeholder="제목, 내용 또는 고객사 검색..."
-                    value={reqSearchTerm}
-                    onChange={(e) => setReqSearchTerm(e.target.value)}
-                    className="form-control"
-                    style={{ width: '240px', height: '42px', padding: '0 0.85rem' }}
-                  />
-
-                  {(reqSearchTerm || selectedReqDate) && (
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => { setReqSearchTerm(''); setSelectedReqDate(''); }}
-                      style={{ height: '42px' }}
-                    >
-                      필터 초기화
-                    </button>
-                  )}
+                  {/* 4. 필터 초기화 아이콘 버튼 (RotateCcw) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReqSearchTerm('');
+                      setSelectedReqDate('');
+                      setOnlyMyReqTasks(false);
+                      setReqCurrentPage(1);
+                    }}
+                    title="필터 초기화"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '6px',
+                      cursor: 'pointer',
+                      color: hasActiveFilter ? 'var(--text-primary)' : 'var(--text-muted)',
+                      opacity: hasActiveFilter ? 1 : 0.3,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      outline: 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.color = 'var(--text-primary)';
+                      e.currentTarget.style.opacity = '0.9';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.color = hasActiveFilter ? 'var(--text-primary)' : 'var(--text-muted)';
+                      e.currentTarget.style.opacity = hasActiveFilter ? 1 : 0.3;
+                    }}
+                  >
+                    <RotateCcw size={22} strokeWidth={2} />
+                  </button>
                 </div>
               );
             })()}
+          </div>
+
+          {/* Option 2: Full-Width Search Ribbon Bar (부드러운 하드웨어 가속 슬라이드) */}
+          <div
+            style={{
+              height: isReqSearchOpen ? '84px' : '0px',
+              opacity: isReqSearchOpen ? 1 : 0,
+              overflow: 'hidden',
+              transition: 'height 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease',
+              marginBottom: '1.5rem',
+              pointerEvents: isReqSearchOpen ? 'auto' : 'none',
+              willChange: 'height, opacity'
+            }}
+          >
+            <div
+              style={{
+                height: '84px',
+                padding: '0 2rem',
+                backgroundColor: 'var(--bg-card, #141417)',
+                borderBottom: '1px solid var(--border-color)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                boxSizing: 'border-box',
+                gap: '1rem'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flex: 1 }}>
+                <Search size={22} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+                <input
+                  ref={reqSearchInputRef}
+                  type="text"
+                  value={reqSearchTerm}
+                  onChange={(e) => { setReqSearchTerm(e.target.value); setReqCurrentPage(1); }}
+                  placeholder="검색어 입력"
+                  tabIndex={isReqSearchOpen ? 0 : -1}
+                  style={{
+                    width: '100%',
+                    height: '48px',
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    fontSize: '16px',
+                    color: 'var(--text-primary)',
+                    padding: '0 4px',
+                    fontWeight: 400
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setIsReqSearchOpen(false);
+                      setReqSearchTerm('');
+                      setReqCurrentPage(1);
+                    }
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
+                {reqSearchTerm.trim() && (() => {
+                  const baseList = clientReqTab === 'REQUESTED' ? requestedClientRequests
+                    : clientReqTab === 'IN_PROGRESS' ? inProgressClientRequests
+                    : clientReqTab === 'REVIEW' ? reviewClientRequests
+                    : doneClientRequests;
+                  const matchCount = baseList.filter(req => {
+                    if (selectedReqDate) {
+                      const targetDate = (clientReqTab === 'DONE' && req.completedAt) ? req.completedAt.slice(0, 10) : (req.requestDate || req.createdAt || '').slice(0, 10);
+                      if (targetDate !== selectedReqDate) return false;
+                    }
+                    if (reqSearchTerm) {
+                      const q = reqSearchTerm.toLowerCase();
+                      const matchTitle = (req.title || '').toLowerCase().includes(q);
+                      const matchDesc = (req.description || '').toLowerCase().includes(q);
+                      const matchCompany = (req.clientCompanyName || req.companyName || req.clientName || '').toLowerCase().includes(q);
+                      if (!matchTitle && !matchDesc && !matchCompany) return false;
+                    }
+                    if (onlyMyReqTasks) {
+                      const isAssigned = (req.assignedTasks || []).some(t => t.assigneeId === user?.id);
+                      const isApprover = req.approverId === user?.id;
+                      if (!isAssigned && !isApprover) return false;
+                    }
+                    return true;
+                  }).length;
+                  return (
+                    <span style={{ fontSize: '15px', color: 'var(--text-muted)', whiteSpace: 'nowrap', userSelect: 'none', fontWeight: 400 }}>
+                      {matchCount}건
+                    </span>
+                  );
+                })()}
+                <button
+                  type="button"
+                  tabIndex={isReqSearchOpen ? 0 : -1}
+                  onClick={() => {
+                    setIsReqSearchOpen(false);
+                    setReqSearchTerm('');
+                    setReqCurrentPage(1);
+                  }}
+                  title="닫기"
+                  aria-label="닫기"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--text-muted)',
+                    outline: 'none',
+                    borderRadius: '4px',
+                    transition: 'color 0.15s ease',
+                    flexShrink: 0
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                >
+                  <X size={22} strokeWidth={2} />
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Full-width List Table (고객사 포털과 동일한 목록 스타일) */}
@@ -2720,6 +3006,8 @@ export default function EmployeePortal({
               : clientReqTab === 'IN_PROGRESS' ? inProgressClientRequests
               : clientReqTab === 'REVIEW' ? reviewClientRequests
               : doneClientRequests;
+
+            const REQ_PAGE_SIZE = 15;
 
             const currentList = baseList.filter(req => {
               if (selectedReqDate) {
@@ -2730,14 +3018,24 @@ export default function EmployeePortal({
                 const q = reqSearchTerm.toLowerCase();
                 const matchTitle = (req.title || '').toLowerCase().includes(q);
                 const matchDesc = (req.description || '').toLowerCase().includes(q);
-                const matchCompany = (req.clientCompanyName || req.companyName || '').toLowerCase().includes(q);
+                const matchCompany = (req.clientCompanyName || req.companyName || req.clientName || '').toLowerCase().includes(q);
                 if (!matchTitle && !matchDesc && !matchCompany) return false;
+              }
+              if (onlyMyReqTasks) {
+                const isAssigned = (req.assignedTasks || []).some(t => t.assigneeId === user?.id);
+                const isApprover = req.approverId === user?.id;
+                if (!isAssigned && !isApprover) return false;
               }
               return true;
             });
 
+            const totalPages = Math.ceil(currentList.length / REQ_PAGE_SIZE) || 1;
+            const safeCurrentPage = Math.min(Math.max(1, reqCurrentPage), totalPages);
+            const paginatedList = currentList.slice((safeCurrentPage - 1) * REQ_PAGE_SIZE, safeCurrentPage * REQ_PAGE_SIZE);
+
             return (
-              <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 0 }}>
+              <>
+                <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 0 }}>
                 {/* Header Row (양끝 간격 최적화: 좌우 0 패딩으로 컨테이너 경계와 정렬) */}
                 <div style={{
                   display: 'flex',
@@ -2771,9 +3069,10 @@ export default function EmployeePortal({
                   </div>
                 ) : (
                   <div>
-                    {currentList.map((req, idx) => {
+                    {paginatedList.map((req, idx) => {
                       const isSelected = selectedReq && selectedReq.id === req.id;
-                      const isLast = idx === currentList.length - 1;
+                      const isLast = idx === paginatedList.length - 1;
+                      const rowNum = currentList.length - ((safeCurrentPage - 1) * REQ_PAGE_SIZE + idx);
                       return (
                         <div
                           key={req.id}
@@ -2791,7 +3090,7 @@ export default function EmployeePortal({
                         >
                           {/* 1. 번호 */}
                           <span style={{ width: '88px', flexShrink: 0, textAlign: 'center', fontSize: '15px', fontWeight: 500, color: 'var(--text-secondary)' }}>
-                            {currentList.length - idx}
+                            {rowNum}
                           </span>
 
                           {/* 2. 고객사 */}
@@ -2841,7 +3140,165 @@ export default function EmployeePortal({
                   </div>
                 )}
               </div>
-            );
+
+              {/* Pagination Controls (카드 밖 독립 영역 분리, 배경색 없음, 원 칠해진 숫자, 42px 크기) */}
+              {totalPages > 1 && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.4rem',
+                  marginTop: '1.75rem',
+                  marginBottom: '1.5rem',
+                  userSelect: 'none',
+                  background: 'transparent'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setReqCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={safeCurrentPage === 1}
+                    style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '50%',
+                      background: 'transparent',
+                      border: '1px solid transparent',
+                      color: 'var(--text-primary)',
+                      cursor: safeCurrentPage === 1 ? 'default' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: safeCurrentPage === 1 ? 0.2 : 0.8,
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={e => {
+                      if (safeCurrentPage !== 1) {
+                        e.currentTarget.style.background = 'var(--bg-card-hover)';
+                        e.currentTarget.style.opacity = '1';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (safeCurrentPage !== 1) {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.opacity = '0.8';
+                      }
+                    }}
+                    title="이전 페이지"
+                  >
+                    <ChevronLeft size={19} strokeWidth={2} />
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(p => {
+                      if (totalPages <= 7) return true;
+                      if (p === 1 || p === totalPages) return true;
+                      if (Math.abs(p - safeCurrentPage) <= 2) return true;
+                      return false;
+                    })
+                    .reduce((acc, p, idx, arr) => {
+                      if (idx > 0 && p - arr[idx - 1] > 1) {
+                        acc.push('ellipsis-' + p);
+                      }
+                      acc.push(p);
+                      return acc;
+                    }, [])
+                    .map(item => {
+                      if (typeof item === 'string') {
+                        return (
+                          <span
+                            key={item}
+                            style={{
+                              width: '38px',
+                              height: '38px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'var(--text-muted)',
+                              fontSize: '15px',
+                              userSelect: 'none'
+                            }}
+                          >
+                            ···
+                          </span>
+                        );
+                      }
+                      const isCurrent = item === safeCurrentPage;
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => setReqCurrentPage(item)}
+                          style={{
+                            width: '38px',
+                            height: '38px',
+                            borderRadius: '50%',
+                            background: isCurrent ? 'var(--primary-light)' : 'transparent',
+                            border: isCurrent ? '1px solid var(--border-color)' : '1px solid transparent',
+                            fontSize: '15px',
+                            fontWeight: 400,
+                            color: isCurrent ? 'var(--text-primary)' : 'var(--text-muted)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.15s ease'
+                          }}
+                          onMouseEnter={e => {
+                            if (!isCurrent) {
+                              e.currentTarget.style.background = 'var(--bg-card-hover)';
+                              e.currentTarget.style.color = 'var(--text-primary)';
+                            }
+                          }}
+                          onMouseLeave={e => {
+                            if (!isCurrent) {
+                              e.currentTarget.style.background = 'transparent';
+                              e.currentTarget.style.color = 'var(--text-muted)';
+                            }
+                          }}
+                        >
+                          {item}
+                        </button>
+                      );
+                    })}
+
+                  <button
+                    type="button"
+                    onClick={() => setReqCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={safeCurrentPage === totalPages}
+                    style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '50%',
+                      background: 'transparent',
+                      border: '1px solid transparent',
+                      color: 'var(--text-primary)',
+                      cursor: safeCurrentPage === totalPages ? 'default' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: safeCurrentPage === totalPages ? 0.2 : 0.8,
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={e => {
+                      if (safeCurrentPage !== totalPages) {
+                        e.currentTarget.style.background = 'var(--bg-card-hover)';
+                        e.currentTarget.style.opacity = '1';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (safeCurrentPage !== totalPages) {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.opacity = '0.8';
+                      }
+                    }}
+                    title="다음 페이지"
+                  >
+                    <ChevronRight size={19} strokeWidth={2} />
+                  </button>
+                </div>
+              )}
+            </>
+          );
           })()}
 
           {/* DRAWER: SELECTED REQUEST DETAIL & ACTIONS */}
@@ -2882,7 +3339,7 @@ export default function EmployeePortal({
                         gap: '2.5rem',
                         marginLeft: '0.5rem'
                       }}>
-                        {(selectedReq.history || []).map((item, idx, arr) => {
+                        {[...(selectedReq.history || [])].reverse().map((item, idx, arr) => {
                           const isLast = idx === arr.length - 1;
                           return (
                             <div key={item.id || idx} style={{ position: 'relative', paddingLeft: '1.5rem' }}>
@@ -2914,7 +3371,7 @@ export default function EmployeePortal({
                               {/* 1. Action */}
                               <div style={{
                                 fontSize: '17px',
-                                fontWeight: 700,
+                                fontWeight: 400,
                                 color: 'var(--text-primary)',
                                 lineHeight: 1.3,
                                 letterSpacing: '-0.01em'
@@ -2926,8 +3383,8 @@ export default function EmployeePortal({
                               {(item.detail || item.actorName) && (
                                 <div style={{
                                   fontSize: '16px',
-                                  fontWeight: 500,
-                                  color: 'var(--text-primary)',
+                                  fontWeight: 400,
+                                  color: 'var(--text-secondary)',
                                   marginTop: '0.35rem',
                                   lineHeight: 1.4
                                 }}>
@@ -3026,17 +3483,17 @@ export default function EmployeePortal({
 
                 {/* Detail Drawer Body */}
                 <div style={{ flex: 1, padding: '0 2.25rem 2.5rem 2.25rem', display: 'flex', flexDirection: 'column', gap: '1.75rem', overflowY: 'auto', minHeight: 0 }}>
-                  {/* Hero Title: 고객사 명만 깔끔하게 */}
+                  {/* Hero Title: 요청 제목으로 표기 (회사명 일체 배제) */}
                   <div style={{ paddingTop: '0.65rem' }}>
                     <h3 style={{
-                      fontSize: '28px',
-                      fontWeight: 700,
+                      fontSize: '22px',
+                      fontWeight: 400,
                       margin: 0,
                       color: 'var(--text-primary)',
-                      letterSpacing: '-0.02em',
+                      letterSpacing: '-0.01em',
                       lineHeight: 1.35
                     }}>
-                      {selectedReq.clientName}
+                      {selectedReq.title}
                     </h3>
                   </div>
 
@@ -3113,6 +3570,7 @@ export default function EmployeePortal({
                         내용
                       </span>
                       <div 
+                        className="request-content-html"
                         style={{ 
                           flex: 1, 
                           fontSize: '16px', 
@@ -3123,6 +3581,184 @@ export default function EmployeePortal({
                         }}
                         dangerouslySetInnerHTML={{ __html: formatHtmlContent(selectedReq.content) }}
                       />
+                    </div>
+
+                    {/* 댓글 (고객사 및 사내 소통 - 내용 바로 아래 배치) */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      padding: '1.25rem 0',
+                      borderBottom: '1px solid var(--border-color)',
+                      gap: '1.5rem'
+                    }}>
+                      <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 400, flexShrink: 0, paddingTop: '0.2rem' }}>
+                        댓글
+                      </span>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.85rem', minWidth: 0 }}>
+                        {/* 댓글 목록 */}
+                        {(!comments || comments.length === 0) ? (
+                          <div style={{ fontSize: '15px', color: 'var(--text-muted)', padding: '0.25rem 0' }}>
+                            등록된 댓글이 없습니다.
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                            {(comments || []).map((comm) => {
+                              let cleanAuthor = (comm.authorName || '작성자').trim();
+                              while (/\([^)]*\)/.test(cleanAuthor)) {
+                                cleanAuthor = cleanAuthor.replace(/\([^)]*\)/g, '').trim();
+                              }
+                              while (/\[[^\]]*\]/.test(cleanAuthor)) {
+                                cleanAuthor = cleanAuthor.replace(/\[[^\]]*\]/g, '').trim();
+                              }
+                              if (selectedReq?.clientName) {
+                                const pureClient = selectedReq.clientName.replace(/[()\[\]\s]/g, '');
+                                if (pureClient) {
+                                  cleanAuthor = cleanAuthor.replaceAll(pureClient, '').trim();
+                                }
+                              }
+                              cleanAuthor = cleanAuthor
+                                .replace(/\(주\)/g, '')
+                                .replace(/주식회사/g, '')
+                                .replace(/알파솔루션/g, '')
+                                .replace(/[()\[\]]/g, '')
+                                .trim();
+                              if (!cleanAuthor) cleanAuthor = '작성자';
+
+                              return (
+                                <div
+                                  key={comm.id || Math.random()}
+                                  style={{
+                                    padding: '1rem 1.25rem',
+                                    backgroundColor: '#18181c',
+                                    border: '1px solid #2a2a30',
+                                    borderRadius: '6px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.75rem'
+                                  }}
+                                >
+                                  {/* 작성자 이름 단독 표시: 소프트 블루 색상 + 하단 헤어라인 구분선으로 발화 주체 명확화 */}
+                                  <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    paddingBottom: '0.55rem',
+                                    borderBottom: '1px solid #26262b'
+                                  }}>
+                                    <span style={{ fontSize: '15px', color: '#93c5fd', fontWeight: 400 }}>
+                                      {cleanAuthor}
+                                    </span>
+                                  </div>
+
+                                  {/* 댓글 내용: 선명하고 시원한 16px 본문 */}
+                                  <div style={{
+                                    fontSize: '16px',
+                                    color: '#f4f4f5',
+                                    lineHeight: 1.7,
+                                    whiteSpace: 'pre-wrap',
+                                    wordBreak: 'break-word',
+                                    fontWeight: 400,
+                                    letterSpacing: '-0.01em'
+                                  }}>
+                                    {comm.content || ''}
+                                  </div>
+
+                                  {/* 첨부파일 (클립 이모지 없이 깔끔한 텍스트 링크) */}
+                                  {comm.attachments && comm.attachments.length > 0 && (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', paddingTop: '0.35rem', borderTop: '1px solid #26262b' }}>
+                                      {comm.attachments.map((att, attIdx) => (
+                                        <a
+                                          key={att.id || att.url || attIdx}
+                                          href={att.url}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          style={{ fontSize: '14px', color: '#60a5fa', textDecoration: 'none' }}
+                                        >
+                                          첨부: {att.name || '파일'}
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* 날짜와 시간은 이름 옆이 아닌 아래에 배치 */}
+                                  <div style={{ fontSize: '14px', color: 'var(--text-muted)', paddingTop: '0.15rem' }}>
+                                    {comm.createdAt ? String(comm.createdAt).slice(0, 16) : ''}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* 댓글 입력 폼 */}
+                        <form onSubmit={handleSendComment} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: (comments && comments.length > 0) ? '0.25rem' : '0' }}>
+                          <textarea
+                            value={commentText}
+                            onChange={e => setCommentText(e.target.value)}
+                            placeholder="댓글을 입력하세요..."
+                            rows={2}
+                            style={{
+                              width: '100%',
+                              backgroundColor: '#141417',
+                              border: '1px solid #2e2e34',
+                              borderRadius: '4px',
+                              color: 'var(--text-primary)',
+                              padding: '0.75rem 0.85rem',
+                              fontSize: '15px',
+                              fontFamily: 'inherit',
+                              resize: 'vertical',
+                              outline: 'none',
+                              boxSizing: 'border-box',
+                              lineHeight: 1.5
+                            }}
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                              <label
+                                style={{
+                                  fontSize: '14px',
+                                  color: 'var(--text-secondary)',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  padding: '0.35rem 0.7rem',
+                                  backgroundColor: '#1f1f24',
+                                  border: '1px solid #333339',
+                                  borderRadius: '4px'
+                                }}
+                              >
+                                파일 첨부
+                                <input
+                                  type="file"
+                                  style={{ display: 'none' }}
+                                  onChange={handleFileUpload}
+                                />
+                              </label>
+                              {commentAttachments.length > 0 && (
+                                <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                                  {commentAttachments.map(f => f.name).join(', ')}
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              type="submit"
+                              disabled={!commentText.trim()}
+                              style={{
+                                padding: '0.45rem 1.1rem',
+                                fontSize: '14px',
+                                fontWeight: 400,
+                                backgroundColor: commentText.trim() ? '#27272a' : '#1a1a1e',
+                                color: commentText.trim() ? '#f4f4f5' : '#52525b',
+                                border: '1px solid #3f3f46',
+                                borderRadius: '4px',
+                                cursor: commentText.trim() ? 'pointer' : 'default'
+                              }}
+                            >
+                              댓글 등록
+                            </button>
+                          </div>
+                        </form>
+                      </div>
                     </div>
 
                     {/* 5. 상태 */}
@@ -3164,9 +3800,8 @@ export default function EmployeePortal({
                         {selectedReq.assignedTasks && selectedReq.assignedTasks.length > 0 ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
                             {selectedReq.assignedTasks.map(task => {
-                              const isCompletingThis = inlineCompletingTaskId === task.id;
                               const isMyTask = user?.id === task.assigneeId;
-                              const canOperate = isMyTask || user?.role === 'ADMIN';
+                              const canOperate = (isMyTask || user?.role === 'ADMIN') && selectedReq.status !== 'DONE';
 
                               return (
                                 <div
@@ -3184,169 +3819,263 @@ export default function EmployeePortal({
                                     gap: '0.5rem',
                                     flexWrap: 'wrap'
                                   }}>
-                                    {/* 분야 및 담당자명 */}
-                                    <span style={{ fontSize: '15px', color: 'var(--text-primary)', fontWeight: 500 }}>
-                                      [{task.categoryName || getCategoryLabel(task.category)}] {task.assigneeName}
+                                    {/* 담당자명 */}
+                                    <span style={{ fontSize: '15px', color: 'var(--text-primary)', fontWeight: 400 }}>
+                                      {task.assigneeName}
                                     </span>
                                     <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>·</span>
 
                                     {/* 인터랙티브 상태 드롭다운: 호버 시 피드백 + 클릭 시 상태 선택 메뉴 팝오버 */}
                                     <div className="status-dropdown-wrapper" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (canOperate) {
-                                            setActiveStatusMenuTaskId(activeStatusMenuTaskId === task.id ? null : task.id);
-                                          }
-                                        }}
-                                        title={canOperate ? '클릭하여 상태 선택' : undefined}
-                                        style={{
-                                          background: 'none',
-                                          border: 'none',
-                                          padding: '0 2px',
-                                          fontSize: '15px',
-                                          fontWeight: task.status === 'COMPLETED' || task.status === 'IN_PROGRESS' ? 600 : 400,
-                                          color: task.status === 'COMPLETED' ? 'var(--text-primary)' : task.status === 'IN_PROGRESS' ? '#3b82f6' : 'var(--text-muted)',
-                                          cursor: canOperate ? 'pointer' : 'default',
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '3px',
-                                          borderRadius: '3px',
-                                          transition: 'all 0.15s ease'
-                                        }}
-                                        onMouseEnter={e => {
-                                          if (canOperate) {
-                                            e.currentTarget.style.color = task.status === 'IN_PROGRESS' ? '#60a5fa' : 'var(--text-primary)';
-                                            e.currentTarget.style.textDecoration = 'underline';
-                                          }
-                                        }}
-                                        onMouseLeave={e => {
-                                          if (canOperate) {
-                                            e.currentTarget.style.color = task.status === 'COMPLETED' ? 'var(--text-primary)' : task.status === 'IN_PROGRESS' ? '#3b82f6' : 'var(--text-muted)';
-                                            e.currentTarget.style.textDecoration = 'none';
-                                          }
-                                        }}
-                                      >
-                                        <span>
-                                          {task.status === 'COMPLETED' ? `완료 (${task.spentHours || 0}h)` : task.status === 'IN_PROGRESS' ? '진행 중' : '대기'}
-                                        </span>
-                                        {canOperate && (
-                                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>▾</span>
-                                        )}
-                                      </button>
-
-                                      {/* 상태 선택 미니 팝오버 메뉴 (토글이 아닌 직접 선택 UX) */}
-                                      {activeStatusMenuTaskId === task.id && (
-                                        <div
-                                          style={{
-                                            position: 'absolute',
-                                            top: 'calc(100% + 4px)',
-                                            left: 0,
-                                            zIndex: 60,
-                                            backgroundColor: 'var(--bg-primary)',
-                                            border: '1px solid var(--border-color)',
-                                            borderRadius: '6px',
-                                            boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
-                                            padding: '4px',
-                                            minWidth: '120px',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: '2px'
-                                          }}
-                                          onClick={e => e.stopPropagation()}
-                                        >
-                                          <button
-                                            type="button"
-                                            onClick={() => handleUpdateTaskStatus(selectedReq.id, task.id, 'PENDING')}
-                                            style={{
-                                              background: 'none',
-                                              border: 'none',
-                                              padding: '6px 10px',
-                                              fontSize: '13px',
-                                              textAlign: 'left',
-                                              color: task.status === 'PENDING' ? '#3b82f6' : 'var(--text-primary)',
-                                              fontWeight: task.status === 'PENDING' ? 600 : 400,
-                                              cursor: 'pointer',
-                                              borderRadius: '4px',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              justifyContent: 'space-between',
-                                              transition: 'background-color 0.12s'
-                                            }}
-                                            onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
-                                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                                          >
-                                            <span>대기</span>
-                                            {task.status === 'PENDING' && <span style={{ fontSize: '12px' }}>✓</span>}
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => handleUpdateTaskStatus(selectedReq.id, task.id, 'IN_PROGRESS')}
-                                            style={{
-                                              background: 'none',
-                                              border: 'none',
-                                              padding: '6px 10px',
-                                              fontSize: '13px',
-                                              textAlign: 'left',
-                                              color: task.status === 'IN_PROGRESS' ? '#3b82f6' : 'var(--text-primary)',
-                                              fontWeight: task.status === 'IN_PROGRESS' ? 600 : 400,
-                                              cursor: 'pointer',
-                                              borderRadius: '4px',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              justifyContent: 'space-between',
-                                              transition: 'background-color 0.12s'
-                                            }}
-                                            onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
-                                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                                          >
-                                            <span>진행 중</span>
-                                            {task.status === 'IN_PROGRESS' && <span style={{ fontSize: '12px' }}>✓</span>}
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => handleUpdateTaskStatus(selectedReq.id, task.id, 'COMPLETED')}
-                                            style={{
-                                              background: 'none',
-                                              border: 'none',
-                                              padding: '6px 10px',
-                                              fontSize: '13px',
-                                              textAlign: 'left',
-                                              color: task.status === 'COMPLETED' ? '#3b82f6' : 'var(--text-primary)',
-                                              fontWeight: task.status === 'COMPLETED' ? 600 : 400,
-                                              cursor: 'pointer',
-                                              borderRadius: '4px',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              justifyContent: 'space-between',
-                                              transition: 'background-color 0.12s'
-                                            }}
-                                            onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
-                                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                                          >
-                                            <span>완료 처리...</span>
-                                            {task.status === 'COMPLETED' && <span style={{ fontSize: '12px' }}>✓</span>}
-                                          </button>
+                                      {task.status === 'COMPLETED' ? (
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                          <span style={{
+                                            fontSize: '15px',
+                                            fontWeight: 400,
+                                            color: '#10b981'
+                                          }}>
+                                            {task.spentHours > 0 ? `완료 (${task.spentHours}h)` : '완료'}
+                                          </span>
+                                          {canOperate && (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setTaskCompletionModal({
+                                                  reqId: selectedReq.id,
+                                                  task,
+                                                  hours: task.spentHours ? String(task.spentHours) : '1.0',
+                                                  note: task.note || ''
+                                                });
+                                              }}
+                                              style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                padding: '0 2px',
+                                                fontSize: '13px',
+                                                fontWeight: 400,
+                                                color: 'var(--text-muted)',
+                                                cursor: 'pointer',
+                                                textDecoration: 'underline'
+                                              }}
+                                              onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+                                              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                                              title="상세 작업 내역 수정"
+                                            >
+                                              수정
+                                            </button>
+                                          )}
+                                          {selectedReq.status !== 'DONE' && (selectedReq?.approverId === user?.id || user?.role === 'ADMIN') && (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleReopenTask(selectedReq.id, task.id);
+                                              }}
+                                              style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                padding: '0 2px',
+                                                fontSize: '13px',
+                                                fontWeight: 400,
+                                                color: '#ef4444',
+                                                cursor: 'pointer',
+                                                textDecoration: 'underline'
+                                              }}
+                                              title="업무 재요청 (진행중으로 복귀)"
+                                            >
+                                              재요청
+                                            </button>
+                                          )}
                                         </div>
+                                      ) : (
+                                        <>
+                                          <button
+                                            type="button"
+                                            disabled={!canOperate}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              if (!canOperate) return;
+                                              setActiveStatusMenuTaskId(activeStatusMenuTaskId === task.id ? null : task.id);
+                                            }}
+                                            title={canOperate ? '클릭하여 상태 선택' : undefined}
+                                            style={{
+                                              background: 'none',
+                                              border: 'none',
+                                              padding: '0 2px',
+                                              fontSize: '15px',
+                                              fontWeight: 400,
+                                              color: task.status === 'IN_PROGRESS'
+                                                ? '#3b82f6'
+                                                : task.status === 'CONFIRMED'
+                                                ? '#10b981'
+                                                : 'var(--text-muted)',
+                                              cursor: canOperate ? 'pointer' : 'default',
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              gap: '3px',
+                                              borderRadius: '3px',
+                                              transition: 'all 0.15s ease'
+                                            }}
+                                            onMouseEnter={e => {
+                                              if (canOperate) {
+                                                e.currentTarget.style.textDecoration = 'underline';
+                                              }
+                                            }}
+                                            onMouseLeave={e => {
+                                              if (canOperate) {
+                                                e.currentTarget.style.textDecoration = 'none';
+                                              }
+                                            }}
+                                          >
+                                            <span>
+                                              {task.status === 'IN_PROGRESS'
+                                                ? '진행중'
+                                                : task.status === 'CONFIRMED'
+                                                ? '확인'
+                                                : '요청'}
+                                            </span>
+                                            {canOperate && (
+                                              <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>▾</span>
+                                            )}
+                                          </button>
+
+                                          {/* 상태 선택 미니 팝오버 메뉴 (불투명 레이어 보장 & 4단계 상태: 요청, 확인, 진행중, 완료) */}
+                                          {activeStatusMenuTaskId === task.id && (
+                                            <div
+                                              style={{
+                                                position: 'absolute',
+                                                top: 'calc(100% + 4px)',
+                                                left: 0,
+                                                zIndex: 100,
+                                                backgroundColor: 'var(--bg-card, #18181b)',
+                                                border: '1px solid var(--border-color)',
+                                                borderRadius: '4px',
+                                                boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+                                                padding: '4px',
+                                                minWidth: '120px',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '2px'
+                                              }}
+                                              onClick={e => e.stopPropagation()}
+                                            >
+                                              {/* 1. 요청 */}
+                                              <button
+                                                type="button"
+                                                onClick={() => handleUpdateTaskStatus(selectedReq.id, task.id, 'REQUESTED')}
+                                                style={{
+                                                  background: 'none',
+                                                  border: 'none',
+                                                  padding: '6px 10px',
+                                                  fontSize: '14px',
+                                                  textAlign: 'left',
+                                                  color: (task.status === 'REQUESTED' || task.status === 'PENDING') ? '#3b82f6' : 'var(--text-primary)',
+                                                  fontWeight: 400,
+                                                  cursor: 'pointer',
+                                                  borderRadius: '3px',
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  justifyContent: 'space-between',
+                                                  transition: 'background-color 0.12s'
+                                                }}
+                                                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-hover, rgba(255,255,255,0.06))'}
+                                                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                              >
+                                                <span>요청</span>
+                                                {(task.status === 'REQUESTED' || task.status === 'PENDING') && <span style={{ fontSize: '13px' }}>✓</span>}
+                                              </button>
+
+                                              {/* 2. 확인 */}
+                                              <button
+                                                type="button"
+                                                onClick={() => handleUpdateTaskStatus(selectedReq.id, task.id, 'CONFIRMED')}
+                                                style={{
+                                                  background: 'none',
+                                                  border: 'none',
+                                                  padding: '6px 10px',
+                                                  fontSize: '14px',
+                                                  textAlign: 'left',
+                                                  color: task.status === 'CONFIRMED' ? '#3b82f6' : 'var(--text-primary)',
+                                                  fontWeight: 400,
+                                                  cursor: 'pointer',
+                                                  borderRadius: '3px',
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  justifyContent: 'space-between',
+                                                  transition: 'background-color 0.12s'
+                                                }}
+                                                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-hover, rgba(255,255,255,0.06))'}
+                                                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                              >
+                                                <span>확인</span>
+                                                {task.status === 'CONFIRMED' && <span style={{ fontSize: '13px' }}>✓</span>}
+                                              </button>
+
+                                              {/* 3. 진행중 */}
+                                              <button
+                                                type="button"
+                                                onClick={() => handleUpdateTaskStatus(selectedReq.id, task.id, 'IN_PROGRESS')}
+                                                style={{
+                                                  background: 'none',
+                                                  border: 'none',
+                                                  padding: '6px 10px',
+                                                  fontSize: '14px',
+                                                  textAlign: 'left',
+                                                  color: task.status === 'IN_PROGRESS' ? '#3b82f6' : 'var(--text-primary)',
+                                                  fontWeight: 400,
+                                                  cursor: 'pointer',
+                                                  borderRadius: '3px',
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  justifyContent: 'space-between',
+                                                  transition: 'background-color 0.12s'
+                                                }}
+                                                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-hover, rgba(255,255,255,0.06))'}
+                                                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                              >
+                                                <span>진행중</span>
+                                                {task.status === 'IN_PROGRESS' && <span style={{ fontSize: '13px' }}>✓</span>}
+                                              </button>
+
+                                              {/* 4. 완료 */}
+                                              <button
+                                                type="button"
+                                                onClick={() => handleUpdateTaskStatus(selectedReq.id, task.id, 'COMPLETED')}
+                                                style={{
+                                                  background: 'none',
+                                                  border: 'none',
+                                                  padding: '6px 10px',
+                                                  fontSize: '14px',
+                                                  textAlign: 'left',
+                                                  color: task.status === 'COMPLETED' ? '#3b82f6' : 'var(--text-primary)',
+                                                  fontWeight: 400,
+                                                  cursor: 'pointer',
+                                                  borderRadius: '3px',
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  justifyContent: 'space-between',
+                                                  transition: 'background-color 0.12s'
+                                                }}
+                                                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-hover, rgba(255,255,255,0.06))'}
+                                                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                              >
+                                                <span>완료</span>
+                                                {task.status === 'COMPLETED' && <span style={{ fontSize: '13px' }}>✓</span>}
+                                              </button>
+                                            </div>
+                                          )}
+                                        </>
                                       )}
                                     </div>
 
-                                      {task.note && (
-                                        <>
-                                          <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>·</span>
-                                          <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                                            {task.note}
-                                          </span>
-                                        </>
-                                      )}
 
-                                      {/* 배정 업무 삭제 버튼 (호버 시 부드러운 피드백, 클릭 시 확인창) */}
-                                      {selectedReq.status !== 'DONE' && (user?.role === 'ADMIN' || isMyTask) && (
+                                      {/* 배정 업무 삭제 버튼 (호버 시 부드러운 피드백, 관리자 전용) */}
+                                      {selectedReq.status !== 'DONE' && user?.role === 'ADMIN' && (
                                         <button
                                           type="button"
                                           onClick={() => handleRemoveInlineTask(task.id)}
-                                          title="배정 업무 삭제"
+                                          title="배정 취소"
                                           style={{
                                             height: '20px',
                                             width: '20px',
@@ -3370,70 +4099,33 @@ export default function EmployeePortal({
                                       )}
                                     </div>
 
-                                  {/* Inline completion input form (박스 없이 순수 인라인) */}
-                                  {isCompletingThis && (
-                                    <div style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '0.5rem',
-                                      flexWrap: 'wrap',
-                                      marginTop: '0.35rem'
-                                    }}>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                        <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>공수:</span>
-                                        <input
-                                          type="number"
-                                          step="0.5"
-                                          min="0.5"
-                                          placeholder="1.0"
-                                          value={inlineCompleteHours}
-                                          onChange={e => setInlineCompleteHours(e.target.value)}
-                                          className="form-control"
-                                          style={{ width: '70px', height: '32px', fontSize: '13px', padding: '0.2rem 0.4rem' }}
-                                          autoFocus
-                                        />
-                                        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>시간</span>
+                                    {/* 상세 작업 내용 / 메모 (줄바꿈 지원) */}
+                                    {task.note && (
+                                      <div style={{
+                                        fontSize: '14px',
+                                        color: 'var(--text-secondary)',
+                                        whiteSpace: 'pre-wrap',
+                                        wordBreak: 'break-word',
+                                        lineHeight: '1.6',
+                                        paddingLeft: '0.2rem'
+                                      }}>
+                                        {task.note}
                                       </div>
-                                      <input
-                                        type="text"
-                                        placeholder="완료 메모 (선택)"
-                                        value={inlineCompleteNote}
-                                        onChange={e => setInlineCompleteNote(e.target.value)}
-                                        className="form-control"
-                                        style={{ flex: 1, minWidth: '130px', height: '32px', fontSize: '13px', padding: '0.2rem 0.5rem' }}
-                                      />
-                                      <button
-                                        type="button"
-                                        className="btn btn-primary btn-sm"
-                                        style={{ height: '32px', padding: '0 0.65rem', fontSize: '13px' }}
-                                        onClick={() => handleSaveInlineTaskCompletion(selectedReq.id, task.id)}
-                                      >
-                                        저장
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="btn btn-secondary btn-sm"
-                                        style={{ height: '32px', padding: '0 0.5rem', fontSize: '13px' }}
-                                        onClick={() => setInlineCompletingTaskId(null)}
-                                      >
-                                        취소
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : null}
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : null}
 
-                        {/* Inline Task Add Form / Button (박스 없이 인라인, 이미 추가된 인원 제외) */}
+                        {/* Inline Task Add Form / Button (관리자만 배정 가능, 박스 없이 인라인, 이미 추가된 인원 제외, 팀별 optgroup 통일) */}
                         {(() => {
                           if (selectedReq.status === 'DONE') return null;
+                          if (user?.role !== 'ADMIN') return null; // 관리자만 업무 배정 가능
                           const assignedEmpIds = (selectedReq.assignedTasks || []).map(t => t.assigneeId);
                           const availableEmployees = (employees || []).filter(emp => !assignedEmpIds.includes(emp.id));
 
                           if (isAddingTask) {
-                            const candidateEmployees = getMatchingEmployeesForCategory(availableEmployees, newTaskCategory);
                             return (
                               <div style={{
                                 display: 'flex',
@@ -3443,29 +4135,31 @@ export default function EmployeePortal({
                                 marginTop: '0.35rem'
                               }}>
                                 <select
-                                  value={newTaskCategory}
-                                  onChange={e => handleCategoryChange(e.target.value)}
-                                  className="form-control"
-                                  style={{ width: '95px', height: '36px', fontSize: '14px', padding: '0.2rem 0.4rem' }}
-                                >
-                                  <option value="DEV">개발</option>
-                                  <option value="DESIGN">디자인</option>
-                                  <option value="PUBLISH">퍼블</option>
-                                  <option value="PLAN">기획</option>
-                                  <option value="ETC">기타</option>
-                                </select>
-
-                                <select
                                   value={newTaskAssigneeId}
                                   onChange={e => setNewTaskAssigneeId(e.target.value)}
                                   className="form-control"
-                                  style={{ width: '170px', height: '36px', fontSize: '14px', padding: '0.2rem 0.4rem' }}
+                                  style={{ minWidth: '220px', height: '36px', fontSize: '15px', padding: '0.2rem 0.5rem' }}
                                 >
-                                  {candidateEmployees.map(emp => (
-                                    <option key={emp.id} value={emp.id}>
-                                      {emp.name} ({emp.position || emp.dept || '담당'})
-                                    </option>
-                                  ))}
+                                  {(() => {
+                                    const deptMap = new Map();
+                                    availableEmployees.forEach(u => {
+                                      const dept = u.dept || '기타';
+                                      if (!deptMap.has(dept)) deptMap.set(dept, []);
+                                      deptMap.get(dept).push(u);
+                                    });
+                                    return Array.from(deptMap.entries()).map(([deptName, deptUsers]) => (
+                                      <optgroup key={deptName} label={`── ${deptName} ──`}>
+                                        {deptUsers.map(emp => {
+                                          const title = emp.position ? emp.position : (emp.role === 'ADMIN' ? '최고관리자' : emp.dept || '담당');
+                                          return (
+                                            <option key={emp.id} value={emp.id}>
+                                              {emp.name} ({title})
+                                            </option>
+                                          );
+                                        })}
+                                      </optgroup>
+                                    ));
+                                  })()}
                                 </select>
 
                                 <button
@@ -3510,13 +4204,11 @@ export default function EmployeePortal({
                                 }}
                                 onClick={() => {
                                   setIsAddingTask(true);
-                                  setNewTaskCategory('DEV');
-                                  const matched = getMatchingEmployeesForCategory(availableEmployees, 'DEV');
-                                  setNewTaskAssigneeId(matched[0]?.id || availableEmployees[0]?.id || '');
+                                  setNewTaskAssigneeId(availableEmployees[0]?.id || '');
                                 }}
                               >
                                 <Plus size={14} />
-                                <span>추가</span>
+                                <span>인원 추가</span>
                               </button>
                             </div>
                           );
@@ -3584,7 +4276,16 @@ export default function EmployeePortal({
                                     type="button"
                                     className="btn btn-primary btn-sm"
                                     style={{ fontSize: '14px', padding: '0.35rem 0.85rem' }}
-                                    onClick={() => handleFinalApprove(selectedReq)}
+                                    onClick={() => {
+                                      const defaultSummary = (selectedReq.assignedTasks || [])
+                                        .filter(t => t.note)
+                                        .map(t => `${t.assigneeName}: ${t.note}`)
+                                        .join('\n');
+                                      setFinalApproveModal({
+                                        req: selectedReq,
+                                        summary: defaultSummary || selectedReq.completionSummary || ''
+                                      });
+                                    }}
                                   >
                                     최종 완료 승인 및 고객사 전달
                                   </button>
@@ -3619,82 +4320,114 @@ export default function EmployeePortal({
                       </div>
                     )}
 
-                    {/* 9. 작업 완료 정보 (DONE 상태 전용) */}
+                    {/* 9. 작업 완료 및 조치 내용 (접어서 볼 수 있는 아코디언 스타일, DONE 상태 전용) */}
                     {selectedReq.status === 'DONE' && (
-                      <>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'baseline',
-                          padding: '1.25rem 0',
-                          borderBottom: '1px solid var(--border-color)',
-                          gap: '1.5rem'
-                        }}>
-                          <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0 }}>
-                            투입 공수
-                          </span>
-                          <div style={{ flex: 1, fontSize: '18px', color: 'var(--text-primary)', fontWeight: 600, lineHeight: 1.5 }}>
-                            {selectedReq.spentHours}시간
-                            {selectedReq.spentHoursBreakdown && (
-                              <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '0.75rem' }}>
-                                ({[
-                                  selectedReq.spentHoursBreakdown.design > 0 ? `디자인 ${selectedReq.spentHoursBreakdown.design}h` : null,
-                                  selectedReq.spentHoursBreakdown.publish > 0 ? `퍼블 ${selectedReq.spentHoursBreakdown.publish}h` : null,
-                                  selectedReq.spentHoursBreakdown.dev > 0 ? `개발 ${selectedReq.spentHoursBreakdown.dev}h` : null,
-                                  selectedReq.spentHoursBreakdown.etc > 0 ? `기타 ${selectedReq.spentHoursBreakdown.etc}h` : null
-                                ].filter(Boolean).join(' · ') || '개발 100%'})
+                      <div style={{
+                        border: '1px solid #2e2e34',
+                        backgroundColor: '#1c1c20',
+                        marginTop: '1.25rem',
+                        overflow: 'hidden'
+                      }}>
+                        <div
+                          onClick={() => setIsWorkDetailsOpen(!isWorkDetailsOpen)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            cursor: 'pointer',
+                            padding: '1rem 1.25rem',
+                            userSelect: 'none',
+                            backgroundColor: '#1c1c20'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                            <span style={{ fontSize: '17px', color: 'var(--text-primary)' }}>
+                              작업 완료 및 조치 내용
+                            </span>
+                            {selectedReq.completedAt && (
+                              <span style={{ fontSize: '15px', color: 'var(--text-secondary)' }}>
+                                · 완료일 {selectedReq.completedAt.slice(0, 10)}
+                              </span>
+                            )}
+                            {selectedReq.spentHours > 0 && (
+                              <span style={{ fontSize: '15px', color: 'var(--text-muted)' }}>
+                                · {selectedReq.spentHours}시간
                               </span>
                             )}
                           </div>
+                          <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+                            {isWorkDetailsOpen ? '접기 ▴' : '펼치기 ▾'}
+                          </span>
                         </div>
 
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'baseline',
-                          padding: '1.25rem 0',
-                          borderBottom: '1px solid var(--border-color)',
-                          gap: '1.5rem'
-                        }}>
-                          <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0 }}>
-                            완료 내용
-                          </span>
-                          <div style={{ flex: 1, fontSize: '17px', color: 'var(--text-primary)', lineHeight: 1.6 }}>
-                            <div>{selectedReq.completionSummary || '작업 완료 처리되었습니다.'}</div>
-                            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
-                              담당: {selectedReq.assigneeName} · 완료일시: {selectedReq.completedAt}
+                        {isWorkDetailsOpen && (
+                          <div style={{
+                            padding: '1.25rem',
+                            borderTop: '1px solid #2e2e34',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '1.25rem'
+                          }}>
+                            {/* 투입 공수 */}
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '1.5rem' }}>
+                              <span style={{ width: '100px', fontSize: '16px', color: 'var(--text-secondary)', flexShrink: 0 }}>
+                                투입 공수
+                              </span>
+                              <div style={{ flex: 1, fontSize: '16px', color: 'var(--text-primary)', lineHeight: 1.5 }}>
+                                {selectedReq.spentHours}시간
+                                {selectedReq.spentHoursBreakdown && (
+                                  <span style={{ fontSize: '15px', color: 'var(--text-secondary)', marginLeft: '0.75rem' }}>
+                                    ({[
+                                      selectedReq.spentHoursBreakdown.design > 0 ? `디자인 ${selectedReq.spentHoursBreakdown.design}h` : null,
+                                      selectedReq.spentHoursBreakdown.publish > 0 ? `퍼블 ${selectedReq.spentHoursBreakdown.publish}h` : null,
+                                      selectedReq.spentHoursBreakdown.dev > 0 ? `개발 ${selectedReq.spentHoursBreakdown.dev}h` : null,
+                                      selectedReq.spentHoursBreakdown.etc > 0 ? `기타 ${selectedReq.spentHoursBreakdown.etc}h` : null
+                                    ].filter(Boolean).join(' · ') || '개발 100%'})
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 조치 내용 본문 */}
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '1.5rem' }}>
+                              <span style={{ width: '100px', fontSize: '16px', color: 'var(--text-secondary)', flexShrink: 0 }}>
+                                조치 내용
+                              </span>
+                              <div style={{ flex: 1, fontSize: '16px', color: 'var(--text-primary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                                <div>{selectedReq.completionSummary || '작업이 완료되었습니다.'}</div>
+                                <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                                  담당: {selectedReq.assigneeName} · 완료일시: {selectedReq.completedAt}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* 고객사 확인 여부 */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                              <span style={{ width: '100px', fontSize: '16px', color: 'var(--text-secondary)', flexShrink: 0 }}>
+                                고객사 확인
+                              </span>
+                              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <span style={{
+                                  fontSize: '16px',
+                                  color: selectedReq.clientConfirmed ? 'var(--text-muted)' : '#3b82f6'
+                                }}>
+                                  {selectedReq.clientConfirmed ? `확인 완료 (${selectedReq.clientConfirmedAt?.slice(0, 16)})` : '확인 대기'}
+                                </span>
+                                {!selectedReq.clientConfirmed && (
+                                  <button 
+                                    type="button"
+                                    className="btn btn-secondary btn-sm"
+                                    style={{ fontSize: '13px', padding: '0.25rem 0.65rem' }}
+                                    onClick={() => handleProxyConfirm(selectedReq.id)}
+                                  >
+                                    대리 확인 완료 처리
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '1.25rem 0',
-                          borderBottom: '1px solid var(--border-color)',
-                          gap: '1.5rem'
-                        }}>
-                          <span style={{ width: '100px', fontSize: '17px', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0 }}>
-                            고객사 확인
-                          </span>
-                          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <span style={{
-                              fontSize: '17px',
-                              color: selectedReq.clientConfirmed ? 'var(--text-muted)' : '#3b82f6',
-                              fontWeight: selectedReq.clientConfirmed ? 400 : 600
-                            }}>
-                              {selectedReq.clientConfirmed ? `확인 완료 (${selectedReq.clientConfirmedAt?.slice(0, 16)})` : '확인 대기'}
-                            </span>
-                            {!selectedReq.clientConfirmed && (
-                              <button 
-                                className="btn btn-secondary btn-sm"
-                                style={{ fontSize: '13px', padding: '0.25rem 0.65rem' }}
-                                onClick={() => handleProxyConfirm(selectedReq.id)}
-                              >
-                                대리 확인 완료 처리
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -3714,6 +4447,10 @@ export default function EmployeePortal({
           onDeleteFile={onDeleteFile}
           onLinkFileToSchedule={onLinkFilesToSchedule}
           onShowToast={onShowToast}
+          onNavigateToSchedule={(scheduleId) => {
+            setInternalTargetScheduleId(scheduleId);
+            setActiveTab('calendar');
+          }}
         />
       )}
 
@@ -4359,6 +5096,350 @@ export default function EmployeePortal({
                   </span>
                 ));
               })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+    
+      {/* Task Completion Modal (미니멀 다크 모노크롬, 알약/칩 금지, 타이틀 하단 설명문구 배제) */}
+      {taskCompletionModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.72)',
+            backdropFilter: 'blur(3px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+            padding: '1rem'
+          }}
+          onClick={() => setTaskCompletionModal(null)}
+        >
+          <div
+            style={{
+              backgroundColor: 'var(--bg-card, #1c1c20)',
+              border: '1px solid var(--border-color, #2e2e34)',
+              borderRadius: '6px',
+              width: '100%',
+              maxWidth: '540px',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              padding: '1.25rem 1.5rem',
+              borderBottom: '1px solid var(--border-color)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <h4 style={{
+                fontSize: '20px',
+                fontWeight: 400,
+                margin: 0,
+                color: 'var(--text-primary)'
+              }}>
+                상세 작업 내역
+              </h4>
+              <button
+                type="button"
+                onClick={() => setTaskCompletionModal(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{
+              padding: '1.75rem 1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem'
+            }}>
+              {/* 1. 담당자 (가로 배치) */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '16px', color: 'var(--text-secondary)', width: '80px', flexShrink: 0 }}>
+                  담당자
+                </span>
+                <span style={{ fontSize: '16px', color: 'var(--text-primary)' }}>
+                  {taskCompletionModal.task?.assigneeName}
+                </span>
+              </div>
+
+              {/* 2. 투입 공수 (가로 배치, 시간 괄호 제거) */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                <label style={{ fontSize: '16px', color: 'var(--text-secondary)', width: '80px', flexShrink: 0, margin: 0 }}>
+                  투입 공수
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, justifyContent: 'flex-end' }}>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0.5"
+                    placeholder="1.0"
+                    value={taskCompletionModal.hours}
+                    onChange={e => setTaskCompletionModal({ ...taskCompletionModal, hours: e.target.value })}
+                    className="form-control"
+                    style={{
+                      width: '130px',
+                      height: '42px',
+                      fontSize: '16px',
+                      backgroundColor: 'var(--bg-input, #141417)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '4px',
+                      padding: '0 0.85rem',
+                      textAlign: 'right'
+                    }}
+                    autoFocus
+                  />
+                  <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>시간</span>
+                </div>
+              </div>
+
+              {/* 3. 완료 메모 (멀티라인 textarea 지원) */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
+                <label style={{ fontSize: '16px', color: 'var(--text-secondary)', width: '80px', flexShrink: 0, margin: 0, paddingTop: '8px' }}>
+                  조치 내용
+                </label>
+                <textarea
+                  value={taskCompletionModal.note}
+                  onChange={e => setTaskCompletionModal({ ...taskCompletionModal, note: e.target.value })}
+                  className="form-control"
+                  rows={5}
+                  style={{
+                    flex: 1,
+                    height: '120px',
+                    fontSize: '15px',
+                    lineHeight: '1.6',
+                    backgroundColor: 'var(--bg-input, #141417)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    padding: '0.75rem 0.85rem',
+                    resize: 'none',
+                    fontFamily: 'inherit'
+                  }}
+                  onKeyDown={e => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSaveTaskCompletionModal();
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Footer: 취소 버튼 제거, 저장 단독 배치 */}
+            <div style={{
+              padding: '1rem 1.5rem',
+              borderTop: '1px solid var(--border-color)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              backgroundColor: 'rgba(0,0,0,0.1)'
+            }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleSaveTaskCompletionModal}
+                style={{ height: '42px', padding: '0 1.75rem', fontSize: '16px', borderRadius: '4px' }}
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Final Approval Modal (최종 승인자가 작업자들의 조치 내용을 확인하고 최종 고객사 전달 조치 내용 작성) */}
+      {finalApproveModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.72)',
+            backdropFilter: 'blur(3px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+            padding: '1rem'
+          }}
+          onClick={() => setFinalApproveModal(null)}
+        >
+          <div
+            style={{
+              backgroundColor: 'var(--bg-card, #1c1c20)',
+              border: '1px solid var(--border-color, #2e2e34)',
+              borderRadius: '6px',
+              width: '100%',
+              maxWidth: '540px',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              padding: '1.25rem 1.5rem',
+              borderBottom: '1px solid var(--border-color)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <h4 style={{
+                fontSize: '20px',
+                fontWeight: 400,
+                margin: 0,
+                color: 'var(--text-primary)'
+              }}>
+                최종 완료 승인
+              </h4>
+              <button
+                type="button"
+                onClick={() => setFinalApproveModal(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{
+              padding: '1.75rem 1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem'
+            }}>
+              {/* 1. 최종 승인자 */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '16px', color: 'var(--text-secondary)', width: '80px', flexShrink: 0 }}>
+                  최종 승인자
+                </span>
+                <span style={{ fontSize: '16px', color: 'var(--text-primary)' }}>
+                  {user?.name}
+                </span>
+              </div>
+
+              {/* 2. 작업자별 조치 내역 (참고용) */}
+              {finalApproveModal.req?.assignedTasks && finalApproveModal.req.assignedTasks.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  <span style={{ fontSize: '15px', color: 'var(--text-muted)' }}>
+                    작업자별 조치 내역
+                  </span>
+                  <div style={{
+                    backgroundColor: 'var(--bg-input, #141417)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    padding: '0.75rem 0.85rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem',
+                    maxHeight: '130px',
+                    overflowY: 'auto'
+                  }}>
+                    {finalApproveModal.req.assignedTasks.map(t => (
+                      <div key={t.id} style={{ fontSize: '14px', lineHeight: '1.5' }}>
+                        <span style={{ color: 'var(--text-primary)' }}>{t.assigneeName}</span>
+                        <span style={{ color: 'var(--text-muted)' }}> · </span>
+                        <span style={{ color: t.note ? 'var(--text-secondary)' : 'var(--text-muted)', whiteSpace: 'pre-wrap' }}>
+                          {t.note || '조치 내용 없음'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 3. 고객사 전달 조치 내용 */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
+                <label style={{ fontSize: '16px', color: 'var(--text-secondary)', width: '80px', flexShrink: 0, margin: 0, paddingTop: '8px' }}>
+                  조치 내용
+                </label>
+                <textarea
+                  value={finalApproveModal.summary}
+                  onChange={e => setFinalApproveModal({ ...finalApproveModal, summary: e.target.value })}
+                  className="form-control"
+                  rows={5}
+                  style={{
+                    flex: 1,
+                    height: '120px',
+                    fontSize: '15px',
+                    lineHeight: '1.6',
+                    backgroundColor: 'var(--bg-input, #141417)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    padding: '0.75rem 0.85rem',
+                    resize: 'none',
+                    fontFamily: 'inherit'
+                  }}
+                  onKeyDown={e => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                      e.preventDefault();
+                      handleFinalApprove(finalApproveModal.req, finalApproveModal.summary);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding: '1rem 1.5rem',
+              borderTop: '1px solid var(--border-color)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              backgroundColor: 'rgba(0,0,0,0.1)'
+            }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => handleFinalApprove(finalApproveModal.req, finalApproveModal.summary)}
+                style={{ height: '42px', padding: '0 1.75rem', fontSize: '16px', borderRadius: '4px' }}
+              >
+                승인 및 고객사 전달
+              </button>
             </div>
           </div>
         </div>

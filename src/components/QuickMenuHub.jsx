@@ -355,7 +355,7 @@ export default function QuickMenuHub({
           {/* Client Card 1: 홈페이지 바로가기 */}
           <div 
             className="card card-hover"
-            onClick={() => window.open('https://example.com', '_blank')}
+            onClick={() => window.open(user.websiteUrl || user.homepageUrl || 'https://example.com', '_blank')}
             style={{
               padding: '3.5rem 2rem',
               textAlign: 'center',
@@ -366,15 +366,15 @@ export default function QuickMenuHub({
               minHeight: '220px'
             }}
           >
-            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)' }}>
+            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)', fontWeight: 400 }}>
               홈페이지 바로가기
             </h3>
           </div>
 
-          {/* Client Card 2: 관리자 바로가기 */}
+          {/* Client Card 2: 관리자 바로가기 (고객사 웹사이트 관리자 페이지 새 탭 열기) */}
           <div 
             className="card card-hover"
-            onClick={() => onNavigate('ADMIN_CONTACT')}
+            onClick={() => window.open(user.adminUrl || user.websiteAdminUrl || (user.websiteUrl ? `${user.websiteUrl}/admin` : (user.homepageUrl ? `${user.homepageUrl}/admin` : 'https://example.com/admin')), '_blank')}
             style={{
               padding: '3.5rem 2rem',
               textAlign: 'center',
@@ -385,7 +385,7 @@ export default function QuickMenuHub({
               minHeight: '220px'
             }}
           >
-            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)' }}>
+            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)', fontWeight: 400 }}>
               관리자 바로가기
             </h3>
           </div>
@@ -404,7 +404,7 @@ export default function QuickMenuHub({
               minHeight: '220px'
             }}
           >
-            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)' }}>
+            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)', fontWeight: 400 }}>
               요청사항 바로가기
             </h3>
           </div>

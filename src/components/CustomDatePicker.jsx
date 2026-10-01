@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Calendar } from 'lucide-react';
 
 export default function CustomDatePicker({ 
   value, 
@@ -11,7 +12,8 @@ export default function CustomDatePicker({
   align = 'left',
   clearable = true,
   minDate = null,
-  maxDate = null
+  maxDate = null,
+  iconOnly = false
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const initialDate = value ? new Date(value) : new Date();
@@ -102,43 +104,78 @@ export default function CustomDatePicker({
     setIsOpen(false);
   };
 
+  const effectiveWidth = iconOnly ? 'auto' : width;
+
   return (
-    <div ref={containerRef} style={{ position: 'relative', width, ...style }}>
-      {/* Trigger: Form Control Styled Button (No Calendar Icon, Same Tone as Placeholder) */}
-      <div
-        onClick={() => setIsOpen(!isOpen)}
-        className="form-control"
-        style={{
-          height,
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          userSelect: 'none',
-          padding: '0 0.85rem',
-          backgroundColor: 'var(--bg-input)',
-          borderColor: isOpen ? 'var(--border-focus)' : 'var(--border-color)',
-          color: value ? 'var(--text-primary)' : 'var(--text-muted)'
-        }}
-      >
-        <span style={{ fontSize: '15px' }}>
-          {value || placeholder}
-        </span>
-        {value && clearable && (
-          <span 
-            onClick={handleClear}
-            title="날짜 초기화"
-            style={{ 
-              fontSize: '18px', 
-              color: 'var(--text-muted)', 
-              marginLeft: '6px',
-              cursor: 'pointer'
-            }}
-          >
-            ×
+    <div ref={containerRef} style={{ position: 'relative', width: effectiveWidth, display: iconOnly ? 'inline-block' : 'block', ...style }}>
+      {/* Trigger: iconOnly 시 테두리/배경색 없는 순수 아이콘 버튼, 일반 모드 시 form-control 박스 */}
+      {iconOnly ? (
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          title={value ? `선택된 날짜: ${value} (클릭하여 변경)` : placeholder}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '6px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: (isOpen || value) ? 'var(--text-primary)' : 'var(--text-muted)',
+            opacity: (isOpen || value) ? 1 : 0.45,
+            outline: 'none',
+            userSelect: 'none',
+            transition: 'all 0.15s ease'
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.color = 'var(--text-primary)';
+            e.currentTarget.style.opacity = '0.9';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.color = (isOpen || value) ? 'var(--text-primary)' : 'var(--text-muted)';
+            e.currentTarget.style.opacity = (isOpen || value) ? '1' : '0.45';
+          }}
+        >
+          <Calendar size={22} strokeWidth={2} />
+        </button>
+      ) : (
+        <div
+          onClick={() => setIsOpen(!isOpen)}
+          className="form-control"
+          style={{
+            height,
+            width: '100%',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            userSelect: 'none',
+            padding: '0 0.85rem',
+            backgroundColor: 'var(--bg-input)',
+            borderColor: isOpen ? 'var(--border-focus)' : 'var(--border-color)',
+            color: value ? 'var(--text-primary)' : 'var(--text-muted)'
+          }}
+        >
+          <span style={{ fontSize: '15px' }}>
+            {value || placeholder}
           </span>
-        )}
-      </div>
+          {value && clearable && (
+            <span 
+              onClick={handleClear}
+              title="날짜 초기화"
+              style={{ 
+                fontSize: '18px', 
+                color: 'var(--text-muted)', 
+                marginLeft: '6px',
+                cursor: 'pointer'
+              }}
+            >
+              ×
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Spacious Custom Date Picker Overlay */}
       {isOpen && (
