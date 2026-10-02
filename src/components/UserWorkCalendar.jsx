@@ -971,7 +971,7 @@ export default function UserWorkCalendar({ user, attendance, onShowToast }) {
                       }}>
                         {/* 1행: 출근 라벨 + 시각 */}
                         <span style={{
-                          color: day.att.isLate ? '#ef4444' : 'var(--text-primary)',
+                          color: 'var(--text-primary)',
                           whiteSpace: 'nowrap'
                         }}>
                           출근

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import CustomDatePicker from './CustomDatePicker';
 import CustomCheckbox from './CustomCheckbox';
 import { getHoliday } from '../utils/holidays';
+import PayrollManager from './PayrollManager';
 
 export default function AdminAttendanceSection({ user, employees = [], onShowToast, onRefresh, hideHeader = false }) {
   const [attendances, setAttendances] = useState([]);
@@ -9,7 +10,7 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
   const [usersList, setUsersList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // View Mode: 'CALENDAR' (사원별 근태 달력 - Default) | 'DAILY' (일자별 전체 현황)
+  // View Mode: 'CALENDAR' (사원별 근태 달력 - Default) | 'DAILY' (일자별 전체 현황) | 'PAYROLL' (급여 관리)
   const [viewMode, setViewMode] = useState('CALENDAR');
 
   // Calendar View Specific States
@@ -860,14 +861,14 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
           </div>
         </div>
 
-        {/* Metric 3: 퇴근 */}
+        {/* Metric 3: 미출근 */}
         <div>
           <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
-            퇴근
+            미출근
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-            <span style={{ fontSize: '36px', color: 'var(--text-primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>
-              {summaryMetrics.completedCount}
+            <span style={{ fontSize: '36px', color: summaryMetrics.unrecordedCount > 0 ? 'var(--text-primary)' : 'var(--text-muted)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+              {summaryMetrics.unrecordedCount}
             </span>
             <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>명</span>
           </div>
@@ -912,21 +913,21 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
           </div>
         </div>
 
-        {/* Metric 7: 미출근 */}
+        {/* Metric 7: 퇴근 */}
         <div>
           <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
-            미출근
+            퇴근
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-            <span style={{ fontSize: '36px', color: summaryMetrics.unrecordedCount > 0 ? 'var(--text-primary)' : 'var(--text-muted)', lineHeight: 1, letterSpacing: '-0.02em' }}>
-              {summaryMetrics.unrecordedCount}
+            <span style={{ fontSize: '36px', color: 'var(--text-primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+              {summaryMetrics.completedCount}
             </span>
             <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>명</span>
           </div>
         </div>
       </div>
 
-      {/* 3. VIEW MODE SUB-TABS (사원별 근태 달력 vs 일자별 전체 현황) */}
+      {/* 3. VIEW MODE SUB-TABS (사원별 근태 달력 vs 일자별 전체 현황 vs 급여 관리) */}
       <div style={{
         display: 'flex',
         gap: '2rem',
@@ -940,7 +941,7 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
             background: 'none',
             border: 'none',
             padding: '0.75rem 0.25rem',
-            fontSize: '16px',
+            fontSize: '18px',
             color: viewMode === 'CALENDAR' ? 'var(--text-primary)' : 'var(--text-muted)',
             borderBottom: viewMode === 'CALENDAR' ? '2px solid var(--text-primary)' : '2px solid transparent',
             cursor: 'pointer',
@@ -957,7 +958,7 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
             background: 'none',
             border: 'none',
             padding: '0.75rem 0.25rem',
-            fontSize: '16px',
+            fontSize: '18px',
             color: viewMode === 'DAILY' ? 'var(--text-primary)' : 'var(--text-muted)',
             borderBottom: viewMode === 'DAILY' ? '2px solid var(--text-primary)' : '2px solid transparent',
             cursor: 'pointer',
@@ -966,6 +967,23 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
           }}
         >
           일자별 전체 현황
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode('PAYROLL')}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '0.75rem 0.25rem',
+            fontSize: '18px',
+            color: viewMode === 'PAYROLL' ? 'var(--text-primary)' : 'var(--text-muted)',
+            borderBottom: viewMode === 'PAYROLL' ? '2px solid var(--text-primary)' : '2px solid transparent',
+            cursor: 'pointer',
+            marginBottom: '-1px',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          급여 관리
         </button>
       </div>
 
@@ -1460,6 +1478,16 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
         </div>
       )}
 
+      {/* ===================== VIEW 3: 급여 관리 ===================== */}
+      {viewMode === 'PAYROLL' && (
+        <div style={{ marginTop: '0.5rem', width: '100%' }}>
+          <PayrollManager
+            user={user}
+            onShowToast={onShowToast}
+          />
+        </div>
+      )}
+
       {/* 5. DETAIL & ADMIN CORRECTION SLIDE DRAWER */}
       {selectedAtt && (
         <div
@@ -1481,10 +1509,10 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
               backgroundColor: 'var(--bg-card)'
             }}>
               <div>
-                <h3 style={{ fontSize: '22px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                <h3 style={{ fontSize: '21px', fontWeight: 400, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
                   사원 근태 상세 정보 및 시각 보정
                 </h3>
-                <p className="text-secondary" style={{ fontSize: '14px', margin: '0.25rem 0 0 0' }}>
+                <p style={{ fontSize: '15px', color: 'var(--text-muted)', margin: '0.35rem 0 0 0', fontWeight: 400 }}>
                   {selectedAtt.userName} {selectedAtt.userPosition ? `(${selectedAtt.userPosition})` : ''} · {selectedAtt.dept}
                 </p>
               </div>
@@ -1497,17 +1525,20 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  padding: '6px',
+                  padding: '8px',
                   cursor: 'pointer',
-                  color: 'var(--text-primary)',
+                  color: 'var(--text-secondary)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   outline: 'none',
-                  borderRadius: '4px'
+                  borderRadius: '4px',
+                  transition: 'color 0.15s ease'
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -1515,130 +1546,227 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
             </div>
 
             {/* Drawer Body */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '2.25rem 2rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
               
-              {/* Profile Card */}
+              {/* 사원 기본 프로필 (Zero Box, Pure Minimal Typography) */}
               <div style={{
-                background: 'var(--bg-input)',
-                border: '1px solid var(--border-color)',
-                padding: '1.25rem 1.5rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.85rem'
+                gap: '1.25rem',
+                paddingBottom: '2rem',
+                borderBottom: '1px solid var(--border-color)'
               }}>
-                <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                <div style={{ fontSize: '17px', fontWeight: 400, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
                   사원 기본 프로필
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', fontSize: '15px' }}>
-                  <div><span style={{ color: 'var(--text-muted)' }}>성명:</span> {selectedAtt.userName}</div>
-                  <div><span style={{ color: 'var(--text-muted)' }}>사번:</span> {selectedAtt.userEmpNo || '-'}</div>
-                  <div><span style={{ color: 'var(--text-muted)' }}>소속:</span> {selectedAtt.dept}</div>
-                  <div><span style={{ color: 'var(--text-muted)' }}>직급:</span> {selectedAtt.userPosition || '사원'}</div>
-                  <div><span style={{ color: 'var(--text-muted)' }}>기준일자:</span> {selectedAtt.date || selectedDate}</div>
-                  <div>
-                    <span style={{ color: 'var(--text-muted)' }}>상태:</span>{' '}
-                    {selectedAtt.checkOut ? '퇴근 완료' : (selectedAtt.checkIn ? '근무 중' : (selectedAtt.sourceType === 'LEAVE' ? '휴가 중' : '미출근'))}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '1.25rem 1.75rem'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: 400 }}>성명</span>
+                    <span style={{ fontSize: '16px', color: 'var(--text-primary)', fontWeight: 400 }}>{selectedAtt.userName}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: 400 }}>사번</span>
+                    <span style={{ fontSize: '16px', color: 'var(--text-primary)', fontWeight: 400 }}>{selectedAtt.userEmpNo || '-'}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: 400 }}>소속</span>
+                    <span style={{ fontSize: '16px', color: 'var(--text-primary)', fontWeight: 400 }}>{selectedAtt.dept}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: 400 }}>직급</span>
+                    <span style={{ fontSize: '16px', color: 'var(--text-primary)', fontWeight: 400 }}>{selectedAtt.userPosition || '사원'}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: 400 }}>기준일자</span>
+                    <span style={{ fontSize: '16px', color: 'var(--text-primary)', fontWeight: 400 }}>{selectedAtt.date || selectedDate}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: 400 }}>상태</span>
+                    <span style={{ fontSize: '16px', color: 'var(--text-primary)', fontWeight: 400 }}>
+                      {selectedAtt.checkOut ? '퇴근 완료' : (selectedAtt.checkIn ? '근무 중' : (selectedAtt.sourceType === 'LEAVE' ? '휴가 중' : '미출근'))}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* Correction Form */}
-              <form onSubmit={handleSaveCorrection} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div style={{
-                  border: '1px solid var(--border-color)',
-                  padding: '1.5rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1.25rem'
-                }}>
-                  <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                    출퇴근 시각 및 근무 설정 보정
-                  </div>
+              {/* Correction Form (Zero Box, Pure Minimal Form) */}
+              <form onSubmit={handleSaveCorrection} style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+                <div style={{ fontSize: '17px', fontWeight: 400, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+                  출퇴근 시각 및 근무 설정 보정
+                </div>
 
-                  {/* Time Inputs */}
-                  <div className="grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontSize: '14px', marginBottom: '0.35rem' }}>
-                        출근 시각 (HH:MM)
+                {/* Time Inputs */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <label style={{ fontSize: '15px', color: 'var(--text-primary)', fontWeight: 400, margin: 0 }}>
+                        출근 시각
                       </label>
-                      <input
-                        type="time"
-                        className="form-control"
-                        value={editForm.checkIn}
-                        onChange={(e) => setEditForm({ ...editForm, checkIn: e.target.value })}
-                        style={{ borderRadius: 0 }}
-                      />
+                      <button
+                        type="button"
+                        onClick={() => setEditForm(prev => ({ ...prev, checkIn: '09:00' }))}
+                        title="출근 시각을 09:00으로 즉시 설정"
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-secondary)',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          padding: '3px 10px',
+                          borderRadius: '3px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = 'var(--text-primary)';
+                          e.currentTarget.style.borderColor = 'var(--text-muted)';
+                          e.currentTarget.style.backgroundColor = 'var(--bg-input)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = 'var(--text-secondary)';
+                          e.currentTarget.style.borderColor = 'var(--border-color)';
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        09:00 정시
+                      </button>
                     </div>
-
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontSize: '14px', marginBottom: '0.35rem' }}>
-                        퇴근 시각 (HH:MM)
-                      </label>
-                      <input
-                        type="time"
-                        className="form-control"
-                        value={editForm.checkOut}
-                        onChange={(e) => setEditForm({ ...editForm, checkOut: e.target.value })}
-                        style={{ borderRadius: 0 }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Work Type Selection */}
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '14px', marginBottom: '0.35rem' }}>
-                      근무 형태
-                    </label>
-                    <select
+                    <input
+                      type="time"
                       className="form-control"
-                      value={editForm.workType}
-                      onChange={(e) => setEditForm({ ...editForm, workType: e.target.value })}
-                      style={{ borderRadius: 0 }}
-                    >
-                      <option value="OFFICE">사내정상 근무</option>
-                      <option value="REMOTE">재택근무</option>
-                      <option value="FIELD">외근 / 현장출장</option>
-                    </select>
-                  </div>
-
-                  {/* Network Verification Toggle */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 0', borderTop: '1px solid var(--border-color)' }}>
-                    <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      사내망 인증 일치 여부
-                    </div>
-                    <CustomCheckbox
-                      checked={editForm.isCompanyNetwork}
-                      onChange={(checked) => setEditForm({ ...editForm, isCompanyNetwork: checked })}
-                      label={editForm.isCompanyNetwork ? '사내망 일치' : '사외 접속'}
-                      size={18}
-                      labelStyle={{ fontSize: '14px' }}
+                      value={editForm.checkIn}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, checkIn: e.target.value }))}
+                      style={{ height: '48px', fontSize: '15.5px', fontWeight: 400, padding: '0 1rem', borderRadius: 0 }}
                     />
                   </div>
 
-                  {/* Correction Reason */}
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '14px', marginBottom: '0.35rem' }}>
-                      보정 사유 / 관리자 메모
-                    </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <label style={{ fontSize: '15px', color: 'var(--text-primary)', fontWeight: 400, margin: 0 }}>
+                        퇴근 시각
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setEditForm(prev => ({ ...prev, checkOut: '18:00' }))}
+                        title="퇴근 시각을 18:00으로 즉시 설정"
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-secondary)',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          padding: '3px 10px',
+                          borderRadius: '3px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = 'var(--text-primary)';
+                          e.currentTarget.style.borderColor = 'var(--text-muted)';
+                          e.currentTarget.style.backgroundColor = 'var(--bg-input)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = 'var(--text-secondary)';
+                          e.currentTarget.style.borderColor = 'var(--border-color)';
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        18:00 정시
+                      </button>
+                    </div>
                     <input
-                      type="text"
+                      type="time"
                       className="form-control"
-                      placeholder="예: 미처 퇴근 미입력으로 인한 관리자 수동 보정"
-                      value={editForm.reason}
-                      onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })}
-                      style={{ borderRadius: 0 }}
+                      value={editForm.checkOut}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, checkOut: e.target.value }))}
+                      style={{ height: '48px', fontSize: '15.5px', fontWeight: 400, padding: '0 1rem', borderRadius: 0 }}
                     />
                   </div>
                 </div>
 
+                {/* Work Type Selection */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '15px', color: 'var(--text-primary)', fontWeight: 400, margin: 0 }}>
+                    근무 형태
+                  </label>
+                  <select
+                    className="form-control"
+                    value={editForm.workType}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, workType: e.target.value }))}
+                    style={{ height: '48px', fontSize: '15.5px', fontWeight: 400, padding: '0 1rem', borderRadius: 0 }}
+                  >
+                    <option value="OFFICE">사내정상 근무</option>
+                    <option value="REMOTE">재택근무</option>
+                    <option value="FIELD">외근 / 현장출장</option>
+                  </select>
+                </div>
+
+                {/* Network Verification Toggle */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '1.15rem 0',
+                  borderTop: '1px solid var(--border-color)',
+                  borderBottom: '1px solid var(--border-color)'
+                }}>
+                  <span style={{ fontSize: '15px', fontWeight: 400, color: 'var(--text-primary)' }}>
+                    사내망 인증 일치 여부
+                  </span>
+                  <CustomCheckbox
+                    checked={editForm.isCompanyNetwork}
+                    onChange={(checked) => setEditForm(prev => ({ ...prev, isCompanyNetwork: checked }))}
+                    label={editForm.isCompanyNetwork ? '사내망 일치' : '사외 접속'}
+                    size={18}
+                    labelStyle={{ fontSize: '15px', fontWeight: 400 }}
+                  />
+                </div>
+
+                {/* Correction Reason */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '15px', color: 'var(--text-primary)', fontWeight: 400, margin: 0 }}>
+                    보정 사유 / 관리자 메모
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="예: 미처 퇴근 미입력으로 인한 관리자 수동 보정"
+                    value={editForm.reason}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, reason: e.target.value }))}
+                    style={{ height: '48px', fontSize: '15px', fontWeight: 400, padding: '0 1rem', borderRadius: 0 }}
+                  />
+                </div>
+
                 {/* Drawer Footer Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderTop: '1px solid var(--border-color)',
+                  paddingTop: '1.5rem',
+                  marginTop: '0.5rem'
+                }}>
                   {selectedAtt.sourceType === 'RECORDED' ? (
                     <button
                       type="button"
                       className="btn btn-secondary"
                       onClick={handleDeleteAttendance}
-                      style={{ borderRadius: 0, color: 'var(--text-secondary)' }}
+                      style={{
+                        height: '46px',
+                        fontSize: '15px',
+                        fontWeight: 400,
+                        padding: '0 1.25rem',
+                        borderRadius: 0,
+                        color: 'var(--text-secondary)'
+                      }}
                     >
                       기록 삭제/초기화
                     </button>
@@ -1649,7 +1777,13 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
                       type="button"
                       className="btn btn-secondary"
                       onClick={handleCloseDetail}
-                      style={{ borderRadius: 0, padding: '0.65rem 1.4rem' }}
+                      style={{
+                        height: '46px',
+                        fontSize: '15px',
+                        fontWeight: 400,
+                        padding: '0 1.5rem',
+                        borderRadius: 0
+                      }}
                     >
                       취소
                     </button>
@@ -1657,7 +1791,13 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
                       type="submit"
                       className="btn btn-primary"
                       disabled={isSaving}
-                      style={{ borderRadius: 0, padding: '0.65rem 1.75rem', fontWeight: 600 }}
+                      style={{
+                        height: '46px',
+                        fontSize: '15px',
+                        fontWeight: 400,
+                        padding: '0 1.75rem',
+                        borderRadius: 0
+                      }}
                     >
                       {isSaving ? '저장 중...' : (selectedAtt.sourceType === 'RECORDED' ? '보정 내용 저장' : '신규 근태 등록')}
                     </button>

@@ -75,7 +75,7 @@ export function getKSTTimeStr() {
 
 // Calculate legal annual leave based on hire date
 export function calculateLegalLeave(hireDateStr) {
-  if (!hireDateStr) return 15;
+  if (!hireDateStr) return 0;
   const hireDate = new Date(hireDateStr);
   const today = new Date();
   
@@ -569,6 +569,14 @@ app.post('/api/auth/login', (req, res) => {
     return isUserMatch && isPwMatch;
   });
   if (staff) {
+    if (staff.role !== 'ADMIN' && (!staff.dept || staff.dept === '소속 미배정' || staff.dept === '미배정')) {
+      return res.status(403).json({
+        success: false,
+        code: 'DEPT_UNASSIGNED',
+        message: '아직 부서가 배정되지 않았습니다. 관리자의 부서 배정 후 이용 가능합니다.'
+      });
+    }
+
     const loginEntry = {
       id: 'log-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5),
       sessionId,
@@ -742,6 +750,8 @@ app.post('/api/users', (req, res) => {
     createdAt: creationDate,
     phone: phone || '',
     email: email || '',
+    firstLogin: true,
+    needsProfileSetup: true,
     manualLeaveAdjustment: Number(manualLeaveAdjustment) || 0,
     usedLeave: 0,
     accessLogs: [
@@ -759,12 +769,19 @@ app.post('/api/users', (req, res) => {
   ensureMonthPayrolls(getTodayStr().slice(0, 7), db);
   writeDB(db);
 
-  res.json({ success: true, user: newUser });
+  const legalLeave = calculateLegalLeave(newUser.hireDate);
+  const totalLeave = legalLeave + (newUser.manualLeaveAdjustment || 0);
+  const remainingLeave = totalLeave - (newUser.usedLeave || 0);
+
+  res.json({
+    success: true,
+    user: { ...newUser, legalLeave, totalLeave, remainingLeave }
+  });
 });
 
 // Link employee profile (사내 조직도에서 사원 등록 및 계정 연결)
 app.post('/api/users/link-employee', (req, res) => {
-  const { userId, empNo, dept, position, hireDate, phone, email } = req.body;
+  const { userId, name, empNo, dept, position, hireDate, phone, email } = req.body;
   const db = readDB();
 
   const user = (db.users || []).find(u => u.id === userId);
@@ -772,12 +789,17 @@ app.post('/api/users/link-employee', (req, res) => {
     return res.status(404).json({ success: false, message: '해당 계정을 찾을 수 없습니다.' });
   }
 
+  if (name) user.name = name.trim();
   if (empNo) user.empNo = empNo.trim();
   if (dept) user.dept = dept.trim();
   if (position) user.position = position.trim();
   if (hireDate) user.hireDate = hireDate.trim();
   if (phone) user.phone = phone.trim();
   if (email) user.email = email.trim();
+
+  // Flag for first-time login personal info setup
+  user.firstLogin = true;
+  user.needsProfileSetup = true;
 
   const linkEntry = {
     id: 'log-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5),
@@ -788,8 +810,18 @@ app.post('/api/users/link-employee', (req, res) => {
   };
   user.accessLogs = [linkEntry, ...(user.accessLogs || [])].slice(0, 50);
 
+  ensureMonthPayrolls(getTodayStr().slice(0, 7), db);
   writeDB(db);
-  res.json({ success: true, user, message: '사내 조직도에 성공적으로 등록·연결되었습니다.' });
+
+  const legalLeave = calculateLegalLeave(user.hireDate);
+  const totalLeave = legalLeave + (user.manualLeaveAdjustment || 0);
+  const remainingLeave = totalLeave - (user.usedLeave || 0);
+
+  res.json({
+    success: true,
+    user: { ...user, legalLeave, totalLeave, remainingLeave },
+    message: '사내 조직도에 성공적으로 등록·연결되었습니다.'
+  });
 });
 
 app.put('/api/users/:id/leave', (req, res) => {
@@ -803,7 +835,14 @@ app.put('/api/users/:id/leave', (req, res) => {
   user.manualLeaveAdjustment = Number(manualLeaveAdjustment) || 0;
   writeDB(db);
 
-  res.json({ success: true, user });
+  const legalLeave = calculateLegalLeave(user.hireDate);
+  const totalLeave = legalLeave + (user.manualLeaveAdjustment || 0);
+  const remainingLeave = totalLeave - (user.usedLeave || 0);
+
+  res.json({
+    success: true,
+    user: { ...user, legalLeave, totalLeave, remainingLeave }
+  });
 });
 
 app.patch('/api/users/:id/profile', (req, res) => {
@@ -820,6 +859,10 @@ app.patch('/api/users/:id/profile', (req, res) => {
   if (bankName !== undefined) user.bankName = bankName.trim();
   if (accountNumber !== undefined) user.accountNumber = accountNumber.trim();
 
+  // Clear first-login personal info onboarding flag
+  user.firstLogin = false;
+  user.needsProfileSetup = false;
+
   // Sync bank info to user payroll items
   (db.payrolls || []).forEach(p => {
     if (p.userId === id) {
@@ -830,7 +873,16 @@ app.patch('/api/users/:id/profile', (req, res) => {
 
   writeDB(db);
 
-  const sanitized = { ...user };
+  const legalLeave = calculateLegalLeave(user.hireDate);
+  const totalLeave = legalLeave + (user.manualLeaveAdjustment || 0);
+  const remainingLeave = totalLeave - (user.usedLeave || 0);
+
+  const sanitized = {
+    ...user,
+    legalLeave,
+    totalLeave,
+    remainingLeave
+  };
   delete sanitized.password;
 
   res.json({
@@ -993,9 +1045,8 @@ app.delete('/api/departments/:name', (req, res) => {
 
   const membersInDept = (db.users || []).filter(u => u.dept === decoded);
   if (membersInDept.length > 0) {
-    return res.status(400).json({
-      success: false,
-      message: `해당 부서에 소속된 임직원(${membersInDept.length}명)이 있어 삭제할 수 없습니다. 먼저 사원의 소속을 다른 부서로 이동시켜주세요.`
+    membersInDept.forEach(u => {
+      u.dept = '소속 미배정';
     });
   }
 
@@ -1019,6 +1070,10 @@ app.patch('/api/users/:id/dept', (req, res) => {
 
   const trimmedDept = dept.trim();
   user.dept = trimmedDept;
+  if (!user.phone || !user.email) {
+    user.firstLogin = true;
+    user.needsProfileSetup = true;
+  }
 
   if (!db.departments) {
     db.departments = [...new Set(db.users.map(u => u.dept).filter(Boolean))];
@@ -4568,7 +4623,7 @@ function generatePaystubHtml(p, user) {
         <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
           <tr>
             <td style="padding: 9px 0; color: #4b5563; border-bottom: 1px solid #f3f4f6;">총 부여 연차</td>
-            <td style="padding: 9px 0; text-align: right; color: #111827; border-bottom: 1px solid #f3f4f6;">${p.totalLeave || 15}일</td>
+            <td style="padding: 9px 0; text-align: right; color: #111827; border-bottom: 1px solid #f3f4f6;">${p.totalLeave !== undefined ? p.totalLeave : 0}일</td>
           </tr>
           <tr>
             <td style="padding: 9px 0; color: #4b5563; border-bottom: 1px solid #f3f4f6;">당월 기준 사용 연차</td>

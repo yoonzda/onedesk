@@ -1326,55 +1326,7 @@ export default function ClientPortal({
                 </div>
               )}
 
-              {/* 3. 조치 내용 (작업 완료일, 조치 내용 본문만 단정하게 표시 - 공수는 사내에만 노출) */}
-              {!isEditingReq && (selectedReq.completionSummary || selectedReq.completedAt || selectedReq.status === 'DONE') && (
-                <div>
-                  <h3 style={{ fontSize: '17px', fontWeight: 400, color: '#ffffff', marginBottom: '0.85rem' }}>
-                    조치 내용
-                  </h3>
-                  <div style={{
-                    background: '#18181c',
-                    border: '1px solid #2a2a30',
-                    borderRadius: '6px',
-                    padding: '1.25rem 1.5rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.85rem'
-                  }}>
-                    {/* 상단 메타데이터: 조치 상태 및 완료일 */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      paddingBottom: '0.65rem',
-                      borderBottom: '1px solid #26262b',
-                      fontSize: '14px'
-                    }}>
-                      <span style={{ color: '#34d399', fontWeight: 400 }}>조치 완료</span>
-                      {selectedReq.completedAt && (
-                        <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>
-                          완료일 {selectedReq.completedAt.slice(0, 10)}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* 조치 내용 본문 */}
-                    <div style={{
-                      fontSize: '16px',
-                      color: '#f4f4f5',
-                      lineHeight: 1.75,
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                      fontWeight: 400,
-                      letterSpacing: '-0.01em'
-                    }}>
-                      {selectedReq.completionSummary || '요청하신 작업이 정상적으로 완료되었습니다.'}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* 4. 댓글 (사내 및 고객사 소통) */}
+              {/* 3. 댓글 (사내 및 고객사 소통) */}
               {!isEditingReq && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                   <div style={{
@@ -1550,6 +1502,54 @@ export default function ClientPortal({
                       </div>
                     </div>
                   </form>
+                </div>
+              )}
+
+              {/* 4. 조치 내용 (작업 완료일, 조치 내용 본문만 단정하게 표시 - 댓글 아래 배치) */}
+              {!isEditingReq && (selectedReq.completionSummary || selectedReq.completedAt || selectedReq.status === 'DONE') && (
+                <div>
+                  <h3 style={{ fontSize: '17px', fontWeight: 400, color: '#ffffff', marginBottom: '0.85rem' }}>
+                    조치 내용
+                  </h3>
+                  <div style={{
+                    background: '#18181c',
+                    border: '1px solid #2a2a30',
+                    borderRadius: '6px',
+                    padding: '1.25rem 1.5rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.85rem'
+                  }}>
+                    {/* 상단 메타데이터: 조치 상태 및 완료일 */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingBottom: '0.65rem',
+                      borderBottom: '1px solid #26262b',
+                      fontSize: '14px'
+                    }}>
+                      <span style={{ color: 'var(--text-primary)', fontWeight: 400 }}>조치 완료</span>
+                      {selectedReq.completedAt && (
+                        <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>
+                          완료일 {selectedReq.completedAt.slice(0, 10)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* 조치 내용 본문 */}
+                    <div style={{
+                      fontSize: '16px',
+                      color: '#f4f4f5',
+                      lineHeight: 1.75,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      fontWeight: 400,
+                      letterSpacing: '-0.01em'
+                    }}>
+                      {selectedReq.completionSummary || '요청하신 작업이 정상적으로 완료되었습니다.'}
+                    </div>
+                  </div>
                 </div>
               )}
 

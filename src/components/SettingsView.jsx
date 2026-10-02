@@ -73,7 +73,7 @@ const BANK_OPTIONS = [
 ];
 
 function calculateLegalLeave(hireDateStr) {
-  if (!hireDateStr) return 15;
+  if (!hireDateStr) return 0;
   const hireDate = new Date(hireDateStr);
   const today = new Date();
   const diffMonths = (today.getFullYear() - hireDate.getFullYear()) * 12 + (today.getMonth() - hireDate.getMonth());

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import LoginModal from './components/LoginModal';
+import InitialProfileSetupModal from './components/InitialProfileSetupModal';
 import QuickMenuHub from './components/QuickMenuHub';
 import AdminPortal from './components/AdminPortal';
 import EmployeePortal from './components/EmployeePortal';
@@ -8,6 +9,7 @@ import ClientPortal from './components/ClientPortal';
 import NotificationsView from './components/NotificationsView';
 import AdminContactView from './components/AdminContactView';
 import SettingsView from './components/SettingsView';
+import ModalStyleTestPage from './components/ModalStyleTestPage';
 import { playNotificationSound } from './utils/audio';
 
 // Session duration: 12 hours (Workday TTL Session Policy)
@@ -53,6 +55,22 @@ export default function App() {
   // Navigation View State: 'HUB', 'COMMUTE', 'CLIENT_REQUESTS', 'PROJECTS', 'NOTIFICATIONS', 'CALENDAR_LEAVE', 'SETTINGS', 'ADMIN_CONTACT'
   const [currentView, setCurrentView] = useState('HUB');
   const [previousView, setPreviousView] = useState('HUB');
+  const [isDirectModalTest, setIsDirectModalTest] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.location.search.includes('test=modal') || window.location.hash === '#modal-styles';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === '#modal-styles' || window.location.search.includes('test=modal')) {
+        setIsDirectModalTest(true);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
 
 
@@ -769,8 +787,19 @@ export default function App() {
         ))}
       </div>
 
-      {/* Strict Login Modal when unauthenticated */}
-      {!user ? (
+      {/* Standalone Modal Style Test Page view (accessible via #modal-styles or ?test=modal or currentView === 'MODAL_STYLES') */}
+      {(currentView === 'MODAL_STYLES' || isDirectModalTest) ? (
+        <ModalStyleTestPage
+          onBack={() => {
+            setIsDirectModalTest(false);
+            window.location.hash = '';
+            if (window.location.search.includes('test=modal')) {
+              window.history.replaceState(null, '', window.location.pathname);
+            }
+            setCurrentView(user ? 'HUB' : 'LOGIN');
+          }}
+        />
+      ) : !user ? (
         <LoginModal 
           onLoginSuccess={(loggedInUser, sessionId, device) => {
             if (sessionId) sessionStorage.setItem('app_session_id', sessionId);
@@ -788,6 +817,55 @@ export default function App() {
             setUser(loggedInUser);
             setCurrentView('HUB');
           }} 
+        />
+      ) : user.role !== 'CLIENT' && user.role !== 'ADMIN' && (!user.dept || user.dept === '소속 미배정' || user.dept === '미배정') ? (
+        <div style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem',
+          backgroundColor: 'var(--bg-main)'
+        }}>
+          <div style={{
+            width: '100%',
+            maxWidth: '460px',
+            backgroundColor: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '6px',
+            padding: '2.75rem 2.25rem',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1.25rem'
+          }}>
+            <h2 style={{ fontSize: '22px', fontWeight: 400, color: 'var(--text-primary)', margin: 0 }}>
+              부서 배정 대기
+            </h2>
+            <div style={{ fontSize: '15px', color: 'var(--text-secondary)', lineHeight: 1.7, fontWeight: 400 }}>
+              {user.name} 사원님은 아직 소속 부서가 배정되지 않았습니다.<br />
+              관리자의 부서 배정 완료 후 개인정보 등록을 거쳐 사내 시스템을 이용하실 수 있습니다.
+            </div>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handleLogout}
+              style={{ height: '42px', padding: '0 1.5rem', fontSize: '15px', fontWeight: 400, marginTop: '0.5rem' }}
+            >
+              로그아웃
+            </button>
+          </div>
+        </div>
+      ) : user.role !== 'CLIENT' && (user.needsProfileSetup || (user.firstLogin && (!user.phone || !user.email))) ? (
+        <InitialProfileSetupModal
+          user={user}
+          onComplete={(updatedUser) => {
+            saveUserSession(updatedUser);
+            setUser(updatedUser);
+            showToast('등록 완료', '정보가 등록되었습니다.', 'success');
+          }}
+          onLogout={handleLogout}
         />
       ) : (
         <>
@@ -830,7 +908,7 @@ export default function App() {
                 pendingRequestsCount={clientRequests.filter(r => r.status === 'REQUESTED').length}
                 activeRequestsCount={clients.length}
                 pendingTasksCount={tasks.filter(t => t.status !== 'DONE').length}
-                remainingLeave={user.totalLeave ? (user.totalLeave - (user.usedLeave || 0)) : 15}
+                remainingLeave={user.remainingLeave !== undefined ? user.remainingLeave : (user.totalLeave !== undefined ? Math.max(0, user.totalLeave - (user.usedLeave || 0)) : 0)}
                 approvedWorkType={todayApprovedWorkType}
                 todayLeave={todayLeave}
                 isTodayFullDayLeave={isTodayFullDayLeave}

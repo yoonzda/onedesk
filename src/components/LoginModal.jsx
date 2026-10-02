@@ -34,7 +34,7 @@ export default function LoginModal({ onLoginSuccess }) {
       if (data.success) {
         onLoginSuccess(data.user, data.sessionId, data.device);
       } else {
-        showLoginToast('로그인 정보를 확인해주세요');
+        showLoginToast(data.message || '로그인 정보를 확인해주세요');
       }
     } catch (err) {
       showLoginToast('로그인 정보를 확인해주세요');

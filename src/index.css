@@ -104,15 +104,30 @@ html, body, *, *::before, *::after {
   box-sizing: border-box;
 }
 
+/* Subtle Monochrome Selection (Remove harsh blue) */
+::selection {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  color: inherit !important;
+}
+
 html, body {
   font-size: 16px;
   background-color: var(--bg-main);
   color: var(--text-primary);
   line-height: 1.6;
+  letter-spacing: -0.02em;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   word-break: keep-all;
   overflow-wrap: break-word;
+}
+
+button, input, select, textarea {
+  letter-spacing: -0.02em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.025em;
 }
 
 /* Ensure Korean words wrap naturally by word boundaries across all text containers */
@@ -1099,11 +1114,16 @@ select::-ms-expand {
   width: min(720px, 90vw) !important;
 }
 
+.drawer-2col {
+  width: min(1080px, 94vw) !important;
+}
+
 @media (max-width: 900px) {
   .detail-slide-drawer,
   .drawer-sm,
   .drawer-md,
-  .drawer-lg {
+  .drawer-lg,
+  .drawer-2col {
     width: 100vw !important;
   }
 }

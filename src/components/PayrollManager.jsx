@@ -1220,7 +1220,7 @@ export default function PayrollManager({ user, onShowToast }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>· 잔여 연차</span>
                     <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
-                      {selectedPayroll.remainingLeave !== undefined ? selectedPayroll.remainingLeave : 15}일 (당월 사용 {selectedPayroll.monthlyLeaveUsed || 0}일 / 총 {selectedPayroll.totalLeave !== undefined ? selectedPayroll.totalLeave : 15}일)
+                      {selectedPayroll.remainingLeave !== undefined ? selectedPayroll.remainingLeave : 0}일 (당월 사용 {selectedPayroll.monthlyLeaveUsed || 0}일 / 총 {selectedPayroll.totalLeave !== undefined ? selectedPayroll.totalLeave : 0}일)
                     </span>
                   </div>
                 </div>
@@ -1835,7 +1835,7 @@ export default function PayrollManager({ user, onShowToast }) {
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px' }}>
                         <span style={{ color: 'var(--text-secondary)' }}>· 잔여 연차</span>
                         <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
-                          {selectedPayroll.remainingLeave !== undefined ? selectedPayroll.remainingLeave : 15}일 (당월 사용 {selectedPayroll.monthlyLeaveUsed || 0}일 / 총 {selectedPayroll.totalLeave !== undefined ? selectedPayroll.totalLeave : 15}일)
+                          {selectedPayroll.remainingLeave !== undefined ? selectedPayroll.remainingLeave : 0}일 (당월 사용 {selectedPayroll.monthlyLeaveUsed || 0}일 / 총 {selectedPayroll.totalLeave !== undefined ? selectedPayroll.totalLeave : 0}일)
                         </span>
                       </div>
                     </div>

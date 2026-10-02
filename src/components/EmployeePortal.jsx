@@ -1017,7 +1017,7 @@ export default function EmployeePortal({
       const currentRemaining = Number(
         user?.remainingLeave !== undefined 
           ? user.remainingLeave 
-          : ((user?.totalLeave || 15) - (user?.usedLeave || 0))
+          : ((user?.totalLeave !== undefined ? user.totalLeave : 0) - (user?.usedLeave || 0))
       );
 
       if (requestedDays > currentRemaining) {
@@ -1081,7 +1081,7 @@ export default function EmployeePortal({
       const currentRemaining = Number(
         user?.remainingLeave !== undefined 
           ? user.remainingLeave 
-          : ((user?.totalLeave || 15) - (user?.usedLeave || 0))
+          : ((user?.totalLeave !== undefined ? user.totalLeave : 0) - (user?.usedLeave || 0))
       );
 
       if (requestedDays > currentRemaining) {
@@ -2058,7 +2058,7 @@ export default function EmployeePortal({
                         </div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
                           <span style={{ fontSize: '28px', color: 'var(--text-primary)', lineHeight: 1 }}>
-                            {user.remainingLeave !== undefined ? user.remainingLeave : ((user.totalLeave || 15) - (user.usedLeave || 0))}
+                            {user.remainingLeave !== undefined ? user.remainingLeave : ((user?.totalLeave !== undefined ? user.totalLeave : 0) - (user?.usedLeave || 0))}
                           </span>
                           <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>일</span>
                         </div>
@@ -2082,7 +2082,7 @@ export default function EmployeePortal({
                         </div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
                           <span style={{ fontSize: '28px', color: 'var(--text-muted)', lineHeight: 1 }}>
-                            {user.totalLeave || 15}
+                            {user.totalLeave !== undefined ? user.totalLeave : 0}
                           </span>
                           <span style={{ fontSize: '16px', color: 'var(--text-muted)' }}>일</span>
                         </div>

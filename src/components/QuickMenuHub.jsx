@@ -491,26 +491,7 @@ export default function QuickMenuHub({
             </h3>
           </div>
 
-          {/* Card 4: 파일 관리 */}
-          <div 
-            className="card card-hover"
-            onClick={() => onNavigate('FILES')}
-            style={{
-              padding: '3.5rem 2rem',
-              textAlign: 'center',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '220px'
-            }}
-          >
-            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)' }}>
-              파일 관리
-            </h3>
-          </div>
-
-          {/* Card 5: 일정 관리 */}
+          {/* Card 4: 일정 관리 */}
           <div 
             className="card card-hover"
             onClick={() => onNavigate('CALENDAR_LEAVE')}
@@ -526,6 +507,25 @@ export default function QuickMenuHub({
           >
             <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)' }}>
               일정 관리
+            </h3>
+          </div>
+
+          {/* Card 5: 파일 관리 */}
+          <div 
+            className="card card-hover"
+            onClick={() => onNavigate('FILES')}
+            style={{
+              padding: '3.5rem 2rem',
+              textAlign: 'center',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: '220px'
+            }}
+          >
+            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)' }}>
+              파일 관리
             </h3>
           </div>
 
