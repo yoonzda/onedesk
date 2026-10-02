@@ -37,6 +37,15 @@
       "annualSalary": 84000000,
       "accessLogs": [
         {
+          "id": "log-1790931496144-2x2",
+          "sessionId": "sess-1790931496144-fejxb",
+          "timestamp": "2026-10-02 17:58:16",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
           "id": "log-1790929875372-45d",
           "sessionId": "sess-1790920902509-y3mya",
           "timestamp": "2026-10-02 17:31:15",
@@ -476,15 +485,6 @@
           "device": "웹 브라우저 (Chrome)",
           "ip": "::1",
           "note": "로그아웃"
-        },
-        {
-          "id": "log-1790553684154-t98",
-          "sessionId": "sess-1790553684154-u6ww6",
-          "timestamp": "2026-09-28 09:01:24",
-          "type": "LOGIN",
-          "device": "웹 브라우저 (Chrome)",
-          "ip": "::1",
-          "note": "로그인"
         }
       ],
       "createdAt": "2026-01-01"
@@ -512,6 +512,15 @@
       "accountNumber": "",
       "createdAt": "2026-01-01",
       "accessLogs": [
+        {
+          "id": "log-1790931492766-2k6",
+          "sessionId": "sess-1790929881451-6lyi3",
+          "timestamp": "2026-10-02 17:58:12",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
         {
           "id": "log-1790929881451-01u",
           "sessionId": "sess-1790929881451-6lyi3",
@@ -2237,9 +2246,9 @@
       "dept": "경영지원본부",
       "date": "2026-10-02",
       "checkIn": "09:34:59",
-      "checkOut": null,
-      "workHours": 0,
-      "status": "WORKING",
+      "checkOut": "17:58:10",
+      "workHours": 7.4,
+      "status": "COMPLETED",
       "workType": "OFFICE",
       "ipAddress": "::1",
       "isCompanyNetwork": true,
@@ -2247,7 +2256,8 @@
       "isLate": true,
       "isHalfDay": false,
       "halfDaySlot": null,
-      "overtimeHours": 0
+      "overtimeHours": 0,
+      "isEarlyLeave": true
     },
     {
       "id": "att-1790899584600",
@@ -2256,9 +2266,9 @@
       "dept": "경영지원본부",
       "date": "2026-10-02",
       "checkIn": "09:06:24",
-      "checkOut": null,
-      "workHours": 0,
-      "status": "WORKING",
+      "checkOut": "17:58:18",
+      "workHours": 7.9,
+      "status": "COMPLETED",
       "workType": "OFFICE",
       "ipAddress": "::1",
       "isCompanyNetwork": true,
@@ -2266,7 +2276,8 @@
       "isLate": true,
       "isHalfDay": false,
       "halfDaySlot": null,
-      "overtimeHours": 0
+      "overtimeHours": 0,
+      "isEarlyLeave": true
     },
     {
       "id": "att-1790812261061",
