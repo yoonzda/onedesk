@@ -7,6 +7,7 @@ import AdminPortal from './components/AdminPortal';
 import EmployeePortal from './components/EmployeePortal';
 import ClientPortal from './components/ClientPortal';
 import NotificationsView from './components/NotificationsView';
+import TasksListView from './components/TasksListView';
 import AdminContactView from './components/AdminContactView';
 import SettingsView from './components/SettingsView';
 import ModalStyleTestPage from './components/ModalStyleTestPage';
@@ -767,6 +768,12 @@ export default function App() {
   };
 
   const unreadNotifsCount = notifications.filter(n => !n.isRead).length;
+  const activeTasksCount = user ? (
+    (tasks || []).filter(t => (t.assigneeId === user.id || (!t.assigneeId && t.dept === user.dept)) && t.status !== 'DONE').length +
+    (clientRequests || []).filter(cr => (cr.assignedTasks || []).some(at => (at.assigneeId === user.id || at.staffId === user.id) && at.status !== 'COMPLETED')).length +
+    (schedules || []).filter(s => (s.authorId === user.id || (Array.isArray(s.attendeeIds) && s.attendeeIds.includes(user.id))) && !s.isDone).length
+  ) : 0;
+
 
   return (
     <div className="app-container">
@@ -878,12 +885,21 @@ export default function App() {
             onGoHome={() => setCurrentView('HUB')}
             currentView={currentView}
             unreadNotifsCount={unreadNotifsCount}
+            activeTasksCount={activeTasksCount}
             onOpenNotifications={() => {
               if (currentView === 'NOTIFICATIONS') {
                 setCurrentView(previousView || 'HUB');
               } else {
                 setPreviousView(currentView);
                 setCurrentView('NOTIFICATIONS');
+              }
+            }}
+            onOpenTasksList={() => {
+              if (currentView === 'TASKS_LIST') {
+                setCurrentView(previousView || 'HUB');
+              } else {
+                setPreviousView(currentView);
+                setCurrentView('TASKS_LIST');
               }
             }}
           />
@@ -1059,6 +1075,35 @@ export default function App() {
                 onGoHome={() => setCurrentView(previousView || 'HUB')}
               />
             )}
+
+            {/* VIEW: TASKS_LIST (업무 목록) */}
+            {currentView === 'TASKS_LIST' && (
+              <TasksListView
+                user={user}
+                tasks={tasks}
+                schedules={schedules}
+                clientRequests={clientRequests}
+                employees={employees}
+                onAddTask={handleAddTask}
+                onUpdateTaskStatus={handleUpdateTaskStatus}
+                onRefresh={() => loadAppData(user)}
+                onShowToast={showToast}
+                onNavigateItem={(item) => {
+                  setOpenLeaveHistory(false);
+                  setTargetScheduleId(null);
+                  setTargetLeaveId(null);
+
+                  if (item.sourceType === 'CLIENT_REQUEST') {
+                    setTargetRequestId(item.rawId);
+                    setCurrentView('CLIENT_REQUESTS');
+                  } else if (item.sourceType === 'TASK' && !item.isDirectTask) {
+                    setTargetRequestId(null);
+                    setCurrentView('PROJECTS');
+                  }
+                }}
+              />
+            )}
+
 
             {/* VIEW: FILES (파일 관리) */}
             {currentView === 'FILES' && (

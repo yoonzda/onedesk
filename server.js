@@ -1475,22 +1475,24 @@ const handleCheckInLogic = (req, res) => {
     });
   }
 
-  // Morning half-day late threshold (amStart + 5 min grace)
-  const amLateMins = amH * 60 + amM + 5;
+  const graceMins = Number(policy.lateGraceMinutes ?? 5);
+
+  // Morning half-day late threshold (amStart + grace)
+  const amLateMins = amH * 60 + amM + graceMins;
   const amLateH = String(Math.floor(amLateMins / 60)).padStart(2, '0');
   const amLateM = String(amLateMins % 60).padStart(2, '0');
 
-  // Afternoon half-day late threshold (pmStart + 5 min grace)
+  // Afternoon half-day late threshold (pmStart + grace)
   const pmStart = policy.halfDayPmWorkStart || '09:00';
   const [pmH, pmM] = pmStart.split(':').map(Number);
-  const pmLateMins = pmH * 60 + pmM + 5;
+  const pmLateMins = pmH * 60 + pmM + graceMins;
   const pmLateH = String(Math.floor(pmLateMins / 60)).padStart(2, '0');
   const pmLateM = String(pmLateMins % 60).padStart(2, '0');
 
-  // Standard late threshold (standardWorkStart + 5 min grace)
+  // Standard late threshold (standardWorkStart + grace)
   const stdStart = policy.standardWorkStart || '09:00';
   const [stdH, stdM] = stdStart.split(':').map(Number);
-  const stdLateMins = stdH * 60 + stdM + 5;
+  const stdLateMins = stdH * 60 + stdM + graceMins;
   const stdLateH = String(Math.floor(stdLateMins / 60)).padStart(2, '0');
   const stdLateM = String(stdLateMins % 60).padStart(2, '0');
 
@@ -1556,21 +1558,23 @@ app.post('/api/attendances', (req, res) => {
   const approvedOvertimeLeave = userLeaves.find(l => l.leaveType === 'OVERTIME');
   const policy = getCompanyPolicy(db);
 
+  const graceMins = Number(policy.lateGraceMinutes ?? 5);
+
   const amStart = policy.halfDayAmWorkStart || '14:00';
   const [amH, amM] = amStart.split(':').map(Number);
-  const amLateMins = amH * 60 + amM + 5;
+  const amLateMins = amH * 60 + amM + graceMins;
   const amLateH = String(Math.floor(amLateMins / 60)).padStart(2, '0');
   const amLateM = String(amLateMins % 60).padStart(2, '0');
 
   const pmStart = policy.halfDayPmWorkStart || '09:00';
   const [pmH, pmM] = pmStart.split(':').map(Number);
-  const pmLateMins = pmH * 60 + pmM + 5;
+  const pmLateMins = pmH * 60 + pmM + graceMins;
   const pmLateH = String(Math.floor(pmLateMins / 60)).padStart(2, '0');
   const pmLateM = String(pmLateMins % 60).padStart(2, '0');
 
   const stdStart = policy.standardWorkStart || '09:00';
   const [stdH, stdM] = stdStart.split(':').map(Number);
-  const stdLateMins = stdH * 60 + stdM + 5;
+  const stdLateMins = stdH * 60 + stdM + graceMins;
   const stdLateH = String(Math.floor(stdLateMins / 60)).padStart(2, '0');
   const stdLateM = String(stdLateMins % 60).padStart(2, '0');
 
@@ -2617,6 +2621,17 @@ app.put('/api/schedules/:id', (req, res) => {
   res.json({ success: true, schedule: sched });
 });
 
+app.patch('/api/schedules/:id', (req, res) => {
+  const { id } = req.params;
+  const db = readDB();
+  const sched = (db.schedules || []).find(s => s.id === id);
+  if (!sched) return res.status(404).json({ success: false, message: '일정을 찾을 수 없습니다.' });
+  Object.assign(sched, req.body);
+  writeDB(db);
+  res.json({ success: true, schedule: sched });
+});
+
+
 app.put('/api/schedules/:id/files', (req, res) => {
   const { id } = req.params;
   const { fileIds } = req.body;
@@ -3455,6 +3470,29 @@ app.put('/api/client-requests/:id', (req, res) => {
   res.json({ success: true, request });
 });
 
+app.patch('/api/client-requests/:id/status', (req, res) => {
+  const { id } = req.params;
+  const { status, actorId, actorName } = req.body;
+  const db = readDB();
+  const request = db.clientRequests.find(r => r.id === id);
+  if (!request) return res.status(404).json({ success: false, message: '요청글을 찾을 수 없습니다.' });
+
+  request.status = status;
+  if (status === 'DONE') {
+    request.completedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  }
+  if (Array.isArray(request.assignedTasks)) {
+    request.assignedTasks.forEach(t => {
+      if (!actorId || t.assigneeId === actorId || t.staffId === actorId) {
+        t.status = status === 'DONE' ? 'COMPLETED' : 'IN_PROGRESS';
+      }
+    });
+  }
+  writeDB(db);
+  res.json({ success: true, request });
+});
+
+
 // Complete request and record spent hours (공수 기록 & 분야별 공수) / 최종 완료 승인
 app.post('/api/client-requests/:id/complete', (req, res) => {
   const { id } = req.params;
@@ -3963,6 +4001,7 @@ app.get('/api/export/excel', (req, res) => {
 // Default Company Payroll & Deduction Policy
 const DEFAULT_COMPANY_POLICY = {
   salaryPaymentDay: 25, // 매월 25일 정기 급여 지급일 (1~31)
+  lateGraceMinutes: 5,  // 출근 지각 인정 유예시간(분, 기본 5분)
   lateDeductionPerCase: 20000,
   earlyLeaveDeductionPerCase: 10000,
   absenceDeductionType: 'DAILY_PRORATED', // 'DAILY_PRORATED' (일할 계산) | 'FIXED' (고정액)
@@ -3984,6 +4023,9 @@ function getCompanyPolicy(db) {
   const policy = db.companyPolicy || DEFAULT_COMPANY_POLICY;
   if (!policy.salaryPaymentDay) {
     policy.salaryPaymentDay = 25;
+  }
+  if (policy.lateGraceMinutes === undefined || policy.lateGraceMinutes === null) {
+    policy.lateGraceMinutes = 5;
   }
   if (!policy.standardWorkStart) policy.standardWorkStart = '09:00';
   if (!policy.standardWorkEnd) policy.standardWorkEnd = '18:00';
@@ -4065,6 +4107,7 @@ app.put('/api/company-policy', (req, res) => {
   const updatedPolicy = {
     ...current,
     salaryPaymentDay: updates.salaryPaymentDay !== undefined ? Math.min(31, Math.max(1, Number(updates.salaryPaymentDay))) : (current.salaryPaymentDay || 25),
+    lateGraceMinutes: updates.lateGraceMinutes !== undefined ? Math.max(0, Number(updates.lateGraceMinutes)) : (current.lateGraceMinutes ?? 5),
     lateDeductionPerCase: updates.lateDeductionPerCase !== undefined ? Math.max(0, Number(updates.lateDeductionPerCase)) : current.lateDeductionPerCase,
     earlyLeaveDeductionPerCase: updates.earlyLeaveDeductionPerCase !== undefined ? Math.max(0, Number(updates.earlyLeaveDeductionPerCase)) : current.earlyLeaveDeductionPerCase,
     absenceDeductionType: updates.absenceDeductionType || current.absenceDeductionType || 'DAILY_PRORATED',

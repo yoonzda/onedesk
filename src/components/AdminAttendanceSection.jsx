@@ -1,8 +1,65 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { HelpCircle } from 'lucide-react';
 import CustomDatePicker from './CustomDatePicker';
 import CustomCheckbox from './CustomCheckbox';
+import CustomTimePicker from './CustomTimePicker';
 import { getHoliday } from '../utils/holidays';
 import PayrollManager from './PayrollManager';
+
+function TooltipHelp({ text }) {
+  const [show, setShow] = useState(false);
+  return (
+    <span
+      style={{
+        position: 'relative',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: '6px',
+        cursor: 'pointer',
+        verticalAlign: 'middle'
+      }}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+      onClick={() => setShow(prev => !prev)}
+      tabIndex={0}
+      role="tooltip"
+      aria-label={text}
+    >
+      <HelpCircle
+        size={18}
+        style={{
+          color: show ? 'var(--text-primary)' : 'var(--text-muted)',
+          transition: 'color 0.15s ease'
+        }}
+      />
+      {show && (
+        <span
+          style={{
+            position: 'absolute',
+            left: 'calc(100% + 8px)',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            backgroundColor: '#0f172a',
+            color: '#f8fafc',
+            border: '1px solid #334155',
+            padding: '7px 12px',
+            fontSize: '14px',
+            fontWeight: 400,
+            lineHeight: 1.4,
+            whiteSpace: 'nowrap',
+            zIndex: 9999,
+            borderRadius: 0,
+            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.45)',
+            pointerEvents: 'none'
+          }}
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+}
 
 export default function AdminAttendanceSection({ user, employees = [], onShowToast, onRefresh, hideHeader = false }) {
   const [attendances, setAttendances] = useState([]);
@@ -52,10 +109,85 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
   });
   const [isSaving, setIsSaving] = useState(false);
 
+  // Company-wide Payroll & Attendance Policy (Admin)
+  const [companyPolicy, setCompanyPolicy] = useState({
+    salaryPaymentDay: 25,
+    lateGraceMinutes: 5,
+    mealAllowanceDefault: 200000,
+    lateDeductionPerCase: 30000,
+    earlyLeaveDeductionPerCase: 10000,
+    absenceDeductionType: 'DAILY_PRORATED',
+    absenceDeductionFixed: 100000,
+    standardWorkStart: '09:00',
+    standardWorkEnd: '18:00',
+    lunchStart: '12:00',
+    lunchEnd: '13:00',
+    halfDayAmWorkStart: '14:00',
+    halfDayAmWorkEnd: '18:00',
+    halfDayPmWorkStart: '09:00',
+    halfDayPmWorkEnd: '14:00'
+  });
+  const [savingPolicy, setSavingPolicy] = useState(false);
+
+  const loadCompanyPolicy = async () => {
+    try {
+      const res = await fetch('/api/company-policy');
+      const data = await res.json();
+      if (data.success && data.policy) {
+        setCompanyPolicy(data.policy);
+      }
+    } catch (err) {
+      console.error('Failed to load company policy in AdminAttendanceSection:', err);
+    }
+  };
+
+  const handleSaveCompanyPolicy = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setSavingPolicy(true);
+    try {
+      const res = await fetch('/api/company-policy', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...companyPolicy,
+          salaryPaymentDay: Math.min(31, Math.max(1, Number(companyPolicy.salaryPaymentDay) || 25)),
+          lateGraceMinutes: Math.max(0, Number(companyPolicy.lateGraceMinutes) || 0),
+          standardWorkStart: companyPolicy.standardWorkStart || '09:00',
+          standardWorkEnd: companyPolicy.standardWorkEnd || '18:00',
+          lunchStart: companyPolicy.lunchStart || '12:00',
+          lunchEnd: companyPolicy.lunchEnd || '13:00',
+          halfDayAmWorkStart: companyPolicy.halfDayAmWorkStart || '14:00',
+          halfDayAmWorkEnd: companyPolicy.halfDayAmWorkEnd || '18:00',
+          halfDayPmWorkStart: companyPolicy.halfDayPmWorkStart || '09:00',
+          halfDayPmWorkEnd: companyPolicy.halfDayPmWorkEnd || '14:00',
+          updatedBy: user?.name || '최고관리자'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCompanyPolicy(data.policy);
+        onShowToast?.(
+          '전사 정책 저장 완료',
+          '정규 출퇴근 시간, 지각 유예시간 및 급여 기준 정책이 저장되었습니다.',
+          'success'
+        );
+        onRefresh?.();
+      } else {
+        onShowToast?.('저장 실패', data.message || '전사 정책 저장 중 오류가 발생했습니다.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      onShowToast?.('오류', '서버와의 통신에 실패했습니다.', 'error');
+    } finally {
+      setSavingPolicy(false);
+    }
+  };
+
   // Fetch Attendance, Leaves, Users
   const loadAdminAttendanceData = async () => {
     setIsLoading(true);
     try {
+      loadCompanyPolicy();
       const [attRes, lvRes, usrRes] = await Promise.all([
         fetch('/api/attendances').then(r => r.json()),
         fetch('/api/leaves').then(r => r.json()),
@@ -125,13 +257,16 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
     const actualLeaves = dateLeaves.filter(l => l.leaveType !== 'REMOTE' && l.leaveType !== 'FIELD');
     const leaveCount = actualLeaves.length;
 
-    // Late count (지각: isLate 플래그 또는 09:00 초과 출근)
+    // Late count (지각: isLate 플래그 또는 기준시각 + 유예시간 초과 출근)
     const lateCount = dateAtts.filter(a => {
       if (a.isLate) return true;
       if (a.checkIn) {
         const [h, m] = a.checkIn.slice(0, 5).split(':').map(Number);
         if (!isNaN(h) && !isNaN(m)) {
-          return (h * 60 + m) > 9 * 60;
+          const stdStart = companyPolicy.standardWorkStart || '09:00';
+          const [stdH, stdM] = stdStart.split(':').map(Number);
+          const grace = Number(companyPolicy.lateGraceMinutes ?? 5);
+          return (h * 60 + m) > (stdH * 60 + stdM + grace);
         }
       }
       return false;
@@ -985,6 +1120,23 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
         >
           급여 관리
         </button>
+        <button
+          type="button"
+          onClick={() => setViewMode('POLICY')}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '0.75rem 0.25rem',
+            fontSize: '18px',
+            color: viewMode === 'POLICY' ? 'var(--text-primary)' : 'var(--text-muted)',
+            borderBottom: viewMode === 'POLICY' ? '2px solid var(--text-primary)' : '2px solid transparent',
+            cursor: 'pointer',
+            marginBottom: '-1px',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          근태 및 급여 기준
+        </button>
       </div>
 
       {/* ===================== VIEW 1: 사원별 근태 달력 ===================== */}
@@ -1485,6 +1637,480 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
             user={user}
             onShowToast={onShowToast}
           />
+        </div>
+      )}
+
+      {/* ===================== VIEW 4: 근태 및 급여 기준 설정 ===================== */}
+      {viewMode === 'POLICY' && (
+        <div style={{ marginTop: '0.5rem', width: '100%', maxWidth: '960px' }}>
+          <div style={{
+            paddingBottom: '0.85rem',
+            borderBottom: '2px solid var(--border-color)',
+            marginBottom: '1rem'
+          }}>
+            <h3 style={{ fontSize: '20px', margin: 0, fontWeight: 400, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+              전사 급여 및 근태 기준 설정
+            </h3>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {/* 1. 정기 급여 지급일 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.9rem 0',
+              borderBottom: '1px solid var(--border-color)',
+              gap: '2.5rem'
+            }}>
+              <div style={{
+                width: '220px',
+                height: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '16px',
+                color: 'var(--text-secondary)',
+                fontWeight: 400,
+                flexShrink: 0
+              }}>
+                정기 급여 지급일
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>매월</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={companyPolicy.salaryPaymentDay || 25}
+                  onChange={(e) => setCompanyPolicy({
+                    ...companyPolicy,
+                    salaryPaymentDay: Math.min(31, Math.max(1, Number(e.target.value)))
+                  })}
+                  style={{
+                    width: '100px',
+                    height: '44px',
+                    padding: '0 0.85rem',
+                    fontSize: '16px',
+                    fontWeight: 400,
+                    borderRadius: 0,
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-input)',
+                    color: 'var(--text-primary)',
+                    outline: 'none',
+                    textAlign: 'center'
+                  }}
+                />
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>일</span>
+                <TooltipHelp text="지급일 도래 전: '지급 예정' / 지급일 도래 후: '지급 완료'로 자동 전환됩니다." />
+              </div>
+            </div>
+
+            {/* 2. 정규 근무 시간 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.9rem 0',
+              borderBottom: '1px solid var(--border-color)',
+              gap: '2.5rem'
+            }}>
+              <div style={{
+                width: '220px',
+                height: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '16px',
+                color: 'var(--text-secondary)',
+                fontWeight: 400,
+                flexShrink: 0
+              }}>
+                정규 근무 시간
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>출근</span>
+                <CustomTimePicker
+                  value={companyPolicy.standardWorkStart || '09:00'}
+                  onChange={(val) => setCompanyPolicy({
+                    ...companyPolicy,
+                    standardWorkStart: val
+                  })}
+                  width="125px"
+                  height="44px"
+                />
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400, margin: '0 0.25rem' }}>~</span>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>퇴근</span>
+                <CustomTimePicker
+                  value={companyPolicy.standardWorkEnd || '18:00'}
+                  onChange={(val) => setCompanyPolicy({
+                    ...companyPolicy,
+                    standardWorkEnd: val
+                  })}
+                  width="125px"
+                  height="44px"
+                />
+                <TooltipHelp text="사내 표준 정규 출퇴근 기준 시각입니다. 출근 기준 시각 이후 유예시간 초과 시 지각 처리되며, 사전 승인된 야근 신청 시 퇴근 기준 시각 이후 근무가 연장근로로 인정됩니다." />
+              </div>
+            </div>
+
+            {/* 3. 지각 인정 유예시간 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.9rem 0',
+              borderBottom: '1px solid var(--border-color)',
+              gap: '2.5rem'
+            }}>
+              <div style={{
+                width: '220px',
+                height: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '16px',
+                color: 'var(--text-secondary)',
+                fontWeight: 400,
+                flexShrink: 0
+              }}>
+                지각 인정 유예시간
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <input
+                  type="number"
+                  min="0"
+                  max="60"
+                  value={companyPolicy.lateGraceMinutes ?? 5}
+                  onChange={(e) => setCompanyPolicy({
+                    ...companyPolicy,
+                    lateGraceMinutes: Math.max(0, Number(e.target.value))
+                  })}
+                  style={{
+                    width: '100px',
+                    height: '44px',
+                    padding: '0 0.85rem',
+                    fontSize: '16px',
+                    fontWeight: 400,
+                    borderRadius: 0,
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-input)',
+                    color: 'var(--text-primary)',
+                    outline: 'none',
+                    textAlign: 'center'
+                  }}
+                />
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>분</span>
+                <TooltipHelp text="출근 기준 시각 이후 해당 유예시간 이내 출근 시 정상 출근으로 인정되며, 유예시간 초과 시 지각으로 처리됩니다. (0분 입력 시 정각 초과 즉시 지각)" />
+              </div>
+            </div>
+
+            {/* 4. 점심 휴게 시간 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.9rem 0',
+              borderBottom: '1px solid var(--border-color)',
+              gap: '2.5rem'
+            }}>
+              <div style={{
+                width: '220px',
+                height: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '16px',
+                color: 'var(--text-secondary)',
+                fontWeight: 400,
+                flexShrink: 0
+              }}>
+                점심 휴게 시간
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>시작</span>
+                <CustomTimePicker
+                  value={companyPolicy.lunchStart || '12:00'}
+                  onChange={(val) => setCompanyPolicy({
+                    ...companyPolicy,
+                    lunchStart: val
+                  })}
+                  width="125px"
+                  height="44px"
+                />
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400, margin: '0 0.25rem' }}>~</span>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>종료</span>
+                <CustomTimePicker
+                  value={companyPolicy.lunchEnd || '13:00'}
+                  onChange={(val) => setCompanyPolicy({
+                    ...companyPolicy,
+                    lunchEnd: val
+                  })}
+                  width="125px"
+                  height="44px"
+                />
+                <TooltipHelp text="법정 의무 휴게시간으로 일간 정규 근무 시간 산정 시 자동 공제됩니다." />
+              </div>
+            </div>
+
+            {/* 5. 오전 반차 근무 기준 시간 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.9rem 0',
+              borderBottom: '1px solid var(--border-color)',
+              gap: '2.5rem'
+            }}>
+              <div style={{
+                width: '220px',
+                height: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '16px',
+                color: 'var(--text-secondary)',
+                fontWeight: 400,
+                flexShrink: 0
+              }}>
+                오전 반차 근무 시간
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>출근</span>
+                <CustomTimePicker
+                  value={companyPolicy.halfDayAmWorkStart || '14:00'}
+                  onChange={(val) => setCompanyPolicy({
+                    ...companyPolicy,
+                    halfDayAmWorkStart: val
+                  })}
+                  width="125px"
+                  height="44px"
+                />
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400, margin: '0 0.25rem' }}>~</span>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>퇴근</span>
+                <CustomTimePicker
+                  value={companyPolicy.halfDayAmWorkEnd || '18:00'}
+                  onChange={(val) => setCompanyPolicy({
+                    ...companyPolicy,
+                    halfDayAmWorkEnd: val
+                  })}
+                  width="125px"
+                  height="44px"
+                />
+                <TooltipHelp text="오전 휴무 후 오후 출근 기준 시각 및 정규 퇴근 시각입니다. 출근 기준 1시간 전부터 출근 체크가 허용되며, 유예시간 초과 시 지각 처리됩니다." />
+              </div>
+            </div>
+
+            {/* 6. 오후 반차 근무 기준 시간 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.9rem 0',
+              borderBottom: '1px solid var(--border-color)',
+              gap: '2.5rem'
+            }}>
+              <div style={{
+                width: '220px',
+                height: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '16px',
+                color: 'var(--text-secondary)',
+                fontWeight: 400,
+                flexShrink: 0
+              }}>
+                오후 반차 근무 시간
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>출근</span>
+                <CustomTimePicker
+                  value={companyPolicy.halfDayPmWorkStart || '09:00'}
+                  onChange={(val) => setCompanyPolicy({
+                    ...companyPolicy,
+                    halfDayPmWorkStart: val
+                  })}
+                  width="125px"
+                  height="44px"
+                />
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400, margin: '0 0.25rem' }}>~</span>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 400 }}>퇴근</span>
+                <CustomTimePicker
+                  value={companyPolicy.halfDayPmWorkEnd || '14:00'}
+                  onChange={(val) => setCompanyPolicy({
+                    ...companyPolicy,
+                    halfDayPmWorkEnd: val
+                  })}
+                  width="125px"
+                  height="44px"
+                />
+                <TooltipHelp text="오전 정상 출근 후 오후 퇴근 기준 시각입니다. 퇴근 기준 시각 이전 퇴근 시 조퇴 처리됩니다." />
+              </div>
+            </div>
+
+            {/* 7. 비과세 식대 기본액 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.9rem 0',
+              borderBottom: '1px solid var(--border-color)',
+              gap: '2.5rem'
+            }}>
+              <div style={{
+                width: '220px',
+                height: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '16px',
+                color: 'var(--text-secondary)',
+                fontWeight: 400,
+                flexShrink: 0
+              }}>
+                비과세 식대 기본액
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <input
+                  type="number"
+                  min="0"
+                  step="10000"
+                  value={companyPolicy.mealAllowanceDefault ?? 200000}
+                  onChange={(e) => setCompanyPolicy({
+                    ...companyPolicy,
+                    mealAllowanceDefault: Math.max(0, Number(e.target.value))
+                  })}
+                  style={{
+                    width: '220px',
+                    height: '44px',
+                    padding: '0 1rem',
+                    fontSize: '16px',
+                    fontWeight: 400,
+                    borderRadius: 0,
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-input)',
+                    color: 'var(--text-primary)',
+                    outline: 'none'
+                  }}
+                />
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)' }}>원</span>
+                <TooltipHelp text="소득세법상 법정 비과세 한도는 월 200,000원입니다." />
+              </div>
+            </div>
+
+            {/* 8. 지각 1회당 근태 차감액 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.9rem 0',
+              borderBottom: '1px solid var(--border-color)',
+              gap: '2.5rem'
+            }}>
+              <div style={{
+                width: '220px',
+                height: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '16px',
+                color: 'var(--text-secondary)',
+                fontWeight: 400,
+                flexShrink: 0
+              }}>
+                지각 1회당 차감액
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <input
+                  type="number"
+                  min="0"
+                  step="5000"
+                  value={companyPolicy.lateDeductionPerCase ?? 30000}
+                  onChange={(e) => setCompanyPolicy({
+                    ...companyPolicy,
+                    lateDeductionPerCase: Math.max(0, Number(e.target.value))
+                  })}
+                  style={{
+                    width: '220px',
+                    height: '44px',
+                    padding: '0 1rem',
+                    fontSize: '16px',
+                    fontWeight: 400,
+                    borderRadius: 0,
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-input)',
+                    color: 'var(--text-primary)',
+                    outline: 'none'
+                  }}
+                />
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)' }}>원</span>
+                <TooltipHelp text="월간 지각 횟수에 비례하여 급여에서 일괄 공제됩니다." />
+              </div>
+            </div>
+
+            {/* 9. 조퇴 1회당 근태 차감액 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.9rem 0',
+              borderBottom: '1px solid var(--border-color)',
+              gap: '2.5rem'
+            }}>
+              <div style={{
+                width: '220px',
+                height: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '16px',
+                color: 'var(--text-secondary)',
+                fontWeight: 400,
+                flexShrink: 0
+              }}>
+                조퇴 1회당 차감액
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <input
+                  type="number"
+                  min="0"
+                  step="5000"
+                  value={companyPolicy.earlyLeaveDeductionPerCase ?? 10000}
+                  onChange={(e) => setCompanyPolicy({
+                    ...companyPolicy,
+                    earlyLeaveDeductionPerCase: Math.max(0, Number(e.target.value))
+                  })}
+                  style={{
+                    width: '220px',
+                    height: '44px',
+                    padding: '0 1rem',
+                    fontSize: '16px',
+                    fontWeight: 400,
+                    borderRadius: 0,
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-input)',
+                    color: 'var(--text-primary)',
+                    outline: 'none'
+                  }}
+                />
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)' }}>원</span>
+                <TooltipHelp text="월간 조퇴 횟수에 비례하여 급여에서 일괄 공제됩니다." />
+              </div>
+            </div>
+
+            {/* 10. 정책 저장 버튼 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '1.25rem 0',
+              borderBottom: '1px solid var(--border-color)',
+              gap: '2.5rem'
+            }}>
+              <div style={{ width: '220px', flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <button
+                  type="button"
+                  onClick={handleSaveCompanyPolicy}
+                  disabled={savingPolicy}
+                  className="btn btn-primary"
+                  style={{
+                    minWidth: '260px',
+                    height: '44px',
+                    fontSize: '15px',
+                    fontWeight: 400,
+                    borderRadius: 0,
+                    cursor: savingPolicy ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {savingPolicy ? '전사 정책 저장 중...' : '전사 급여 및 근태 기준 저장'}
+                </button>
+              </div>
+            </div>
+
+          </div>
         </div>
       )}
 

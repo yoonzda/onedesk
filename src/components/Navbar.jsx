@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Sun, Moon, LogOut } from 'lucide-react';
+import { Mail, ClipboardList, Sun, Moon, LogOut } from 'lucide-react';
 
 export default function Navbar({ 
   user, 
@@ -9,8 +9,11 @@ export default function Navbar({
   onGoHome, 
   currentView,
   unreadNotifsCount = 0,
-  onOpenNotifications
+  onOpenNotifications,
+  onOpenTasksList,
+  activeTasksCount = 0
 }) {
+
   if (!user) return null;
 
   return (
@@ -88,6 +91,31 @@ export default function Navbar({
               )}
             </button>
           )}
+
+          {/* Tasks List Button (업무 목록) - Borderless */}
+          {user.role !== 'CLIENT' && onOpenTasksList && (
+            <button
+              type="button"
+              onClick={onOpenTasksList}
+              title="업무 목록"
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '6px',
+                cursor: 'pointer',
+                color: currentView === 'TASKS_LIST' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                outline: 'none',
+                transition: 'color 0.15s ease'
+              }}
+            >
+              <ClipboardList size={22} strokeWidth={2} />
+            </button>
+          )}
+
 
 
           {/* Theme Toggle Icon (Sun / Moon) - Borderless */}
