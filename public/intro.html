@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <link rel="icon" href="/logo_mono.png" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>OneDesk · 전체 기능 안내 및 사용 설명서</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&family=Plus+Jakarta+Sans:wght@400&display=swap" rel="stylesheet" />
+  <style>
+    /* ===================================================
+       OneDesk Complete Functional Guide & User Manual
+       Strictly font-weight: 400 / Min font-size: 14px
+       NO Badges / NO Chips / NO Shadows / Pure Monochrome
+       Vertical Flowing Items (No artificial 3-col constraint)
+       =================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      word-break: keep-all;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      font-weight: 400 !important;
+      box-shadow: none !important;
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      background-color: #ffffff;
+      color: #18181b;
+      font-size: 16px;
+      line-height: 1.65;
+      letter-spacing: -0.02em;
+      -webkit-font-smoothing: antialiased;
+      padding: clamp(52px, 5.5vw, 88px) clamp(28px, 6vw, 96px) clamp(80px, 7vw, 120px);
+    }
+
+    .page-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(44px, 4.5vw, 60px);
+    }
+
+    /* ── 1. 상단 프로젝트 소개 (Hero Section) ── */
+    .hero-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .hero-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #d4d4d8;
+    }
+
+    .hero-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+      color: #18181b;
+    }
+
+    .hero-logo {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .hero-slogan {
+      font-family: 'Inter', 'Plus Jakarta Sans', sans-serif !important;
+      font-size: 15px;
+      color: #71717a;
+      letter-spacing: -0.01em;
+    }
+
+    .hero-portal-link {
+      font-size: 15px;
+      color: #18181b;
+      text-decoration: none;
+      padding: 8px 18px;
+      border: 1px solid #18181b;
+      border-radius: 6px;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .hero-portal-link:hover {
+      background-color: #18181b;
+      color: #ffffff;
+    }
+
+    .hero-title {
+      font-size: clamp(2.2rem, 3.8vw, 3.4rem);
+      color: #18181b;
+      letter-spacing: -0.03em;
+      line-height: 1.22;
+      margin-top: 4px;
+    }
+
+    .hero-lead {
+      font-size: clamp(1.06rem, 1.3vw, 1.24rem);
+      color: #52525b;
+      line-height: 1.78;
+    }
+
+    .hero-lead .em-text {
+      color: #18181b;
+      border-bottom: 1px solid #18181b;
+      padding-bottom: 1px;
+    }
+
+    /* ── 2. 전체 기능 목차 및 빠른 이동 영역 (Manual Index) ── */
+    .toc-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding: clamp(28px, 3.4vw, 40px) clamp(24px, 3.6vw, 44px);
+      background-color: #f4f4f5;
+      border: 1px solid #d4d4d8;
+      border-radius: 12px;
+    }
+
+    .toc-header {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .toc-title {
+      font-size: clamp(1.3rem, 1.7vw, 1.55rem);
+      color: #18181b;
+      letter-spacing: -0.02em;
+    }
+
+    .toc-desc {
+      font-size: 15px;
+      color: #52525b;
+      line-height: 1.65;
+    }
+
+    .toc-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px 24px;
+      padding-top: 16px;
+      border-top: 1px solid #d4d4d8;
+    }
+
+    .toc-link {
+      font-size: 15px;
+      color: #52525b;
+      text-decoration: none;
+      padding: 6px 0;
+      border-bottom: 1px solid #e4e4e7;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .toc-link:hover {
+      color: #18181b;
+      border-bottom-color: #18181b;
+    }
+
+    .toc-link-num {
+      font-size: 14px;
+      color: #71717a;
+      margin-right: 8px;
+    }
+
+    /* ── 3. 기능별 상세 사용 설명서 리스트 (세로 적층형) ── */
+    .manual-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid #18181b;
+    }
+
+    .manual-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: minmax(220px, 280px) 1fr;
+      align-items: start;
+      gap: clamp(28px, 4vw, 64px);
+      padding: 0 8px;
+      border-bottom: 1px solid #d4d4d8;
+      color: #18181b;
+      scroll-margin-top: 0;
+    }
+
+    .manual-left {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: sticky;
+      top: 0;
+      padding: clamp(40px, 4vw, 52px) 0;
+      will-change: transform;
+      transform: translate3d(0, 0, 0);
+      backface-visibility: hidden;
+    }
+
+    .manual-num {
+      font-size: 14px;
+      color: #71717a;
+      letter-spacing: 0.02em;
+    }
+
+    .manual-title {
+      font-size: clamp(1.55rem, 2.05vw, 1.95rem);
+      color: #18181b;
+      letter-spacing: -0.025em;
+      line-height: 1.3;
+    }
+
+    .manual-meta {
+      font-size: 14px;
+      color: #71717a;
+      margin-top: 4px;
+      line-height: 1.55;
+    }
+
+    .manual-center {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      min-width: 0;
+      padding: clamp(40px, 4vw, 52px) 0;
+    }
+
+    .manual-summary {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #18181b;
+    }
+
+    .manual-headline {
+      font-size: clamp(1.14rem, 1.35vw, 1.28rem);
+      color: #18181b;
+      line-height: 1.48;
+      letter-spacing: -0.015em;
+    }
+
+    .manual-sub {
+      font-size: 15px;
+      color: #52525b;
+      line-height: 1.68;
+    }
+
+    /* 쭉 아래로 떨어지는 세로 설명 블록 리스트 (개수 제한 없음) */
+    .vertical-items {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .v-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 20px 0;
+      border-bottom: 1px solid #e4e4e7;
+    }
+
+    .v-item:first-child {
+      padding-top: 4px;
+    }
+
+    .v-item:last-child {
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .v-item-head {
+      font-size: 18px;
+      color: #18181b;
+      line-height: 1.42;
+      letter-spacing: -0.015em;
+    }
+
+    .v-item-desc {
+      font-size: 15px;
+      color: #52525b;
+      line-height: 1.7;
+    }
+
+    .v-item-steps {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+      padding-left: 14px;
+      border-left: 1px solid #d4d4d8;
+    }
+
+    .v-item-steps li {
+      font-size: 15px;
+      color: #3f3f46;
+      line-height: 1.65;
+    }
+
+    .v-item-rule {
+      font-size: 14px;
+      color: #71717a;
+      line-height: 1.6;
+      margin-top: 2px;
+    }
+
+    /* ── 태블릿 이하 반응형 ── */
+    @media (max-width: 1024px) {
+      .toc-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .manual-row {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        padding: 36px 8px;
+      }
+
+      .manual-left {
+        position: static;
+        padding: 0;
+        transform: none;
+      }
+
+      .manual-center {
+        padding: 0;
+      }
+    }
+
+    /* ── 모바일 최적화 ── */
+    @media (max-width: 720px) {
+      body {
+        padding: 36px 20px 64px;
+      }
+
+      .hero-title {
+        font-size: 1.95rem;
+      }
+
+      .hero-lead {
+        font-size: 1rem;
+        line-height: 1.68;
+      }
+
+      .toc-section {
+        padding: 24px 20px;
+      }
+
+      .toc-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .manual-row {
+        padding: 36px 2px;
+      }
+
+      .manual-title {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-wrap">
+    <!-- 1. 상단 프로젝트 소개 -->
+    <header class="hero-section">
+      <div class="hero-top-bar">
+        <a class="hero-brand" href="/">
+          <img class="hero-logo" src="/logo_mono.png" alt="OneDesk Logo" />
+          <span class="hero-slogan">Alone we can do so little · Together we can do so much</span>
+        </a>
+        <a class="hero-portal-link" href="/">OneDesk 포털 실행하기</a>
+      </div>
+
+      <h1 class="hero-title">OneDesk 전체 기능 안내 및 사용 설명서</h1>
+      <p class="hero-lead">
+        OneDesk는 사내 임직원의 <span class="em-text">출퇴근 · 휴가 · 야근 · 휴일근무</span>, 외부 고객사와의 <span class="em-text">유지보수 요청 접수 · 분야별 공수(h) 산정 · 사내 프로젝트 관리</span>, 부서 간 <span class="em-text">전사 캘린더 · 파일 트리 보관함</span>, 그리고 근태와 직결되는 <span class="em-text">월별 급여 정산 · 조직/보안 관제</span>를 하나로 묶은 통합 업무 플랫폼입니다. 각 기능에 들어 있는 세부 동작과 설계 기준, 실제 사용 순서를 항목별로 빠짐없이 정리한 설명서입니다.
+      </p>
+    </header>
+
+    <!-- 2. 기능 모듈 목차 (클릭 시 해당 설명 위치로 이동) -->
+    <section class="toc-section">
+      <div class="toc-header">
+        <h2 class="toc-title">기능별 사용 설명서 목차</h2>
+        <p class="toc-desc">
+          원하는 항목을 클릭하면 해당 기능의 상세 설명과 단계별 조작 방법으로 바로 이동합니다.
+        </p>
+      </div>
+      <div class="toc-grid">
+        <a class="toc-link" href="#sec-01"><span><span class="toc-link-num">01</span>로그인 · 초기 프로필 설정</span><span>↓</span></a>
+        <a class="toc-link" href="#sec-02"><span><span class="toc-link-num">02</span>메인 퀵 허브 · 상단 내비게이션</span><span>↓</span></a>
+        <a class="toc-link" href="#sec-03"><span><span class="toc-link-num">03</span>출퇴근 타각 · 근무 상태 전환</span><span>↓</span></a>
+        <a class="toc-link" href="#sec-04"><span><span class="toc-link-num">04</span>휴가 · 반차 · 공가 · 연차 관리</span><span>↓</span></a>
+        <a class="toc-link" href="#sec-05"><span><span class="toc-link-num">05</span>재택 · 외근 · 출장 · 야근 · 휴일근무</span><span>↓</span></a>
+        <a class="toc-link" href="#sec-06"><span><span class="toc-link-num">06</span>고객사 전용 포털 · 요청 접수</span><span>↓</span></a>
+        <a class="toc-link" href="#sec-07"><span><span class="toc-link-num">07</span>사내 요청 처리 · 분야별 공수 산정</span><span>↓</span></a>
+        <a class="toc-link" href="#sec-08"><span><span class="toc-link-num">08</span>사내 프로젝트 관리 · 내 업무 목록</span><span>↓</span></a>
+        <a class="toc-link" href="#sec-09"><span><span class="toc-link-num">09</span>전사 캘린더 · 일정 공유</span><span>↓</span></a>
+        <a class="toc-link" href="#sec-10"><span><span class="toc-link-num">10</span>파일 보관함 · 일정 아코디언 트리</span><span>↓</span></a>
+        <a class="toc-link" href="#sec-11"><span><span class="toc-link-num">11</span>실시간 알림 센터 · 개인 환경설정</span><span>↓</span></a>
+        <a class="toc-link" href="#sec-12"><span><span class="toc-link-num">12</span>인사 · 월별 급여 정산 · 명세서</span><span>↓</span></a>
+        <a class="toc-link" href="#sec-13"><span><span class="toc-link-num">13</span>최고 관리자 · 계정/근태/네트워크 관제</span><span>↓</span></a>
+      </div>
+    </section>
+
+    <!-- 3. 기능별 상세 사용 설명서 리스트 (세로 나열 구조) -->
+    <div class="manual-list">
+
+      <!-- [01] 로그인 · 초기 프로필 설정 -->
+      <section class="manual-row" id="sec-01">
+        <div class="manual-left">
+          <span class="manual-num">01 · AUTH &amp; SESSION</span>
+          <h2 class="manual-title">로그인 · 초기 설정</h2>
+          <span class="manual-meta">화면 · LoginModal / InitialProfileSetupModal<br />대상 · 전 사용자 (임직원 · 고객사 · 관리자)</span>
+        </div>
+        <div class="manual-center">
+          <div class="manual-summary">
+            <p class="manual-headline">계정 권한을 자동 판별해 역할별 포털로 연결하며, 신규 발급 계정의 최초 프로필 설정과 12시간 세션 유지를 처리합니다.</p>
+          </div>
+          <div class="vertical-items">
+            <div class="v-item">
+              <h3 class="v-item-head">신규 임직원 최초 로그인 및 초기 프로필 설정</h3>
+              <p class="v-item-desc">관리자가 새로 발급한 임직원 계정(`isInitialSetupRequired: true`)으로 처음 로그인하면, 메인 화면으로 넘어가기 전에 초기 프로필 설정 모달이 자동으로 열립니다. 본인의 실제 연락처와 이메일을 등록하고 초기 비밀번호를 새 비밀번호로 변경해야 포털 사용이 시작됩니다.</p>
+              <ul class="v-item-steps">
+                <li>1단계 · 관리자에게 전달받은 아이디와 초기 비밀번호를 입력해 로그인합니다.</li>
+                <li>2단계 · 자동으로 열린 초기 설정 모달에 휴대폰 번호와 이메일 주소를 입력합니다.</li>
+                <li>3단계 · 앞으로 사용할 새 비밀번호를 입력하고 저장하면 설정이 완료되며 메인 허브로 진입합니다.</li>
+              </ul>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">권한별 자동 화면 분기 및 12시간 Workday 세션 유지</h3>
+              <p class="v-item-desc">로그인 시 계정 권한(`CLIENT` · `STAFF` · `TEAM_LEADER` · `HR` · `ADMIN`)을 식별해 각 역할에 맞는 허브와 메뉴 구성을 불러옵니다. 한 번 로그인하면 12시간 동안 로컬 세션이 유지되어 일과 중 브라우저를 새로고침하거나 닫았다 열어도 로그인이 풀리지 않습니다.</p>
+              <p class="v-item-rule">설계 기준 · 로그인 중에는 30초 주기로 서버에 접속 상태(`lastActive`)와 기기 유형(PC / Mobile)을 자동 전송하여 관리자가 실시간 접속 현황을 확인할 수 있습니다.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [02] 메인 퀵 허브 · 상단 내비게이션 바 -->
+      <section class="manual-row" id="sec-02">
+        <div class="manual-left">
+          <span class="manual-num">02 · QUICK HUB &amp; NAVBAR</span>
+          <h2 class="manual-title">메인 허브 · 상단 바</h2>
+          <span class="manual-meta">화면 · QuickMenuHub / Navbar<br />대상 · 전 임직원 · 고객사</span>
+        </div>
+        <div class="manual-center">
+          <div class="manual-summary">
+            <p class="manual-headline">로그인 직후 가장 먼저 나타나는 시작 화면으로, 실시간 시계와 출퇴근 컨트롤 및 전체 메뉴 바로가기 카드를 제공합니다.</p>
+          </div>
+          <div class="vertical-items">
+            <div class="v-item">
+              <h3 class="v-item-head">임직원 6대 메뉴 허브와 고객사 3대 메뉴 허브</h3>
+              <p class="v-item-desc">사내 임직원 계정으로 접속하면 상단에 실시간 플립 시계(`FlipClock`)와 오늘 날짜, 현재 출근/근무 상태, 즉시 출근 · 퇴근 · 상태변경 버튼이 배치되고, 그 아래에 [근태 관리 · 요청관리 · 프로젝트 관리 · 일정 관리 · 파일 관리 · 역할별 관리(급여 관리 / 최고 관리자 / 팀 관리 / 환경설정)] 6개 카드가 표시됩니다. 고객사 계정으로 접속하면 상단에 상호명과 계약 공수 현황이 표시되고, 아래에 [홈페이지 바로가기 · 관리자 바로가기 · 요청사항 바로가기] 3개 카드가 표시됩니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">상단 글로벌 내비게이션 바 도구 사용법</h3>
+              <p class="v-item-desc">모든 화면 상단에 고정된 헤더 바를 통해 어느 메뉴에서든 홈 복귀, 알림 확인, 내 업무 조회, 테마 전환을 즉시 실행할 수 있습니다.</p>
+              <ul class="v-item-steps">
+                <li>좌측 로고 클릭 · 현재 어느 탭에 있든 처음의 메인 퀵 허브 화면으로 즉시 돌아갑니다.</li>
+                <li>우측 메일 아이콘 · 알림 센터를 엽니다. 읽지 않은 새 알림이 있으면 아이콘 우측 상단에 빨간 점이 표시됩니다.</li>
+                <li>우측 클립보드 아이콘 · 나에게 배정된 사내 프로젝트 과업과 고객사 요청 작업을 모아보는 내 업무 목록을 엽니다.</li>
+                <li>우측 해/달 아이콘 · 다크 모드(Dark)와 라이트 모드(Light)를 즉시 전환하며, 선택한 테마는 계정에 자동 저장됩니다.</li>
+                <li>우측 로그아웃 아이콘 · 현재 세션을 종료하고 로그인 화면으로 돌아갑니다.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [03] 출퇴근 타각 · 실시간 근무 상태 전환 -->
+      <section class="manual-row" id="sec-03">
+        <div class="manual-left">
+          <span class="manual-num">03 · COMMUTE &amp; STATUS</span>
+          <h2 class="manual-title">출퇴근 · 근무 상태</h2>
+          <span class="manual-meta">화면 · EmployeePortal (근태 관리)<br />대상 · 전 임직원</span>
+        </div>
+        <div class="manual-center">
+          <div class="manual-summary">
+            <p class="manual-headline">사내 공인 IP 보안 검증을 거쳐 일일 출퇴근을 기록하고, 근무 형태별 지각/실근무시간 판정과 실시간 자리 상태 공유를 수행합니다.</p>
+          </div>
+          <div class="vertical-items">
+            <div class="v-item">
+              <h3 class="v-item-head">사내 공인 IP 인증 기반 출근 · 퇴근 기록 방법</h3>
+              <p class="v-item-desc">메인 허브 또는 [근태 관리] 메뉴 상단의 [출근] · [퇴근] 버튼을 눌러 타각합니다. 서버는 접속자의 현재 공인 IP 주소를 확인하여 관리자가 등록해 둔 사내 네트워크 IP 대역과 일치할 때만 출퇴근 처리를 허용합니다.</p>
+              <ul class="v-item-steps">
+                <li>1단계 · 출근 후 PC 또는 사내 와이파이에 연결된 모바일에서 [출근] 버튼을 누릅니다.</li>
+                <li>2단계 · 출근 시각이 기록되며 현재 상태가 `근무 중`으로 전환됩니다.</li>
+                <li>3단계 · 일과 종료 후 [퇴근] 버튼을 누르면 퇴근 시각과 함께 당일 실근무시간이 자동 계산되어 저장됩니다.</li>
+              </ul>
+              <p class="v-item-rule">예외 허용 규칙 · 당일 승인된 재택근무(`REMOTE`) 신청 내역이 있는 직원은 사내 공인 IP가 아닌 외부 네트워크에서도 정상적으로 출퇴근 타각이 가능하며, 재택·외근(`FIELD`) 승인 시 해당 근무 유형으로 자동 기록됩니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">정규 근무시간 기준 및 지각 유예시간(Grace Time) 설계</h3>
+              <p class="v-item-desc">전사 기본 정규 근무시간은 `09:00 ~ 18:00`이며, `12:00 ~ 13:00` 점심시간 1시간을 제외한 일일 기본 소정근로시간은 `8.0시간`입니다. 출근 시에는 기본 5분의 지각 유예시간(`lateGraceMinutes: 5`)이 적용되어 `09:05:00`까지 출근 버튼을 누르면 정상 출근(`PRESENT`)으로 기록되고, `09:05:01`부터는 지각(`LATE`)으로 자동 분류됩니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">오전반차 · 오후반차 · 전일휴가 승인 시 출퇴근 동작 규칙</h3>
+              <p class="v-item-desc">당일 승인된 휴가 종류에 따라 출퇴근 버튼 활성화 시각과 지각 판정 기준, 인정 근무시간이 자동으로 바뀝니다.</p>
+              <ul class="v-item-steps">
+                <li>오전반차(`HALF_AM`) 승인일 · 오후 출근 기준 시각이 `14:00`로 변경됩니다. 오전 휴가 시간 중 오작동을 막기 위해 `13:00` 이전에는 출근 버튼이 잠기며(`13:00 이후 출근 가능` 표시), `14:00`(+유예시간) 이후 타각 시 지각으로 판정됩니다. 퇴근 시 기본 `4.0시간`이 인정됩니다.</li>
+                <li>오후반차(`HALF_PM`) 승인일 · 오전 `09:00`에 정상 출근하고 오후 `14:00`에 퇴근하며, 기본 `4.0시간`이 인정됩니다.</li>
+                <li>전일 연차(`ANNUAL`) · 공가(`PUBLIC`) 승인일 · 화면에 `휴가 중` 상태로 표시되며 당일 출근 및 퇴근 버튼이 비활성화됩니다.</li>
+              </ul>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">5종 실시간 근무 상태 전환 및 공유</h3>
+              <p class="v-item-desc">출근 타각 후 퇴근하기 전까지 [상태 변경] 버튼을 눌러 본인의 현재 상태를 `근무 중` · `회의 중` · `외근 중` · `식사 중` · `자리비움` 5가지 중 하나로 언제든 변경할 수 있습니다. 변경된 상태는 관리자 근태 현황판과 사내 화면에 실시간으로 반영됩니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">개인별 월간 근태 캘린더(`UserWorkCalendar`) 확인</h3>
+              <p class="v-item-desc">근태 관리 화면 하단에는 본인의 월간 근태 달력이 표시됩니다. 날짜별로 실제 출근 시각과 퇴근 시각, 정상/지각/조퇴 여부, 승인된 휴가·반차·재택·외근·출장·야근·휴일근무 내역이 텍스트로 깔끔하게 정리되어 한 달간의 근태 기록을 직접 점검할 수 있습니다.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [04] 휴가 · 반차 · 공가 신청 및 연차 관리 -->
+      <section class="manual-row" id="sec-04">
+        <div class="manual-left">
+          <span class="manual-num">04 · LEAVE APPLICATION</span>
+          <h2 class="manual-title">휴가 · 반차 · 연차</h2>
+          <span class="manual-meta">화면 · ApplicationCalendar (휴가 신청)<br />대상 · 전 임직원</span>
+        </div>
+        <div class="manual-center">
+          <div class="manual-summary">
+            <p class="manual-headline">신청 전용 달력에서 날짜를 직접 클릭해 연차 · 오전/오후 반차 · 공가를 신청하고 잔여 연차를 관리합니다.</p>
+          </div>
+          <div class="vertical-items">
+            <div class="v-item">
+              <h3 class="v-item-head">연차 현황 대시보드 및 차감 일수 계산 기준</h3>
+              <p class="v-item-desc">근태 관리 화면 상단에서 본인에게 부여된 총 연차(`totalLeave`), 현재까지 승인되어 사용한 연차(`usedLeave`), 남은 잔여 연차 일수, 그리고 결재 대기/승인 건수를 실시간으로 확인합니다.</p>
+              <p class="v-item-rule">차감 공식 · 연차(`ANNUAL`)는 1일당 `1.0일` 차감 · 오전반차(`HALF_AM`) 및 오후반차(`HALF_PM`)는 1회당 `0.5일` 차감 · 공가(`PUBLIC`, 예비군/민방위/경조사 등)는 `0.0일`로 연차에서 차감되지 않습니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">인터랙티브 달력을 이용한 휴가 · 반차 신청 방법</h3>
+              <p class="v-item-desc">별도의 시작일·종료일 입력창 대신 달력에서 원하는 날짜 칸을 직접 클릭하여 단일 또는 다중 일자를 한 번에 신청합니다.</p>
+              <ul class="v-item-steps">
+                <li>1단계 · [근태 관리] 화면에서 [휴가 신청] 아코디언 패널을 클릭하여 엽니다.</li>
+                <li>2단계 · 상단 구분에서 [연차] · [반차] · [공가] 중 신청할 유형을 먼저 선택합니다.</li>
+                <li>3단계 · 달력에서 희망하는 평일 날짜를 클릭합니다. 만약 [반차]를 선택한 상태라면 날짜 클릭 시 나타나는 `오전반차(09:00~14:00)` 또는 `오후반차(14:00~18:00)` 옵션을 선택합니다.</li>
+                <li>4단계 · 우측 입력 영역에서 선택된 날짜 목록과 총 차감 일수를 확인한 뒤, 사유를 입력하고 [신청하기] 버튼을 누릅니다.</li>
+              </ul>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">주말 · 공휴일 선택 제한 및 중복 신청 방지 설계</h3>
+              <p class="v-item-desc">휴가 신청 모드에서는 토요일, 일요일 및 대한민국 법정공휴일(`holidays.js` 기준) 날짜 칸이 자동으로 비활성화되어 잘못된 휴가 신청을 원천 차단합니다. 또한 본인이 이미 휴가를 신청해 결재 대기 중(`PENDING`)이거나 승인 완료(`APPROVED`)된 날짜도 중복 선택이 방지됩니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">휴가 신청 내역 조회 및 취소 방법</h3>
+              <p class="v-item-desc">근태 관리 하단의 [휴가 및 근무 신청 내역] 아코디언을 열면 본인이 신청한 모든 휴가·근무의 진행 상태(`승인 대기` · `승인 완료` · `반려` · `취소됨`)를 확인할 수 있습니다. 결재 대기 중인 건이나 아직 도래하지 않은 휴가는 내역 우측의 취소 버튼을 눌러 신청을 철회할 수 있으며, 취소 시 차감되었던 연차 일수와 전사 캘린더 일정이 즉시 복구·삭제됩니다.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [05] 재택 · 외근 · 출장 · 야근 · 휴일근무 신청 -->
+      <section class="manual-row" id="sec-05">
+        <div class="manual-left">
+          <span class="manual-num">05 · WORK APPLICATION</span>
+          <h2 class="manual-title">재택 · 외근 · 야근 · 휴일</h2>
+          <span class="manual-meta">화면 · ApplicationCalendar (근무 신청)<br />대상 · 전 임직원</span>
+        </div>
+        <div class="manual-center">
+          <div class="manual-summary">
+            <p class="manual-headline">사내 출근 외의 외부 근무(재택 · 외근 · 출장)와 소정근로시간 외의 연장 근무(야근 · 휴일근무)를 사전 신청하고 근태/급여와 연동합니다.</p>
+          </div>
+          <div class="vertical-items">
+            <div class="v-item">
+              <h3 class="v-item-head">재택근무(REMOTE) · 외근(FIELD) · 출장(TRIP) 신청 및 사용법</h3>
+              <p class="v-item-desc">사무실 외부에서 근무해야 하는 날에는 [근태 관리] → [근무 신청] 아코디언을 열고 [재택] · [외근] · [출장] 중 하나를 선택한 뒤 달력에서 대상 평일을 클릭하고 사유(방문처, 업무 목적 등)를 적어 신청합니다.</p>
+              <p class="v-item-rule">자동 연동 규칙 · 결재가 승인(`APPROVED`)되면 전사 캘린더에 해당 직원의 재택/외근/출장 일정이 자동 등록되며, 당일 출근 타각 시 별도 조작 없이 근무 형태가 `재택근무` 또는 `외근`으로 자동 매핑됩니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">평일 야근(OVERTIME) 신청 방법</h3>
+              <p class="v-item-desc">평일 정규 퇴근 시각(`18:00`) 이후 추가 근무가 필요한 경우, 사전(또는 당일)에 야근 신청을 등록해 승인을 받아야 연장근무 시간으로 인정됩니다.</p>
+              <ul class="v-item-steps">
+                <li>1단계 · [근태 관리] → [근무 신청] 아코디언에서 [야근] 탭을 선택합니다.</li>
+                <li>2단계 · 달력에서 야근할 평일 날짜를 클릭합니다. (주말·공휴일은 야근 탭에서 선택 불가)</li>
+                <li>3단계 · 우측에 나타나는 커스텀 시간 선택기(`CustomTimePicker`)로 야근 시작 시각(기본 `18:00`)과 종료 예정 시각을 30분 단위로 선택합니다.</li>
+                <li>4단계 · 야근 업무 사유를 입력하고 [신청하기]를 눌러 결재를 올립니다.</li>
+              </ul>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">야근 시간(overtimeHours) 인정 및 실근무시간 합산 공식</h3>
+              <p class="v-item-desc">서버는 직원이 `18:00` 이후에 퇴근 버튼을 누를 때 해당 일자에 승인 완료(`APPROVED`)된 야근 신청 건이 존재하는지 자동 조회합니다.</p>
+              <ul class="v-item-steps">
+                <li>승인된 야근 신청이 없는 경우 · `18:00` 이후 늦게 퇴근하더라도 연장근무 시간(`overtimeHours`)은 `0시간`으로 처리되며 당일 근무시간은 기본 `8.0시간`까지만 인정됩니다.</li>
+                <li>승인된 야근 신청이 있는 경우 · 신청 시 승인받은 시간 한도(`workStartTime ~ workEndTime`)와 실제 `18:00` 이후 퇴근 시각까지의 체류 시간 중 작은 값(`Math.min`)을 연장근무 시간으로 인정하여 당일 총 근무시간(`8.0h + 연장근무시간`) 및 월말 야근수당에 자동 반영합니다.</li>
+              </ul>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">주말 · 법정공휴일 휴일근무(HOLIDAY_WORK) 신청 방법</h3>
+              <p class="v-item-desc">토요일, 일요일 또는 법정공휴일에 출근하여 근무해야 하는 경우 [근무 신청] 아코디언에서 [휴일근무]를 선택합니다. 휴일근무 탭에서는 평일 선택이 차단되고 주말과 공휴일만 클릭할 수 있도록 설계되어 있습니다. 날짜 선택 후 근무 시작 시각과 종료 시각(예: `10:00 ~ 15:00`) 및 수행할 업무 내용을 입력해 결재를 요청합니다.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [06] 고객사 전용 포털 · 유지보수 요청 접수 -->
+      <section class="manual-row" id="sec-06">
+        <div class="manual-left">
+          <span class="manual-num">06 · CLIENT PORTAL</span>
+          <h2 class="manual-title">고객사 포털 · 요청 접수</h2>
+          <span class="manual-meta">화면 · ClientPortal / HtmlEditor<br />대상 · 외부 고객사 (CLIENT)</span>
+        </div>
+        <div class="manual-center">
+          <div class="manual-summary">
+            <p class="manual-headline">외부 고객사가 자사 계약 공수를 실시간으로 확인하고, 리치 웹 에디터로 유지보수 작업을 요청·수정·검수하는 전용 공간입니다.</p>
+          </div>
+          <div class="vertical-items">
+            <div class="v-item">
+              <h3 class="v-item-head">계약 공수(h) 실시간 확인 및 웹사이트 · 관리자 바로가기</h3>
+              <p class="v-item-desc">고객사 계정으로 로그인하면 상단에 고객사 상호명과 함께 약정된 `총 계약 공수`, 지금까지 완료된 작업으로 차감된 `사용 공수`, 앞으로 사용할 수 있는 `잔여 공수(h)`가 실시간으로 표시됩니다. 메인 허브의 [홈페이지 바로가기]와 [관리자 바로가기] 카드를 누르면 등록된 고객사 웹사이트와 관리자 페이지가 새 탭으로 즉시 열립니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">리치 웹 에디터 기반의 신규 작업 요청 등록 순서</h3>
+              <p class="v-item-desc">고객사는 전화나 이메일 대신 표준화된 우측 슬라이드 드로어를 통해 작업 요청을 등록합니다.</p>
+              <ul class="v-item-steps">
+                <li>1단계 · [요청사항 바로가기] 진입 후 우측 상단의 [신규 요청 등록] 버튼을 클릭합니다.</li>
+                <li>2단계 · 요청 제목을 입력하고, 커스텀 달력(`CustomDatePicker`)에서 희망 완료일을 선택합니다. (오늘 이전의 과거 날짜는 선택할 수 없도록 자동 비활성화되어 있습니다.)</li>
+                <li>3단계 · 긴급한 장애나 우선 처리가 필요한 경우 `긴급 요청` 체크박스(`CustomCheckbox`)를 선택합니다.</li>
+                <li>4단계 · 리치 웹 에디터(`HtmlEditor`)에 상세 작업 내용을 작성합니다. 글자 크기, 굵기/밑줄, 정렬, 리스트, 표(Table) 삽입을 지원하며, 하단에 참고 이미지나 문서 파일을 다중 첨부한 뒤 [등록]을 누릅니다.</li>
+              </ul>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">접수 상태에서의 내용 수정 및 단계별 진행 확인 · 검수 승인</h3>
+              <p class="v-item-desc">등록된 요청은 고객사 화면에서 [진행 중] · [확인 요청] · [작업 완료] 3개 탭으로 분류됩니다.</p>
+              <ul class="v-item-steps">
+                <li>요청 내용 직접 수정 · 사내 담당자가 아직 배정되기 전인 접수 대기(`REQUESTED`) 상태의 요청 건은 상세 드로어에서 [수정] 버튼을 눌러 고객사가 직접 제목, 희망 완료일, 긴급 여부, 본문 내용을 수정할 수 있습니다.</li>
+                <li>실시간 코멘트 소통 · 작업이 `진행 중`으로 넘어간 이후에는 상세 드로어 하단의 댓글창과 파일 첨부를 통해 사내 담당자와 실시간으로 질의응답을 주고받습니다.</li>
+                <li>확인 요청 검수 · 사내 담당자가 작업을 마치고 `확인 요청(REVIEW)` 상태로 변경하면, 고객사는 [확인 요청] 탭에서 작업 결과와 산정된 분야별 공수를 확인한 뒤 최종 완료를 승인하거나 추가 수정을 요청합니다.</li>
+              </ul>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">고객사 담당자 정보 및 비밀번호 변경</h3>
+              <p class="v-item-desc">고객사 포털 우측 상단의 정보 수정 버튼을 누르면 슬라이드 드로어가 열리며, 고객사 담당자 이름, 연락처, 사업자등록번호 및 로그인 비밀번호를 직접 변경할 수 있습니다.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [07] 사내 고객사 요청 처리 · 분야별 담당 배정 · 공수 산정 -->
+      <section class="manual-row" id="sec-07">
+        <div class="manual-left">
+          <span class="manual-num">07 · REQUEST WORKFLOW &amp; HOURS</span>
+          <h2 class="manual-title">사내 요청 처리 · 공수</h2>
+          <span class="manual-meta">화면 · EmployeePortal (요청관리)<br />대상 · 사내 실무자 · 팀장 · 관리자</span>
+        </div>
+        <div class="manual-center">
+          <div class="manual-summary">
+            <p class="manual-headline">고객사 요청을 접수해 기획 · 디자인 · 퍼블 · 개발 담당자를 배정하고, 분야별 투입 공수(h)를 기록해 계약 공수를 차감합니다.</p>
+          </div>
+          <div class="vertical-items">
+            <div class="v-item">
+              <h3 class="v-item-head">4단계 요청 상태 탭 및 다중 검색 필터</h3>
+              <p class="v-item-desc">사내 임직원의 [요청관리] 화면은 `작업 요청(REQUESTED)` → `진행 중(IN_PROGRESS)` → `확인 요청(REVIEW)` → `작업 완료(DONE)` 4개 상태 탭으로 구성됩니다. 상단 툴바에서 등록일 달력 필터(`CustomDatePicker`), 키워드 검색창, 그리고 본인에게 배정된 건만 추려보는 `내 담당 요청만 보기`(`CustomCheckbox`) 필터를 조합해 원하는 요청을 빠르게 찾습니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">분야별(기획 · 디자인 · 퍼블 · 개발 · 기타) 담당자 배정 방법</h3>
+              <p class="v-item-desc">하나의 고객사 요청에 여러 직무의 실무자가 동시에 협업할 수 있도록 작업 단위별 담당자 배정 구조를 갖추고 있습니다.</p>
+              <ul class="v-item-steps">
+                <li>1단계 · [작업 요청] 탭에서 신규 접수된 항목을 클릭해 우측 상세 드로어를 엽니다.</li>
+                <li>2단계 · 작업 내역 영역에서 [담당자 추가]를 누르고 작업 분야(`기획` · `디자인` · `퍼블` · `개발` · `기타`)를 선택합니다. 선택한 분야에 맞춰 해당 부서/직무의 임직원이 우선 추천됩니다.</li>
+                <li>3단계 · 담당 실무자를 지정해 추가하면 요청 전체 상태가 자동으로 `진행 중(IN_PROGRESS)`으로 전환되며, 배정된 직원에게 즉시 실시간 알림이 발송됩니다.</li>
+              </ul>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">실무자별 작업 완료 처리 및 투입 공수(h) 기록</h3>
+              <p class="v-item-desc">배정된 각 분야 실무자는 자신의 작업을 진행하면서 개별 상태를 `대기` → `진행 중` → `완료`로 변경합니다. 상태를 `완료`로 바꿀 때 작업 완료 모달이 열리며, 본인이 해당 작업에 실제 투입한 공수(시간 단위, 예: `1.5`시간)와 처리 내용 요약을 필수로 입력합니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">고객사 확인 요청 전환 및 최종 완료 시 계약 공수 자동 차감</h3>
+              <p class="v-item-desc">배정된 모든 분야의 작업이 완료되면 요청 상태를 `확인 요청(REVIEW)`으로 전환하여 고객사에 검수를 요청합니다. 이후 고객사 검수가 끝나 최종 `작업 완료(DONE)`로 확정하면, 각 분야 실무자가 기록한 공수가 분야별로 합산(`디자인 1.5h · 퍼블 2.0h · 개발 3.0h` 형태의 순수 텍스트 표기)되고, 총 합계 시간만큼 해당 고객사의 잔여 계약 공수에서 자동으로 차감됩니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">요청 히스토리 타임라인 패널 및 댓글 · 파일 소통</h3>
+              <p class="v-item-desc">상세 드로어 우측 상단의 [이력] 버튼을 누르면 최초 요청 등록 시각부터 담당자 배정, 분야별 완료 및 공수 기록, 상태 변경 내역이 시간순으로 기록된 타임라인 패널이 열립니다. 드로어 하단에서는 고객사 및 사내 협업자들과 댓글 및 첨부파일을 실시간으로 주고받을 수 있습니다.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [08] 사내 프로젝트 과업 관리 · 내 업무 목록 -->
+      <section class="manual-row" id="sec-08">
+        <div class="manual-left">
+          <span class="manual-num">08 · PROJECTS &amp; MY TASKS</span>
+          <h2 class="manual-title">프로젝트 · 내 업무 목록</h2>
+          <span class="manual-meta">화면 · TaskBoard / TasksListView<br />대상 · 전 임직원 · 부서장</span>
+        </div>
+        <div class="manual-center">
+          <div class="manual-summary">
+            <p class="manual-headline">사내 프로젝트 및 부서 과업을 심플 리스트와 전용 상세 화면으로 관리하고, 상단 클립보드에서 내 담당 업무를 통합 조회합니다.</p>
+          </div>
+          <div class="vertical-items">
+            <div class="v-item">
+              <h3 class="v-item-head">사내 프로젝트 과업 신규 등록 및 리스트 조회</h3>
+              <p class="v-item-desc">[프로젝트 관리] 메뉴에서는 사내 개발 과업, 디자인 개편, 내부 기획 등 부서별 프로젝트 업무를 관리합니다.</p>
+              <ul class="v-item-steps">
+                <li>1단계 · [프로젝트 관리] 우측 상단의 [등록] 버튼을 눌러 우측 슬라이드 등록 드로어를 엽니다.</li>
+                <li>2단계 · 과업 제목, 상세 설명, 담당자(선택 시 소속 부서 자동 매핑), 우선순위(`긴급` · `높음` · `보통` · `낮음`), 시작일과 마감일(`CustomDatePicker`)을 입력해 저장합니다.</li>
+                <li>3단계 · 리스트 화면 상단에서 진행 상태(`전체` · `진행 대기` · `진행 중` · `완료`) 탭과 날짜/검색어 필터로 과업을 조회합니다.</li>
+              </ul>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">전용 상세 화면(`DETAIL` 뷰)에서의 상태 변경 및 내용 편집</h3>
+              <p class="v-item-desc">목록에서 특정 프로젝트를 클릭하면 좁은 팝업 대신 읽기 편한 전용 상세 화면으로 전환됩니다. 상세 화면에서 과업 전문과 일정, 담당 부서를 확인하고, 진행 상태를 즉시 변경하거나 [수정] 모드로 전환해 내용을 편집할 수 있습니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">상단 바 클립보드(내 업무 목록) 통합 모아보기</h3>
+              <p class="v-item-desc">상단 내비게이션 바 우측의 [클립보드 아이콘]을 누르면 `내 업무 목록(TasksListView)` 화면이 열립니다. 이곳에서는 나에게 배정된 `사내 프로젝트 과업`과 내가 담당자로 지정된 `고객사 유지보수 요청`이 한 화면에 모아져 표시되며, 항목을 클릭하면 해당 프로젝트 상세 화면이나 고객사 요청 드로어로 즉시 이동합니다.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [09] 전사 일정 캘린더 · 부서 일정 및 휴가 자동 공유 -->
+      <section class="manual-row" id="sec-09">
+        <div class="manual-left">
+          <span class="manual-num">09 · COMPANY CALENDAR</span>
+          <h2 class="manual-title">전사 일정 캘린더</h2>
+          <span class="manual-meta">화면 · CompanyCalendar<br />대상 · 전 임직원</span>
+        </div>
+        <div class="manual-center">
+          <div class="manual-summary">
+            <p class="manual-headline">전사 회의 · 업무 · 외근 일정과 승인된 임직원 휴가가 하나의 월간 달력에 자동으로 통합 공유됩니다.</p>
+          </div>
+          <div class="vertical-items">
+            <div class="v-item">
+              <h3 class="v-item-head">신규 전사 일정 등록 및 참석자 다중 지정 방법</h3>
+              <p class="v-item-desc">[일정 관리] 메뉴에서 월간 달력의 특정 날짜 칸을 클릭하거나 우측 상단 [일정 등록] 버튼을 누르면 일정 등록 드로어가 열립니다. 일정 제목, 카테고리(회의 · 내부 업무 · 외근 · 기타), 시작일~종료일(`CustomDatePicker`), 종일 여부(`CustomCheckbox`), 시간대, 상세 메모를 입력하고, 함께 참석할 임직원들을 체크박스로 다중 선택해 저장합니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">내 일정만 보기 및 유형별 필터링</h3>
+              <p class="v-item-desc">전사 일정이 많은 경우 상단 필터 바에서 `내 일정만 보기` 체크박스를 켜면 본인이 등록했거나 참석자로 지정된 일정, 그리고 본인의 휴가 일정만 달력에 깔끔하게 필터링되어 나타납니다. 일정 항목을 클릭하면 상세 내용과 함께 해당 일정에 연결된 첨부파일 목록도 바로 확인할 수 있습니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">근태 결재(휴가 · 재택 · 외근 · 출장)와의 자동 동기화 규칙</h3>
+              <p class="v-item-desc">임직원이 근태 관리 메뉴에서 신청한 `연차` · `반차` · `공가` · `재택근무` · `외근` · `출장`이 승인(`APPROVED`)되면, 별도로 캘린더에 다시 등록하지 않아도 전사 캘린더 해당 날짜에 자동으로 일정이 생성됩니다. 반대로 휴가나 근무 신청을 취소하면 전사 캘린더에서도 자동으로 함께 삭제됩니다. (단, 평일 야근과 휴일근무는 달력 가독성을 위해 전사 캘린더에 표시하지 않고 근태 달력과 급여에만 반영합니다.)</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [10] 파일 보관함 · 일정별 아코디언 세로 트리 -->
+      <section class="manual-row" id="sec-10">
+        <div class="manual-left">
+          <span class="manual-num">10 · FILE REPOSITORY</span>
+          <h2 class="manual-title">파일 보관함 · 트리 연동</h2>
+          <span class="manual-meta">화면 · FileManager<br />대상 · 전 임직원</span>
+        </div>
+        <div class="manual-center">
+          <div class="manual-summary">
+            <p class="manual-headline">사내 문서 · 엑셀 · 이미지 자료를 업로드하고 전사 캘린더의 회의 · 업무 일정과 연결해 아코디언 트리로 관리합니다.</p>
+          </div>
+          <div class="vertical-items">
+            <div class="v-item">
+              <h3 class="v-item-head">파일 업로드 및 전사 일정 다대다(N:M) 연결 방법</h3>
+              <p class="v-item-desc">단순히 파일만 나열하는 자료실이 아니라, 각 파일이 어떤 회의나 업무 일정에서 사용된 산출물인지 양방향으로 연결할 수 있도록 설계되어 있습니다.</p>
+              <ul class="v-item-steps">
+                <li>1단계 · [파일 관리] 메뉴 우측 상단의 [파일 업로드] 버튼을 클릭해 업로드 드로어를 엽니다.</li>
+                <li>2단계 · 업로드할 파일을 선택하고 파일에 대한 설명 메모를 입력합니다.</li>
+                <li>3단계 · 하단 일정 연결 목록에서 이 파일과 연관된 회의 · 업무 일정을 하나 이상 체크(`CustomCheckbox`)한 뒤 업로드합니다.</li>
+                <li>4단계 · 이미 업로드된 파일도 목록 우측의 [일정 연결] 버튼을 눌러 언제든 연결 일정을 추가하거나 해제할 수 있습니다.</li>
+              </ul>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">3가지 조회 탭(전체 · 일정 트리 · 유형별) 사용법</h3>
+              <p class="v-item-desc">파일 보관함 상단에서 3가지 방식으로 파일을 탐색할 수 있습니다.</p>
+              <ul class="v-item-steps">
+                <li>전체 탭 · 등록된 모든 파일을 리스트 형태로 조회하며 파일명·메모·등록자 검색과 정렬(이름순 · 최신순 · 크기순), `내 파일만 보기` 필터를 제공합니다.</li>
+                <li>일정 탭 (아코디언 세로 트리) · 파일이 연결된 전사 일정들이 상위 항목으로 표시됩니다. 일정을 클릭하면 아코디언이 아래로 펼쳐지면서 세로 트리 가이드 라인을 따라 해당 일정에 속한 파일들을 한눈에 확인하고 다운로드하거나 해당 캘린더 일정으로 바로 이동할 수 있습니다.</li>
+                <li>유형 탭 · 업로드된 파일의 확장자를 자동 분석하여 `문서(pdf, hwp, doc, ppt, txt)` · `엑셀(xlsx, xls, csv)` · `이미지(png, jpg, svg, webp)` · `기타` 4개 그룹으로 자동 분류해 보여줍니다.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [11] 실시간 알림 센터 · 개인 환경설정 -->
+      <section class="manual-row" id="sec-11">
+        <div class="manual-left">
+          <span class="manual-num">11 · NOTIFICATIONS &amp; SETTINGS</span>
+          <h2 class="manual-title">알림 센터 · 환경설정</h2>
+          <span class="manual-meta">화면 · NotificationsView / SettingsView<br />대상 · 전 임직원</span>
+        </div>
+        <div class="manual-center">
+          <div class="manual-summary">
+            <p class="manual-headline">업무 배정 · 결재 · 고객사 요청 알림을 실시간으로 수신해 해당 화면으로 즉시 이동하며, 개인별 UI 환경을 설정합니다.</p>
+          </div>
+          <div class="vertical-items">
+            <div class="v-item">
+              <h3 class="v-item-head">실시간 알림 수신 및 원클릭 딥링크 이동</h3>
+              <p class="v-item-desc">고객사가 신규 요청을 등록하거나, 나에게 요청 작업이 배정되거나, 신청한 휴가/근무가 승인·반려되거나, 전사 공지사항이 올라오면 30초 주기로 이를 감지해 알림음과 함께 토스트 팝업을 띄웁니다. 상단 바의 [메일 아이콘]을 눌러 알림 센터에 진입한 뒤 알림 항목을 클릭하면, 해당 알림과 연결된 요청 상세 드로어, 캘린더 일정, 또는 휴가 신청 내역 위치로 즉시 이동합니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">개인 프로필 수정 및 테마 · 토스트 알림 위치 설정</h3>
+              <p class="v-item-desc">[환경설정] 메뉴에서는 본인의 연락처, 이메일, 비밀번호를 수정할 수 있으며, 화면 테마(다크 모드 / 라이트 모드)와 실시간 토스트 알림창이 뜨는 화면 위치(우측 상단 · 우측 하단 · 중앙 상단 등)를 취향에 맞게 변경할 수 있습니다. 변경된 환경설정은 서버 계정에 저장되어 다른 기기에서 접속해도 동일하게 적용됩니다.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [12] 인사 · 월별 급여 정산 · 명세서 관리 -->
+      <section class="manual-row" id="sec-12">
+        <div class="manual-left">
+          <span class="manual-num">12 · PAYROLL &amp; HR SETTLEMENT</span>
+          <h2 class="manual-title">월급 · 급여 정산</h2>
+          <span class="manual-meta">화면 · PayrollManager<br />대상 · 인사 담당자 (HR / insa) · 관리자</span>
+        </div>
+        <div class="manual-center">
+          <div class="manual-summary">
+            <p class="manual-headline">전사 급여 · 근태 공제 기준을 설정하고, 당월 출퇴근(지각 · 조퇴 · 결근) 및 승인된 야근 데이터를 연동해 월별 급여 명세서를 정산합니다.</p>
+          </div>
+          <div class="vertical-items">
+            <div class="v-item">
+              <h3 class="v-item-head">전사 급여 지급일 및 근태 공제 기준 정책 설정</h3>
+              <p class="v-item-desc">인사 담당자(`HR` / `insa`) 또는 최고 관리자가 [급여 관리] 우측 상단의 [급여/공제 기준 설정] 버튼을 누르면 전사 급여 정책 설정 드로어가 열립니다. 여기서 매월 급여 지급일(기본 25일), 기본 비과세 식대(기본 200,000원), 지각 1건당 공제 금액(기본 20,000원), 조퇴 1건당 공제 금액(기본 10,000원), 결근 시 공제 방식(일할 계산 차감 또는 정액 차감), 오전/오후 반차 기준 근무시간을 일괄 설정합니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">지급 항목(기본급 · 수당 · 승인 야근수당) 자동 산출 구조</h3>
+              <p class="v-item-desc">각 임직원의 책정 연봉을 기준으로 월 기본급(연봉÷12)이 자동 계산되며, 여기에 직책수당, 기본 식대, 상여금, 그리고 해당 귀속월에 사전 승인(`APPROVED`)받아 실제 수행한 연장근무(야근) 수당(`overtimePay`)이 합산되어 지급 총액(`totalPay`)이 산출됩니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">공제 항목(4대 보험 · 소득세 · 근태 공제) 및 실수령액 계산 공식</h3>
+              <p class="v-item-desc">지급 총액에서 법정 4대 보험 및 세금(국민연금 4.5% · 건강보험 3.545% · 장기요양보험 · 고용보험 0.9% · 소득세 및 지방소득세)과 당월 근태 기록에서 자동 집계된 근태 공제액(당월 지각 횟수×지각 공제 단가 + 조퇴 횟수×조퇴 공제 단가 + 결근 공제)을 차감하여 최종 실수령액(`netPay = 지급 총액 - 공제 총액`)을 자동 산출합니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">월별 급여 명세서 개별 조정 · 상태 확정 및 인쇄 방법</h3>
+              <p class="v-item-desc">실제 월급 정산 업무는 아래 순서로 진행합니다.</p>
+              <ul class="v-item-steps">
+                <li>1단계 · [급여 관리] 상단에서 정산할 귀속월(예: `2026-09`)과 부서 필터를 선택하여 전체 지급액 · 공제액 · 실지급액 요약을 확인합니다.</li>
+                <li>2단계 · 목록(테이블 뷰 또는 카드 뷰)에서 직원을 클릭해 우측 급여 명세서 상세 드로어를 엽니다.</li>
+                <li>3단계 · 자동 계산된 수당 및 근태 공제 내역을 검토하고, 특별 상여나 수당 조정이 필요한 경우 [수정] 버튼을 눌러 항목별 금액을 직접 조정한 뒤 저장합니다.</li>
+                <li>4단계 · 검토가 끝나면 명세서 상태를 `검토 대기(PENDING_REVIEW)` → `검토 완료(REVIEWED)` → `지급 완료(PAID)` 순으로 변경하고, 상단 인쇄/복사 버튼으로 급여 명세서를 출력하거나 전달합니다.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [13] 최고 관리자 콘솔 · 조직/근태보정/고객사/네트워크 관제 -->
+      <section class="manual-row" id="sec-13">
+        <div class="manual-left">
+          <span class="manual-num">13 · ADMIN CONSOLE</span>
+          <h2 class="manual-title">최고 관리자 콘솔</h2>
+          <span class="manual-meta">화면 · AdminPortal / AdminAttendanceSection<br />대상 · 최고 관리자 (ADMIN) · 팀장</span>
+        </div>
+        <div class="manual-center">
+          <div class="manual-summary">
+            <p class="manual-headline">임직원 사번 자동 채번과 부서 편성, 전사 근태 관제 및 09:00 정시 즉시 보정, 고객사 계약 공수, 사내 공인 IP 보안 설정을 총괄합니다.</p>
+          </div>
+          <div class="vertical-items">
+            <div class="v-item">
+              <h3 class="v-item-head">임직원 계정 발급(사번 자동 채번) 및 부서 · 직급 관리</h3>
+              <p class="v-item-desc">최고 관리자 화면의 [계정 관리] 탭에서 [임직원 등록]을 누르면 현재 연도와 시퀀스를 조합한 표준 사번(`EMP-YYYY-NNN`)이 자동으로 채번됩니다. 이름, 아이디, 초기 비밀번호, 부서(팀), 직급(사원~대표이사 및 연구원 직군), 총 연차 일수를 입력해 계정을 생성하며, 목록에서 각 임직원의 실시간 온라인 접속 상태와 접속 기기(PC / Mobile)를 바로 확인할 수 있습니다. 서브탭인 [팀 관리]에서는 부서 신설, 부서명 수정, 소속 팀원 배정을 관리합니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">전사 근태 일자별 · 월간 관제 및 09:00 정시 출근 즉시 보정</h3>
+              <p class="v-item-desc">[사내 근태 관리] 탭에서는 전 직원의 출퇴근 현황과 휴가 · 근무 결재를 한곳에서 관제합니다.</p>
+              <ul class="v-item-steps">
+                <li>상단 요약 및 뷰 전환 · 당일 전체 인원, 정상출근, 지각, 휴가/외근, 미출근 인원을 상단 요약 카드로 확인하고, `직원별 월간 캘린더 뷰`와 `일자별 전체 현황 뷰`를 전환하며 조회합니다.</li>
+                <li>09:00 정시 출근 즉시 보정 · 전산 오류나 사유가 있는 지각 · 미출근 기록을 클릭해 상세 드로어를 열고 보정 사유를 입력한 뒤 [09:00 정시 출근 보정] 버튼을 누르면, 해당 기록의 출근 시각이 `09:00:00`, 상태가 `정상 출근(PRESENT)`으로 즉시 보정되며 당월 급여의 지각 공제 대상에서도 자동 제외됩니다.</li>
+                <li>휴가 · 근무 결재 처리 · 임직원이 올린 휴가 · 반차 · 재택 · 외근 · 야근 · 휴일근무 신청 건을 확인하고 [승인] 또는 [반려]를 처리합니다.</li>
+              </ul>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">고객사 계정 발급 및 유지보수 계약 공수(h) 관제</h3>
+              <p class="v-item-desc">[고객사 관리] 탭에서 신규 고객사 계정(상호명, 로그인 아이디/비밀번호, 담당자명, 연락처, 사업자번호, 홈페이지 URL, 관리자 URL)을 등록하고 약정된 `총 계약 공수(h)`를 설정합니다. 목록에서 고객사별 총 공수 대비 현재 사용 공수와 잔여 공수를 한눈에 파악하고 계약 갱신 시 공수를 추가·조정할 수 있습니다.</p>
+            </div>
+            <div class="v-item">
+              <h3 class="v-item-head">사내 출퇴근 허용 공인 IP 네트워크 등록 및 전사 공지사항 발행</h3>
+              <p class="v-item-desc">[원데스크 설정] 탭에서는 사내 보안 네트워크와 전사 공지를 관리합니다. [네트워크 설정]에서 사무실 라우터의 공인 IP 주소(예: `211.xxx.xxx.xxx` 또는 대역)를 등록해 두면 해당 IP에서만 일반 출퇴근 타각이 허용되며, [현재 접속 IP 불러오기] 버튼으로 지금 접속 중인 사무실 IP를 오타 없이 바로 입력할 수 있습니다. [공지사항 관리]에서는 전 임직원에게 노출할 사내 공지사항을 작성 · 수정 · 삭제합니다.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+  <script>
+    document.querySelectorAll('.toc-link').forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        var href = link.getAttribute('href');
+        if (href && href.charAt(0) === '#') {
+          var target = document.querySelector(href);
+          if (target) {
+            e.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
