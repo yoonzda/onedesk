@@ -9,7 +9,8 @@ export default function TaskBoard({
   onAddTask, 
   onUpdateTaskStatus, 
   onShowToast,
-  onRefresh 
+  onRefresh,
+  activeSubTab = 'ALL'
 }) {
   const [viewMode, setViewMode] = useState('LIST'); // 'LIST' | 'DETAIL'
   const [selectedTaskId, setSelectedTaskId] = useState(null);
@@ -19,12 +20,21 @@ export default function TaskBoard({
   const [showNewDrawer, setShowNewDrawer] = useState(false);
   const [isNewDrawerClosing, setIsNewDrawerClosing] = useState(false);
 
-  // Filters (List View)
-  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'TODO' | 'IN_PROGRESS' | 'DONE'
+  // Filters (List View - controlled by Left Sidebar sub-tab)
+  const [statusFilter, setStatusFilter] = useState(activeSubTab || 'ALL'); // 'ALL' | 'TODO' | 'IN_PROGRESS' | 'DONE'
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef(null);
+
+  React.useEffect(() => {
+    if (activeSubTab) {
+      setStatusFilter(activeSubTab);
+      setViewMode('LIST');
+      setSearchTerm('');
+      setSelectedDate('');
+    }
+  }, [activeSubTab]);
 
   // New Task Form
   const [newForm, setNewForm] = useState({
@@ -247,48 +257,49 @@ export default function TaskBoard({
   if (viewMode === 'LIST') {
     return (
       <div>
-        {/* Full-width Standard Toolbar: Sub-tabs (Left) + Search, Date, Reset & Plus Icon (Right) */}
+        {/* Full-width Standard Toolbar: Status Filter Pills (Left) + Search, Date, Reset & Plus Icon (Right) */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '1rem',
+          paddingBottom: '0.85rem',
           borderBottom: '1px solid var(--border-color)',
           marginBottom: '0',
           position: 'relative',
           zIndex: 20
         }}>
-          {/* Sub-tabs: 4단계 (전체 | 할 일 | 진행 중 | 작업 완료) - 전사 규칙: 괄호 및 숫자 일체 배제 */}
-          <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', marginBottom: '-1px' }}>
-            <button 
-              type="button"
-              className={`tab-btn tab-btn-lg ${statusFilter === 'ALL' ? 'active' : ''}`}
-              onClick={() => { setStatusFilter('ALL'); setSearchTerm(''); setSelectedDate(''); }}
-            >
-              전체
-            </button>
-            <button 
-              type="button"
-              className={`tab-btn tab-btn-lg ${statusFilter === 'TODO' ? 'active' : ''}`}
-              onClick={() => { setStatusFilter('TODO'); setSearchTerm(''); setSelectedDate(''); }}
-            >
-              할 일
-            </button>
-            <button 
-              type="button"
-              className={`tab-btn tab-btn-lg ${statusFilter === 'IN_PROGRESS' ? 'active' : ''}`}
-              onClick={() => { setStatusFilter('IN_PROGRESS'); setSearchTerm(''); setSelectedDate(''); }}
-            >
-              진행 중
-            </button>
-            <button 
-              type="button"
-              className={`tab-btn tab-btn-lg ${statusFilter === 'DONE' ? 'active' : ''}`}
-              onClick={() => { setStatusFilter('DONE'); setSearchTerm(''); setSelectedDate(''); }}
-            >
-              작업 완료
-            </button>
+          {/* Left: Status Filter Buttons (전체 | 할 일 | 진행 중 | 작업 완료) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {[
+              { id: 'ALL', label: '전체' },
+              { id: 'TODO', label: '할 일' },
+              { id: 'IN_PROGRESS', label: '진행 중' },
+              { id: 'DONE', label: '작업 완료' }
+            ].map(f => {
+              const isSelected = statusFilter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => { setStatusFilter(f.id); setSearchTerm(''); setSelectedDate(''); }}
+                  style={{
+                    padding: '0.4rem 1.05rem',
+                    borderRadius: '9999px',
+                    border: isSelected ? '1px solid var(--text-muted)' : '1px solid var(--border-color)',
+                    backgroundColor: isSelected ? 'var(--primary-light)' : 'transparent',
+                    color: isSelected ? 'var(--text-primary)' : 'var(--text-muted)',
+                    fontSize: '15px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    outline: 'none'
+                  }}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
           </div>
 
           {/* Right: Unified Minimal Icon Toolbar (Search + Date Picker + Reset + Plus) */}
@@ -313,18 +324,18 @@ export default function TaskBoard({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: (isSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-muted)',
-                opacity: (isSearchOpen || searchTerm) ? 1 : 0.45,
+                color: (isSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-secondary)',
+                opacity: (isSearchOpen || searchTerm) ? 1 : 0.72,
                 outline: 'none',
                 transition: 'all 0.15s ease'
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.color = 'var(--text-primary)';
-                e.currentTarget.style.opacity = '0.9';
+                e.currentTarget.style.opacity = '1';
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.color = (isSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-muted)';
-                e.currentTarget.style.opacity = (isSearchOpen || searchTerm) ? 1 : 0.45;
+                e.currentTarget.style.color = (isSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-secondary)';
+                e.currentTarget.style.opacity = (isSearchOpen || searchTerm) ? 1 : 0.72;
               }}
             >
               <Search size={22} strokeWidth={2} />
@@ -354,8 +365,8 @@ export default function TaskBoard({
                 border: 'none',
                 padding: '6px',
                 cursor: 'pointer',
-                color: hasActiveFilter ? 'var(--text-primary)' : 'var(--text-muted)',
-                opacity: hasActiveFilter ? 1 : 0.3,
+                color: hasActiveFilter ? 'var(--text-primary)' : 'var(--text-secondary)',
+                opacity: hasActiveFilter ? 1 : 0.55,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -364,11 +375,11 @@ export default function TaskBoard({
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.color = 'var(--text-primary)';
-                e.currentTarget.style.opacity = '0.9';
+                e.currentTarget.style.opacity = '1';
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.color = hasActiveFilter ? 'var(--text-primary)' : 'var(--text-muted)';
-                e.currentTarget.style.opacity = hasActiveFilter ? 1 : 0.3;
+                e.currentTarget.style.color = hasActiveFilter ? 'var(--text-primary)' : 'var(--text-secondary)';
+                e.currentTarget.style.opacity = hasActiveFilter ? 1 : 0.55;
               }}
             >
               <RotateCcw size={22} strokeWidth={2} />
@@ -523,6 +534,13 @@ export default function TaskBoard({
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {filteredTasks.map((task, idx) => {
               const isLast = idx === filteredTasks.length - 1;
+              const isMyRelated = Boolean(
+                user && (
+                  task.assigneeId === user.id ||
+                  task.assigneeName === user.name ||
+                  task.authorId === user.id
+                )
+              );
               return (
                 <div
                   key={task.id}
@@ -530,6 +548,9 @@ export default function TaskBoard({
                   style={{
                     padding: '1.25rem 1rem',
                     borderBottom: isLast ? 'none' : '1px solid var(--border-color)',
+                    backgroundColor: isMyRelated ? 'var(--bg-my-row)' : 'transparent',
+                    outline: isMyRelated ? '1px solid var(--border-my-row)' : 'none',
+                    outlineOffset: '-1px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -537,8 +558,6 @@ export default function TaskBoard({
                     gap: '2rem',
                     transition: 'background-color 0.15s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
                   {/* Left: Status, Title, Priority, Description preview */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', flex: 1, minWidth: 0 }}>

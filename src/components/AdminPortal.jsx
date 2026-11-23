@@ -136,6 +136,10 @@ export default function AdminPortal({
   };
 
   const [activeTab, setActiveTab] = useState(() => resolveInitialTab(initialTab)); // accounts, internal, clients, onedesk, etc
+
+  useEffect(() => {
+    setActiveTab(resolveInitialTab(initialTab));
+  }, [initialTab]);
   const [accountSubTab, setAccountSubTab] = useState(() => {
     if (initialTab === 'teams') {
       return 'teams';
@@ -1516,121 +1520,6 @@ export default function AdminPortal({
 
   return (
     <div>
-      {/* Subtab Navigation (5 Main Tabs for Admin) */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '1rem',
-        borderBottom: '1px solid var(--border-color)',
-        marginBottom: '1.5rem',
-        position: 'relative',
-        zIndex: 20
-      }}>
-        {/* Left: Subtabs (계정관리, 사내관리, 고객사 관리, 원데스크 설정, 기타) */}
-        <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto' }}>
-          {user?.role === 'ADMIN' ? (
-            <>
-              <button 
-                type="button"
-                className={`tab-btn tab-btn-lg ${activeTab === 'accounts' ? 'active' : ''}`}
-                onClick={() => { setActiveTab('accounts'); setSearchTerm(''); setAccountCategory('ALL'); }}
-              >
-                계정관리
-              </button>
-              <button 
-                type="button"
-                className={`tab-btn tab-btn-lg ${activeTab === 'internal' ? 'active' : ''}`}
-                onClick={() => { setActiveTab('internal'); setSearchTerm(''); }}
-              >
-                사내관리
-              </button>
-              <button 
-                type="button"
-                className={`tab-btn tab-btn-lg ${activeTab === 'clients' ? 'active' : ''}`}
-                onClick={() => { setActiveTab('clients'); setSearchTerm(''); }}
-              >
-                고객사 관리
-              </button>
-              <button 
-                type="button"
-                className={`tab-btn tab-btn-lg ${activeTab === 'onedesk' ? 'active' : ''}`}
-                onClick={() => { setActiveTab('onedesk'); setSearchTerm(''); }}
-              >
-                원데스크 설정
-              </button>
-              <button 
-                type="button"
-                className={`tab-btn tab-btn-lg ${activeTab === 'etc' ? 'active' : ''}`}
-                onClick={() => { setActiveTab('etc'); setSearchTerm(''); }}
-              >
-                기타
-              </button>
-            </>
-          ) : (
-            <button 
-              type="button"
-              className={`tab-btn tab-btn-lg ${activeTab === 'approvals' ? 'active' : ''}`}
-              onClick={() => { setActiveTab('approvals'); setSearchTerm(''); }}
-            >
-              결재 및 당일 근태 {pendingApprovals.length > 0 ? `(${pendingApprovals.length})` : ''}
-            </button>
-          )}
-        </div>
-
-        {/* Right: Search & Action Button (Only for legacy tabs if any) */}
-        {activeTab !== 'approvals' && activeTab !== 'teams' && activeTab !== 'accounts' && activeTab !== 'internal' && activeTab !== 'clients' && activeTab !== 'onedesk' && activeTab !== 'etc' && activeTab !== 'announcements' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', paddingBottom: '0.5rem' }}>
-            {activeTab === 'attendances' && (
-              <CustomDatePicker
-                value={selectedAttDate}
-                onChange={(d) => setSelectedAttDate(d)}
-                placeholder="날짜 검색"
-                width="150px"
-                height="42px"
-              />
-            )}
-
-            <input 
-              type="text"
-              placeholder={
-                activeTab === 'employees' ? '사원명 또는 사번 검색...'
-                : activeTab === 'teams' ? '소속명 또는 사원명 검색...'
-                : activeTab === 'networks' ? '식별명 또는 IP 검색...'
-                : '사원명 또는 부서 검색...'
-              }
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="form-control"
-              style={{ width: '220px', height: '42px', padding: '0 0.85rem' }}
-            />
-
-            {(searchTerm || (activeTab === 'attendances' && selectedAttDate)) && (
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => { setSearchTerm(''); setSelectedAttDate(''); }}
-                style={{ height: '42px' }}
-              >
-                초기화
-              </button>
-            )}
-
-            {activeTab === 'networks' && (
-              <button 
-                type="button"
-                className="btn btn-primary"
-                onClick={() => { setIsNetClosing(false); setShowNetDrawer(true); }}
-                style={{ height: '42px', padding: '0 1.25rem' }}
-              >
-                네트워크 추가
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
       {/* Sub Navigation Bar for 계정관리 (계정 목록, 사내 조직도) + Unified Minimal Toolbar */}
       {activeTab === 'accounts' && (
         <>
@@ -1687,18 +1576,18 @@ export default function AdminPortal({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: (isAccountSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-muted)',
-                      opacity: (isAccountSearchOpen || searchTerm) ? 1 : 0.45,
+                      color: (isAccountSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      opacity: (isAccountSearchOpen || searchTerm) ? 1 : 0.72,
                       outline: 'none',
                       transition: 'all 0.15s ease'
                     }}
                     onMouseEnter={e => {
                       e.currentTarget.style.color = 'var(--text-primary)';
-                      e.currentTarget.style.opacity = '0.9';
+                      e.currentTarget.style.opacity = '1';
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.color = (isAccountSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-muted)';
-                      e.currentTarget.style.opacity = (isAccountSearchOpen || searchTerm) ? 1 : 0.45;
+                      e.currentTarget.style.color = (isAccountSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-secondary)';
+                      e.currentTarget.style.opacity = (isAccountSearchOpen || searchTerm) ? 1 : 0.72;
                     }}
                   >
                     <Search size={22} strokeWidth={2} />
@@ -1719,18 +1608,18 @@ export default function AdminPortal({
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: (accountCategory !== 'ALL' || isAccountFilterOpen) ? 'var(--text-primary)' : 'var(--text-muted)',
-                          opacity: (accountCategory !== 'ALL' || isAccountFilterOpen) ? 1 : 0.45,
+                          color: (accountCategory !== 'ALL' || isAccountFilterOpen) ? 'var(--text-primary)' : 'var(--text-secondary)',
+                          opacity: (accountCategory !== 'ALL' || isAccountFilterOpen) ? 1 : 0.72,
                           outline: 'none',
                           transition: 'all 0.15s ease'
                         }}
                         onMouseEnter={e => {
                           e.currentTarget.style.color = 'var(--text-primary)';
-                          e.currentTarget.style.opacity = '0.9';
+                          e.currentTarget.style.opacity = '1';
                         }}
                         onMouseLeave={e => {
-                          e.currentTarget.style.color = (accountCategory !== 'ALL' || isAccountFilterOpen) ? 'var(--text-primary)' : 'var(--text-muted)';
-                          e.currentTarget.style.opacity = (accountCategory !== 'ALL' || isAccountFilterOpen) ? 1 : 0.45;
+                          e.currentTarget.style.color = (accountCategory !== 'ALL' || isAccountFilterOpen) ? 'var(--text-primary)' : 'var(--text-secondary)';
+                          e.currentTarget.style.opacity = (accountCategory !== 'ALL' || isAccountFilterOpen) ? 1 : 0.72;
                         }}
                       >
                         <Filter size={22} strokeWidth={2} />
@@ -1813,8 +1702,8 @@ export default function AdminPortal({
                       border: 'none',
                       padding: '6px',
                       cursor: 'pointer',
-                      color: hasActiveFilter ? 'var(--text-primary)' : 'var(--text-muted)',
-                      opacity: hasActiveFilter ? 1 : 0.3,
+                      color: hasActiveFilter ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      opacity: hasActiveFilter ? 1 : 0.55,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1823,11 +1712,11 @@ export default function AdminPortal({
                     }}
                     onMouseEnter={e => {
                       e.currentTarget.style.color = 'var(--text-primary)';
-                      e.currentTarget.style.opacity = '0.9';
+                      e.currentTarget.style.opacity = '1';
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.color = hasActiveFilter ? 'var(--text-primary)' : 'var(--text-muted)';
-                      e.currentTarget.style.opacity = hasActiveFilter ? 1 : 0.3;
+                      e.currentTarget.style.color = hasActiveFilter ? 'var(--text-primary)' : 'var(--text-secondary)';
+                      e.currentTarget.style.opacity = hasActiveFilter ? 1 : 0.55;
                     }}
                   >
                     <RotateCcw size={22} strokeWidth={2} />
@@ -2083,8 +1972,8 @@ export default function AdminPortal({
                             }}
                             onMouseEnter={(e) => {
                               if (copiedUsername !== acc.username) {
-                                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                                e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)';
+                                e.currentTarget.style.borderColor = 'var(--border-color)';
                               }
                             }}
                             onMouseLeave={(e) => {
@@ -2438,7 +2327,7 @@ export default function AdminPortal({
                                     onMouseEnter={(e) => {
                                       if (!isEmpActive) {
                                         e.currentTarget.style.color = 'var(--text-primary)';
-                                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
+                                        e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)';
                                       }
                                     }}
                                     onMouseLeave={(e) => {
@@ -4884,7 +4773,7 @@ export default function AdminPortal({
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.color = 'var(--text-primary)';
-                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                          e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)';
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.color = copiedUsername === selectedAccount.username ? '#22c55e' : 'var(--text-muted)';
@@ -5134,7 +5023,7 @@ export default function AdminPortal({
                         flex: 1,
                         fontSize: '15px',
                         fontWeight: 400,
-                        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                        backgroundColor: 'var(--bg-input)',
                         color: 'var(--text-muted)',
                         border: '1px solid var(--border-color)',
                         cursor: 'default'

@@ -40,9 +40,9 @@ function TooltipHelp({ text }) {
             left: 'calc(100% + 8px)',
             top: '50%',
             transform: 'translateY(-50%)',
-            backgroundColor: '#0f172a',
-            color: '#f8fafc',
-            border: '1px solid #334155',
+            backgroundColor: 'var(--bg-card)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-color)',
             padding: '7px 12px',
             fontSize: '14px',
             fontWeight: 400,
@@ -906,7 +906,7 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
 
 
   return (
-    <div style={{ paddingTop: '0.5rem' }}>
+    <div style={{ paddingTop: 0 }}>
       
       {/* 1. SECTION HEADER (Shown only when hideHeader is false) */}
       {!hideHeader && (
@@ -954,7 +954,7 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
         columnGap: '2.5rem',
         rowGap: '2.25rem',
         marginBottom: '2.5rem',
-        padding: '1.25rem 0 2rem 0',
+        padding: '0 0 2rem 0',
         borderBottom: '1px solid var(--border-color)'
       }}>
         {/* Metric 0: 오늘 출근율 */}
@@ -1143,8 +1143,7 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
       {viewMode === 'CALENDAR' && (
         <div style={{
           border: '1px solid var(--border-color)',
-          background: 'var(--bg-card)',
-          marginBottom: '2rem'
+          background: 'var(--bg-card)'
         }}>
           {/* Calendar Integrated Header: Left (Select), Center (Large Month & Arrow Icons), Right (Today & DatePicker) */}
           <div style={{
@@ -1527,8 +1526,7 @@ export default function AdminAttendanceSection({ user, employees = [], onShowToa
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: '1rem',
-              marginBottom: '2.5rem'
+              gap: '1rem'
             }}>
               {displayRows.map((row) => {
                 const isWorking = row.checkIn && !row.checkOut && row.workType !== 'LEAVE';

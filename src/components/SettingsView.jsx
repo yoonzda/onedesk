@@ -114,7 +114,7 @@ export default function SettingsView({
   return (
     <div style={{
       width: '100%',
-      padding: isEmbedded ? '0.5rem 0 5rem 0' : '1.5rem 0 6rem 0'
+      padding: 0
     }}>
       
       {/* View Header (Only shown when not embedded) */}
@@ -814,7 +814,7 @@ export default function SettingsView({
         {/* Bottom Save Action Button */}
         <div style={{
           display: 'flex',
-          padding: '2.5rem 0 1rem 0',
+          padding: '2.5rem 0 0 0',
           gap: '2.5rem'
         }}>
           <div style={{ width: '200px', flexShrink: 0 }} />

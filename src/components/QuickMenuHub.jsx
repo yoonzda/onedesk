@@ -1,4 +1,5 @@
 import React from 'react';
+import FlipClock from './FlipClock';
 
 export default function QuickMenuHub({
   user,
@@ -6,13 +7,15 @@ export default function QuickMenuHub({
   onCheckIn,
   onCheckOut,
   onNavigate,
+  currentView = 'HUB',
+  subTabs = {},
+  onSelectSubTab,
   unreadNotifsCount = 0,
   pendingRequestsCount = 0,
   approvedWorkType,
   todayLeave,
   isTodayFullDayLeave,
-  isAmHalfLeave,
-  isPmHalfLeave
+  isAmHalfLeave
 }) {
   const handleCheckOutClick = () => {
     if (!attendance?.checkIn) {
@@ -50,7 +53,6 @@ export default function QuickMenuHub({
       .catch(() => {});
   }, []);
 
-  // 오전 반차: 출근 기준 시각 1시간 전부터 출근 버튼 활성화
   const amEarliestMins = React.useMemo(() => {
     const [h, m] = (amWorkStart || '14:00').split(':').map(Number);
     return Math.max(0, (h * 60 + (m || 0)) - 60);
@@ -68,133 +70,231 @@ export default function QuickMenuHub({
     return `${year}년 ${month}월 ${date}일 (${day})`;
   };
 
+  const menuItems = React.useMemo(() => {
+    if (user.role === 'CLIENT') {
+      return [
+        {
+          key: 'HUB',
+          label: '홈',
+          onClick: () => onNavigate('HUB'),
+          subItems: []
+        },
+        {
+          key: 'CLIENT_HOMEPAGE',
+          label: '홈페이지 바로가기',
+          isExternal: true,
+          onClick: () => window.open(user.websiteUrl || user.homepageUrl || 'https://example.com', '_blank')
+        },
+        {
+          key: 'CLIENT_ADMIN',
+          label: '관리자 바로가기',
+          isExternal: true,
+          onClick: () => window.open(
+            user.adminUrl ||
+            user.websiteAdminUrl ||
+            (user.websiteUrl ? `${user.websiteUrl}/admin` : (user.homepageUrl ? `${user.homepageUrl}/admin` : 'https://example.com/admin')),
+            '_blank'
+          )
+        },
+        {
+          key: 'CLIENT_REQUESTS',
+          label: '요청사항 바로가기',
+          onClick: () => onNavigate('CLIENT_REQUESTS'),
+          subItems: []
+        }
+      ];
+    }
+
+    const items = [
+      {
+        key: 'HUB',
+        label: '홈',
+        onClick: () => onNavigate('HUB'),
+        subItems: []
+      },
+      {
+        key: 'COMMUTE',
+        label: '근태 관리',
+        onClick: () => onNavigate('COMMUTE'),
+        subItems: [
+          { id: 'calendar', label: '달력보기' },
+          { id: 'leaveStatus', label: '연차 현황' },
+          { id: 'apply', label: '근태 신청' },
+          { id: 'history', label: '근태 내역' }
+        ]
+      },
+      {
+        key: 'CLIENT_REQUESTS',
+        label: '요청관리',
+        hasDot: pendingRequestsCount > 0,
+        onClick: () => onNavigate('CLIENT_REQUESTS'),
+        subItems: []
+      },
+      {
+        key: 'PROJECTS',
+        label: '프로젝트 관리',
+        onClick: () => onNavigate('PROJECTS'),
+        subItems: [
+          { id: 'PROJECTS', label: '프로젝트 목록', isViewSwitch: true },
+          { id: 'TASKS_LIST', label: '내 업무 목록', isViewSwitch: true }
+        ]
+      },
+      {
+        key: 'CALENDAR_LEAVE',
+        label: '일정 관리',
+        onClick: () => onNavigate('CALENDAR_LEAVE'),
+        subItems: []
+      },
+      {
+        key: 'FILES',
+        label: '파일 관리',
+        onClick: () => onNavigate('FILES'),
+        subItems: []
+      },
+      {
+        key: 'NOTIFICATIONS',
+        label: '알림',
+        hasDot: unreadNotifsCount > 0,
+        onClick: () => onNavigate('NOTIFICATIONS'),
+        subItems: []
+      }
+    ];
+
+    if (user.username === 'insa' || user.role === 'HR') {
+      items.push({
+        key: 'PAYROLL',
+        label: '급여 관리',
+        onClick: () => onNavigate('PAYROLL'),
+        subItems: []
+      });
+    }
+
+    if (user.role === 'ADMIN') {
+      items.push({
+        key: 'ADMIN',
+        label: '최고 관리자',
+        onClick: () => onNavigate('ADMIN'),
+        subItems: [
+          { id: 'accounts', label: '계정관리' },
+          { id: 'internal', label: '사내관리' },
+          { id: 'clients', label: '고객사 관리' },
+          { id: 'onedesk', label: '원데스크 설정' },
+          { id: 'etc', label: '기타' }
+        ]
+      });
+    }
+
+    items.push({
+      key: 'SETTINGS',
+      label: '환경설정',
+      onClick: () => onNavigate('SETTINGS'),
+      subItems: []
+    });
+
+    return items;
+  }, [user, unreadNotifsCount, pendingRequestsCount, onNavigate]);
+
   return (
-    <div style={{
-      width: '100%',
-      minHeight: 'calc(100vh - 120px)',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: '2rem 1rem'
-    }}>
-      
-      {/* Top Welcome & Commute Station */}
+    <aside className="workspace-sidebar">
+      {/* 1. 상단 기본 정보 (날짜 -> 부서/성명 -> 출퇴근 버튼 -> 상하 대칭 간격 플립 시계) */}
       <div style={{
-        marginBottom: '3rem',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        textAlign: 'center'
+        alignItems: 'flex-start',
+        borderBottom: '1px solid var(--border-color)'
       }}>
-        {/* 오늘 날짜 */}
+        {/* 1번째 줄: 오늘 날짜 */}
         <div style={{
-          fontSize: '17px',
+          fontSize: '16px',
           color: 'var(--text-secondary)',
-          fontWeight: 500,
-          letterSpacing: '-0.01em',
-          marginBottom: '0.85rem'
+          letterSpacing: '-0.015em',
+          marginBottom: '0.3rem'
         }}>
           {getFormattedToday()}
         </div>
 
-
-        {/* 사용자 정보: 한 줄로 하되 글씨 크기만 다르게 배치 ("님" 제거) */}
+        {/* 2번째 줄: 부서명 / 성명 */}
         {user.role === 'CLIENT' ? (
           <div style={{
             display: 'flex',
             alignItems: 'baseline',
-            justifyContent: 'center',
-            gap: '0.85rem',
-            margin: '0.2rem 0'
+            gap: '0.55rem',
+            flexWrap: 'wrap'
           }}>
             <span style={{
-              fontSize: '18px',
-              fontWeight: 500,
-              color: 'var(--text-secondary)',
-              letterSpacing: '0.01em'
+              fontSize: '17px',
+              color: 'var(--text-secondary)'
             }}>
               협력 고객사
             </span>
             <h2 style={{
-              fontSize: '36px',
-              fontWeight: 700,
+              fontSize: '26px',
               color: 'var(--text-primary)',
               letterSpacing: '-0.025em',
               margin: 0,
-              lineHeight: 1.15
+              lineHeight: 1.2
             }}>
               {user.companyName}
             </h2>
           </div>
         ) : (
-          <>
-            <div style={{
-              display: 'flex',
-              alignItems: 'baseline',
-              justifyContent: 'center',
-              gap: '0.85rem',
-              margin: '0.2rem 0'
+          <div style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: '0.55rem',
+            flexWrap: 'wrap',
+            marginBottom: '0.95rem'
+          }}>
+            <span style={{
+              fontSize: '17px',
+              color: 'var(--text-secondary)'
             }}>
-              {/* 부서명 (한 줄 내 상대적으로 작은 크기) */}
-              <span style={{
-                fontSize: '18px',
-                fontWeight: 500,
-                color: 'var(--text-secondary)',
-                letterSpacing: '0.01em'
-              }}>
-                {user.dept || '개발팀'}
-              </span>
+              {user.dept || '개발팀'}
+            </span>
+            <h2 style={{
+              fontSize: '28px',
+              color: 'var(--text-primary)',
+              letterSpacing: '-0.025em',
+              margin: 0,
+              lineHeight: 1.2
+            }}>
+              {user.name}
+            </h2>
+          </div>
+        )}
 
-              {/* 성명 (한 줄 내 메인 크기, "님" 제거) */}
-              <h2 style={{
-                fontSize: '36px',
-                fontWeight: 700,
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.03em',
-                margin: 0,
-                lineHeight: 1.15
-              }}>
-                {user.name}
-              </h2>
-            </div>
-
-            {/* 오전 반차 출근 전 상태 순수 텍스트 표기 (규칙 준수: 뱃지/칩 금지, 타이포그래피) */}
+        {/* 3번째 줄: 출근 / 퇴근 슬롯 (플립 시계 위쪽 배치) */}
+        {user.role !== 'CLIENT' && (
+          <>
             {isAmHalfLeave && todayLeave?.status === 'APPROVED' && !attendance?.checkIn && (
               <div style={{
-                marginTop: '0.5rem',
+                marginBottom: '0.5rem',
                 fontSize: '15px',
-                color: 'var(--text-secondary)',
-                fontWeight: 500,
-                letterSpacing: '-0.01em'
+                color: 'var(--text-secondary)'
               }}>
                 오전 반차
               </div>
             )}
 
-            {/* 출근 / 퇴근 / 연차 슬롯 */}
             <div style={{
-              marginTop: '1.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.75rem'
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '0.55rem',
+              width: '100%'
             }}>
               {isTodayFullDayLeave && todayLeave?.status === 'APPROVED' && !attendance?.checkIn ? (
                 <>
                   <div
                     style={{
-                      minWidth: '96px',
-                      height: '42px',
+                      height: '44px',
                       display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '15px',
-                      fontWeight: 600,
+                      fontSize: '16px',
                       color: 'var(--text-secondary)',
-                      background: 'var(--bg-input)',
+                      background: 'var(--bg-card)',
                       border: '1px solid var(--border-color)',
-                      borderRadius: '8px',
+                      borderRadius: '7px',
                       cursor: 'default',
                       userSelect: 'none'
                     }}
@@ -206,11 +306,9 @@ export default function QuickMenuHub({
                     className="btn btn-secondary"
                     onClick={() => onNavigate('CALENDAR_LEAVE')}
                     style={{
-                      minWidth: '96px',
-                      height: '42px',
-                      fontSize: '15px',
-                      fontWeight: 600,
-                      borderRadius: '8px',
+                      height: '44px',
+                      fontSize: '16px',
+                      borderRadius: '7px',
                       cursor: 'pointer'
                     }}
                   >
@@ -219,22 +317,19 @@ export default function QuickMenuHub({
                 </>
               ) : (
                 <>
-                  {/* 1. 출근 / 재택 / 외근 버튼 또는 시간 표시 */}
                   {!attendance?.checkIn ? (
                     isAmHalfLocked ? (
                       <div
                         style={{
-                          minWidth: '96px',
-                          height: '42px',
+                          height: '44px',
                           display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: '15px',
-                          fontWeight: 600,
+                          fontSize: '16px',
                           color: 'var(--text-secondary)',
                           background: 'var(--bg-input)',
                           border: '1px solid var(--border-color)',
-                          borderRadius: '8px',
+                          borderRadius: '7px',
                           cursor: 'default',
                           userSelect: 'none'
                         }}
@@ -255,17 +350,10 @@ export default function QuickMenuHub({
                             onCheckIn('OFFICE', isAmHalfLeave ? '오전 반차 출근' : '');
                           }
                         }}
-                        title={
-                          isAmHalfLeave ? '오전 반차 출근' :
-                          (approvedWorkType === 'REMOTE' ? '사전 승인된 재택근무 출근' :
-                          (approvedWorkType === 'FIELD' ? '사전 승인된 외근/출장 출근' : '사내정상 출근'))
-                        }
                         style={{
-                          minWidth: '96px',
-                          height: '42px',
-                          fontSize: '15px',
-                          fontWeight: 600,
-                          borderRadius: '8px',
+                          height: '44px',
+                          fontSize: '16px',
+                          borderRadius: '7px',
                           cursor: 'pointer'
                         }}
                       >
@@ -273,292 +361,147 @@ export default function QuickMenuHub({
                       </button>
                     )
                   ) : (
-                <div
-                  title={`출근 시간: ${attendance.checkIn}`}
-                  style={{
-                    minWidth: '96px',
-                    height: '42px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '16px',
-                    fontWeight: 700,
-                    fontVariantNumeric: 'tabular-nums',
-                    color: 'var(--text-primary)',
-                    background: 'var(--bg-input)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '8px',
-                    letterSpacing: '0.02em'
-                  }}
-                >
-                  {attendance.checkIn.slice(0, 5)}
-                </div>
-              )}
+                    <div
+                      title={`출근 시간: ${attendance.checkIn}`}
+                      style={{
+                        height: '44px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '17px',
+                        fontVariantNumeric: 'tabular-nums',
+                        color: 'var(--text-primary)',
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '7px',
+                        letterSpacing: '0.02em'
+                      }}
+                    >
+                      {attendance.checkIn.slice(0, 5)}
+                    </div>
+                  )}
 
-              {/* 2. 퇴근 버튼 / 시간 표시 */}
-              {attendance?.checkOut ? (
-                <div
-                  title={`퇴근 시간: ${attendance.checkOut}`}
-                  style={{
-                    minWidth: '96px',
-                    height: '42px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '16px',
-                    fontWeight: 700,
-                    fontVariantNumeric: 'tabular-nums',
-                    color: 'var(--text-secondary)',
-                    background: 'var(--bg-input)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '8px',
-                    letterSpacing: '0.02em'
-                  }}
-                >
-                  {attendance.checkOut.slice(0, 5)}
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={handleCheckOutClick}
-                  style={{
-                    minWidth: '96px',
-                    height: '42px',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    borderRadius: '8px',
-                    cursor: attendance?.checkIn ? 'pointer' : 'default',
-                    opacity: attendance?.checkIn ? 1 : 0.45
-                  }}
-                >
-                  퇴근
-                </button>
+                  {attendance?.checkOut ? (
+                    <div
+                      title={`퇴근 시간: ${attendance.checkOut}`}
+                      style={{
+                        height: '44px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '17px',
+                        fontVariantNumeric: 'tabular-nums',
+                        color: 'var(--text-secondary)',
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '7px',
+                        letterSpacing: '0.02em'
+                      }}
+                    >
+                      {attendance.checkOut.slice(0, 5)}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleCheckOutClick}
+                      style={{
+                        height: '44px',
+                        fontSize: '16px',
+                        borderRadius: '7px',
+                        cursor: attendance?.checkIn ? 'pointer' : 'default',
+                        opacity: attendance?.checkIn ? 1 : 0.45
+                      }}
+                    >
+                      퇴근
+                    </button>
                   )}
                 </>
               )}
             </div>
           </>
         )}
+
+        {/* 4번째 줄: 플립 시계 (상하 간격 1.65rem으로 넓고 완벽히 동일하게 통일) */}
+        <div style={{
+          width: '100%',
+          paddingTop: '1.65rem',
+          paddingBottom: '1.65rem'
+        }}>
+          <FlipClock size="sidebar" />
+        </div>
       </div>
 
-      {/* CLIENT 3 CARDS LAYOUT */}
-      {user.role === 'CLIENT' ? (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '2rem',
-          width: '100%',
-          maxWidth: '1080px'
-        }}>
-          
-          {/* Client Card 1: 홈페이지 바로가기 */}
-          <div 
-            className="card card-hover"
-            onClick={() => window.open(user.websiteUrl || user.homepageUrl || 'https://example.com', '_blank')}
-            style={{
-              padding: '3.5rem 2rem',
-              textAlign: 'center',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '220px'
-            }}
-          >
-            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)', fontWeight: 400 }}>
-              홈페이지 바로가기
-            </h3>
-          </div>
+      {/* 2. 세로 사이드바 메뉴 리스트 + 액티브 메뉴 하단 아코디언 하위 탭 */}
+      <nav style={{
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%'
+      }}>
+        {menuItems.map(item => {
+          const isProjectsRelated = item.key === 'PROJECTS' && (currentView === 'PROJECTS' || currentView === 'TASKS_LIST');
+          const isActive = !item.isExternal && (currentView === item.key || isProjectsRelated);
+          const hasSubItems = Array.isArray(item.subItems) && item.subItems.length > 0;
 
-          {/* Client Card 2: 관리자 바로가기 (고객사 웹사이트 관리자 페이지 새 탭 열기) */}
-          <div 
-            className="card card-hover"
-            onClick={() => window.open(user.adminUrl || user.websiteAdminUrl || (user.websiteUrl ? `${user.websiteUrl}/admin` : (user.homepageUrl ? `${user.homepageUrl}/admin` : 'https://example.com/admin')), '_blank')}
-            style={{
-              padding: '3.5rem 2rem',
-              textAlign: 'center',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '220px'
-            }}
-          >
-            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)', fontWeight: 400 }}>
-              관리자 바로가기
-            </h3>
-          </div>
+          return (
+            <React.Fragment key={item.key}>
+              <button
+                type="button"
+                onClick={item.onClick}
+                className={`sidebar-nav-btn ${isActive ? 'active' : ''}`}
+              >
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.55rem'
+                }}>
+                  <span>{item.label}</span>
+                  {item.hasDot && (
+                    <span
+                      style={{
+                        width: '7px',
+                        height: '7px',
+                        backgroundColor: '#ef4444',
+                        borderRadius: '50%',
+                        display: 'inline-block'
+                      }}
+                    />
+                  )}
+                </span>
+              </button>
 
-          {/* Client Card 3: 요청사항 바로가기 */}
-          <div 
-            className="card card-hover"
-            onClick={() => onNavigate('CLIENT_REQUESTS')}
-            style={{
-              padding: '3.5rem 2rem',
-              textAlign: 'center',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '220px'
-            }}
-          >
-            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)', fontWeight: 400 }}>
-              요청사항 바로가기
-            </h3>
-          </div>
+              {hasSubItems && (
+                <div className={`sidebar-subnav-wrapper ${isActive ? 'open' : ''}`}>
+                  <div className="sidebar-subnav">
+                    {item.subItems.map(sub => {
+                      const isSubActive = sub.isViewSwitch
+                        ? currentView === sub.id
+                        : subTabs[item.key] === sub.id;
 
-        </div>
-      ) : (
-        /* STAFF & ADMIN 6 CARDS LAYOUT */
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '2rem',
-          width: '100%',
-          maxWidth: '1080px'
-        }}>
-          
-          {/* Card 1: 근태 관리 바로가기 */}
-          <div 
-            className="card card-hover"
-            onClick={() => onNavigate('COMMUTE')}
-            style={{
-              padding: '3.5rem 2rem',
-              textAlign: 'center',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '220px'
-            }}
-          >
-            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)' }}>
-              근태 관리
-            </h3>
-          </div>
-
-          {/* Card 2: 요청관리 */}
-          <div 
-            className="card card-hover"
-            onClick={() => onNavigate('CLIENT_REQUESTS')}
-            style={{
-              padding: '3.5rem 2rem',
-              textAlign: 'center',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '220px'
-            }}
-          >
-            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)', position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-              요청관리
-              {pendingRequestsCount > 0 && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: '-3px',
-                    right: '-9px',
-                    width: '7px',
-                    height: '7px',
-                    backgroundColor: '#ef4444',
-                    borderRadius: '50%',
-                    display: 'block'
-                  }}
-                />
+                      return (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          className={`sidebar-subnav-btn ${isSubActive ? 'active' : ''}`}
+                          onClick={() => {
+                            if (sub.isViewSwitch) {
+                              onNavigate(sub.id);
+                            } else if (onSelectSubTab) {
+                              onSelectSubTab(item.key, sub.id);
+                            }
+                          }}
+                        >
+                          <span>{sub.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
-            </h3>
-          </div>
-
-          {/* Card 3: 프로젝트 관리 */}
-          <div 
-            className="card card-hover"
-            onClick={() => onNavigate('PROJECTS')}
-            style={{
-              padding: '3.5rem 2rem',
-              textAlign: 'center',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '220px'
-            }}
-          >
-            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)' }}>
-              프로젝트 관리
-            </h3>
-          </div>
-
-          {/* Card 4: 일정 관리 */}
-          <div 
-            className="card card-hover"
-            onClick={() => onNavigate('CALENDAR_LEAVE')}
-            style={{
-              padding: '3.5rem 2rem',
-              textAlign: 'center',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '220px'
-            }}
-          >
-            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)' }}>
-              일정 관리
-            </h3>
-          </div>
-
-          {/* Card 5: 파일 관리 */}
-          <div 
-            className="card card-hover"
-            onClick={() => onNavigate('FILES')}
-            style={{
-              padding: '3.5rem 2rem',
-              textAlign: 'center',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '220px'
-            }}
-          >
-            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)' }}>
-              파일 관리
-            </h3>
-          </div>
-
-          {/* Card 6: 기타 또는 관리자 또는 급여 관리 */}
-          <div 
-            className="card card-hover"
-            onClick={() => {
-              if (user.username === 'insa' || user.role === 'HR') {
-                onNavigate('PAYROLL');
-              } else if (user.role === 'ADMIN' || user.role === 'TEAM_LEADER') {
-                onNavigate('ADMIN');
-              } else {
-                onNavigate('SETTINGS');
-              }
-            }}
-            style={{
-              padding: '3.5rem 2rem',
-              textAlign: 'center',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '220px'
-            }}
-          >
-            <h3 style={{ fontSize: '24px', margin: 0, color: 'var(--text-primary)' }}>
-              {(user.username === 'insa' || user.role === 'HR') ? '급여 관리' : (user.role === 'ADMIN' ? '최고 관리자' : (user.role === 'TEAM_LEADER' ? '팀 관리' : '환경설정'))}
-            </h3>
-          </div>
-
-        </div>
-      )}
-
-    </div>
+            </React.Fragment>
+          );
+        })}
+      </nav>
+    </aside>
   );
 }

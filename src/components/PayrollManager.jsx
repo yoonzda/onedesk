@@ -441,7 +441,7 @@ export default function PayrollManager({ user, onShowToast }) {
   };
 
   return (
-    <div style={{ padding: '0 1.5rem 3rem 1.5rem', maxWidth: '1360px', margin: '0 auto' }}>
+    <div style={{ padding: 0, width: '100%' }}>
       
       {/* 1. Header Bar: Title (Left) + Top Action Buttons (Right: 엑셀 다운로드, 일괄 확인, 일괄 지급) */}
       <div style={{

@@ -116,13 +116,13 @@ export default function TasksListView({
       }
     });
 
-    // (B) Client Requests (고객사 요청 - 중복 제거 및 담당 배정 업무 통합)
+    // (B) Client Requests (고객사 요청 - 중복 제거 및 실제 담당 배정 업무/승인자 기준 통합)
     (clientRequests || []).forEach(cr => {
       const myAssignedTasks = (cr.assignedTasks || []).filter(at => at.assigneeId === user.id || at.staffId === user.id);
-      const isDirectAssignee = cr.assigneeId === user.id;
+      const isApprover = cr.approverId === user.id;
       const isAdmin = user.role === 'ADMIN';
 
-      if (myAssignedTasks.length > 0 || isDirectAssignee || (isAdmin && cr.status !== 'DELETED')) {
+      if (myAssignedTasks.length > 0 || isApprover || (isAdmin && cr.status !== 'DELETED')) {
         const override = statusOverrides[`cr-${cr.id}`];
         
         // 완료 여부 판별: 본인 배정 하위 작업이 모두 완료되었거나 요청 전체가 DONE인 경우
@@ -549,49 +549,49 @@ export default function TasksListView({
   };
 
   return (
-    <div style={{ width: '100%', paddingBottom: '3.5rem' }}>
-      {/* Title Header - Rule 3: Strictly NO Descriptive Subtitles */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-        <h2 style={{ fontSize: '22px', fontWeight: 400, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
-          업무 목록
-        </h2>
-      </div>
-
-      {/* Toolbar: Status Sub-tabs (Left) + Unified Minimal Icon Toolbar (Right) */}
+    <div style={{ width: '100%' }}>
+      {/* Toolbar: Status Filter Pills (Left) + Unified Minimal Icon Toolbar (Right) */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '1rem',
+        paddingBottom: '0.85rem',
         borderBottom: '1px solid var(--border-color)',
         marginBottom: '0',
         position: 'relative',
         zIndex: 20
       }}>
-        {/* Left Status Sub-tabs: 진행 중 (기본) | 완료 | 전체 - Rule: 탭에 숫자 표기 일체 배제 */}
-        <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', marginBottom: '-1px' }}>
-          <button
-            type="button"
-            className={`tab-btn tab-btn-lg ${activeTab === 'IN_PROGRESS' ? 'active' : ''}`}
-            onClick={() => setActiveTab('IN_PROGRESS')}
-          >
-            진행 중
-          </button>
-          <button
-            type="button"
-            className={`tab-btn tab-btn-lg ${activeTab === 'DONE' ? 'active' : ''}`}
-            onClick={() => setActiveTab('DONE')}
-          >
-            완료
-          </button>
-          <button
-            type="button"
-            className={`tab-btn tab-btn-lg ${activeTab === 'ALL' ? 'active' : ''}`}
-            onClick={() => setActiveTab('ALL')}
-          >
-            전체
-          </button>
+        {/* Left Status Filter Pills: 진행 중 (기본) | 완료 | 전체 - 프로젝트 목록과 동일한 알약 필터 스타일 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {[
+            { id: 'IN_PROGRESS', label: '진행 중' },
+            { id: 'DONE', label: '완료' },
+            { id: 'ALL', label: '전체' }
+          ].map(f => {
+            const isSelected = activeTab === f.id;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setActiveTab(f.id)}
+                style={{
+                  padding: '0.4rem 1.05rem',
+                  borderRadius: '9999px',
+                  border: isSelected ? '1px solid var(--text-muted)' : '1px solid var(--border-color)',
+                  backgroundColor: isSelected ? 'var(--primary-light)' : 'transparent',
+                  color: isSelected ? 'var(--text-primary)' : 'var(--text-muted)',
+                  fontSize: '15px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  outline: 'none'
+                }}
+              >
+                {f.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Right: Unified Minimal Icon Toolbar (Search + Filter Popover + Sort Popover + Date Picker + Reset + Plus) */}
@@ -616,18 +616,18 @@ export default function TasksListView({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: (isSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-muted)',
-              opacity: (isSearchOpen || searchTerm) ? 1 : 0.45,
+              color: (isSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-secondary)',
+              opacity: (isSearchOpen || searchTerm) ? 1 : 0.72,
               outline: 'none',
               transition: 'all 0.15s ease'
             }}
             onMouseEnter={e => {
               e.currentTarget.style.color = 'var(--text-primary)';
-              e.currentTarget.style.opacity = '0.9';
+              e.currentTarget.style.opacity = '1';
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.color = (isSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-muted)';
-              e.currentTarget.style.opacity = (isSearchOpen || searchTerm) ? 1 : 0.45;
+              e.currentTarget.style.color = (isSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-secondary)';
+              e.currentTarget.style.opacity = (isSearchOpen || searchTerm) ? 1 : 0.72;
             }}
           >
             <Search size={22} strokeWidth={2} />
@@ -651,18 +651,18 @@ export default function TasksListView({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: (typeFilter !== 'ALL' || isFilterOpen) ? 'var(--text-primary)' : 'var(--text-muted)',
-                opacity: (typeFilter !== 'ALL' || isFilterOpen) ? 1 : 0.45,
+                color: (typeFilter !== 'ALL' || isFilterOpen) ? 'var(--text-primary)' : 'var(--text-secondary)',
+                opacity: (typeFilter !== 'ALL' || isFilterOpen) ? 1 : 0.72,
                 outline: 'none',
                 transition: 'all 0.15s ease'
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.color = 'var(--text-primary)';
-                e.currentTarget.style.opacity = '0.9';
+                e.currentTarget.style.opacity = '1';
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.color = (typeFilter !== 'ALL' || isFilterOpen) ? 'var(--text-primary)' : 'var(--text-muted)';
-                e.currentTarget.style.opacity = (typeFilter !== 'ALL' || isFilterOpen) ? 1 : 0.45;
+                e.currentTarget.style.color = (typeFilter !== 'ALL' || isFilterOpen) ? 'var(--text-primary)' : 'var(--text-secondary)';
+                e.currentTarget.style.opacity = (typeFilter !== 'ALL' || isFilterOpen) ? 1 : 0.72;
               }}
             >
               <Filter size={22} strokeWidth={2} />
@@ -744,18 +744,18 @@ export default function TasksListView({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: (sortBy !== 'CUSTOM' || isSortOpen) ? 'var(--text-primary)' : 'var(--text-muted)',
-                opacity: (sortBy !== 'CUSTOM' || isSortOpen) ? 1 : 0.45,
+                color: (sortBy !== 'CUSTOM' || isSortOpen) ? 'var(--text-primary)' : 'var(--text-secondary)',
+                opacity: (sortBy !== 'CUSTOM' || isSortOpen) ? 1 : 0.72,
                 outline: 'none',
                 transition: 'all 0.15s ease'
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.color = 'var(--text-primary)';
-                e.currentTarget.style.opacity = '0.9';
+                e.currentTarget.style.opacity = '1';
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.color = (sortBy !== 'CUSTOM' || isSortOpen) ? 'var(--text-primary)' : 'var(--text-muted)';
-                e.currentTarget.style.opacity = (sortBy !== 'CUSTOM' || isSortOpen) ? 1 : 0.45;
+                e.currentTarget.style.color = (sortBy !== 'CUSTOM' || isSortOpen) ? 'var(--text-primary)' : 'var(--text-secondary)';
+                e.currentTarget.style.opacity = (sortBy !== 'CUSTOM' || isSortOpen) ? 1 : 0.72;
               }}
             >
               <ArrowUpDown size={22} strokeWidth={2} />
@@ -845,8 +845,8 @@ export default function TasksListView({
               border: 'none',
               padding: '6px',
               cursor: 'pointer',
-              color: hasActiveFilter ? 'var(--text-primary)' : 'var(--text-muted)',
-              opacity: hasActiveFilter ? 1 : 0.3,
+              color: hasActiveFilter ? 'var(--text-primary)' : 'var(--text-secondary)',
+              opacity: hasActiveFilter ? 1 : 0.55,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -855,11 +855,11 @@ export default function TasksListView({
             }}
             onMouseEnter={e => {
               e.currentTarget.style.color = 'var(--text-primary)';
-              e.currentTarget.style.opacity = '0.9';
+              e.currentTarget.style.opacity = '1';
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.color = hasActiveFilter ? 'var(--text-primary)' : 'var(--text-muted)';
-              e.currentTarget.style.opacity = hasActiveFilter ? 1 : 0.3;
+              e.currentTarget.style.color = hasActiveFilter ? 'var(--text-primary)' : 'var(--text-secondary)';
+              e.currentTarget.style.opacity = hasActiveFilter ? 1 : 0.55;
             }}
           >
             <RotateCcw size={22} strokeWidth={2} />
@@ -1124,16 +1124,6 @@ export default function TasksListView({
                     opacity: isDragging ? 0.35 : (item.isDone ? 0.55 : 1),
                     boxShadow: isOver ? 'inset 0 2px 0 0 var(--text-primary)' : 'none',
                     transition: 'background-color 0.15s ease, opacity 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (dragOverItemId !== item.id) {
-                      e.currentTarget.style.backgroundColor = 'var(--bg-card-hover, var(--bg-hover))';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (dragOverItemId !== item.id) {
-                      e.currentTarget.style.backgroundColor = 'var(--bg-card)';
-                    }
                   }}
                 >
                   {/* Reordering Grip Handle */}

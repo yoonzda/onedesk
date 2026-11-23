@@ -65,7 +65,7 @@ function FlipDigit({ digit }) {
 
 /**
  * FlipClock
- * @param {string} size - 'normal' | 'compact'
+ * @param {string} size - 'normal' | 'compact' | 'sidebar'
  */
 export default function FlipClock({ size = 'normal' }) {
   const [time, setTime] = useState(() => new Date());
@@ -81,8 +81,10 @@ export default function FlipClock({ size = 'normal' }) {
   const minutes = String(time.getMinutes()).padStart(2, '0');
   const seconds = String(time.getSeconds()).padStart(2, '0');
 
+  const sizeClass = size === 'sidebar' ? 'compact sidebar' : (size === 'compact' ? 'compact' : '');
+
   return (
-    <div className={`flip-clock-container ${size === 'compact' ? 'compact' : ''}`}>
+    <div className={`flip-clock-container ${sizeClass}`}>
       {/* 시 (Hours) - 2개 독립 카드 */}
       <div className="flip-group">
         <div className="flip-pair">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { GripVertical } from 'lucide-react';
 import Navbar from './components/Navbar';
 import LoginModal from './components/LoginModal';
 import InitialProfileSetupModal from './components/InitialProfileSetupModal';
@@ -101,6 +102,38 @@ export default function App() {
   const [openLeaveHistory, setOpenLeaveHistory] = useState(false);
   const [targetLeaveId, setTargetLeaveId] = useState(null);
   const [targetAdminSubtab, setTargetAdminSubtab] = useState('accounts');
+
+  // Home (HUB) Today Priority Drag-and-Drop Order State
+  const [hubCustomOrder, setHubCustomOrder] = useState(() => {
+    try {
+      const initUser = getInitialUser();
+      const saved = localStorage.getItem(`onedesk_hub_today_order_${initUser?.id || 'default'}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [hubDraggedId, setHubDraggedId] = useState(null);
+  const [hubDragOverId, setHubDragOverId] = useState(null);
+
+  // Centralized Sub-tabs State (rendered beneath the active menu inside the Left Sidebar)
+  const [subTabs, setSubTabs] = useState(() => ({
+    COMMUTE: 'calendar',
+    CLIENT_REQUESTS: getInitialUser()?.role === 'CLIENT' ? 'IN_PROGRESS' : 'REQUESTED',
+    PROJECTS: 'ALL',
+    FILES: 'ALL',
+    ADMIN: 'accounts'
+  }));
+
+  const handleSelectSubTab = (menuKey, subId) => {
+    setSubTabs(prev => ({ ...prev, [menuKey]: subId }));
+    if (menuKey === 'ADMIN') {
+      setTargetAdminSubtab(subId);
+    }
+    if (currentView !== menuKey) {
+      setCurrentView(menuKey);
+    }
+  };
 
   // Toast System
   const [toasts, setToasts] = useState([]);
@@ -228,6 +261,12 @@ export default function App() {
   useEffect(() => {
     if (user) {
       loadAppData(user);
+      try {
+        const savedOrder = localStorage.getItem(`onedesk_hub_today_order_${user.id}`);
+        setHubCustomOrder(savedOrder ? JSON.parse(savedOrder) : []);
+      } catch {
+        setHubCustomOrder([]);
+      }
 
       // Load user-specific preferences (priority: DB preferences -> user-specific localStorage -> default)
       const userToastPos = user.preferences?.toastPosition || 
@@ -359,7 +398,6 @@ export default function App() {
 
       if (data.success) {
         setTodayAttendance(data.attendance);
-        if (user) await loadAppData(user);
         showToast('출근 완료', '출근 처리 되었습니다.', 'success');
       } else {
         showToast('출근 처리 실패', data.message || '출근 처리에 실패했습니다.', 'danger');
@@ -421,7 +459,6 @@ export default function App() {
 
       if (data.success) {
         setTodayAttendance(data.attendance);
-        if (user) await loadAppData(user);
         const msg = data.message || '퇴근 처리 되었습니다.';
         showToast('퇴근 완료', msg, 'success');
       } else {
@@ -609,29 +646,14 @@ export default function App() {
     const type = notif.type?.toUpperCase() || '';
     const tId = notif.targetId || notif.requestId || null;
 
-    // 0. Admin & Team Leader notifications (결재 대기, 고객사 관리 등 라우팅)
-    if (user?.role === 'ADMIN' || user?.role === 'TEAM_LEADER') {
-      if (type === 'LEAVE_REQUEST' || type === 'LEAVE_CANCEL_REQUEST' || link === 'admin_approvals') {
-        setOpenLeaveHistory(false);
-        setTargetScheduleId(null);
-        setTargetRequestId(null);
-        setTargetAdminSubtab('approvals');
-        setCurrentView('ADMIN');
-        return;
-      }
+    // 0. Admin notifications (고객사 관리, 사내관리 등 최고 관리자 전용 라우팅)
+    if (user?.role === 'ADMIN') {
       if (link === 'admin_clients' || type.includes('CLIENT_REGISTER')) {
         setOpenLeaveHistory(false);
         setTargetScheduleId(null);
         setTargetRequestId(null);
         setTargetAdminSubtab('clients');
-        setCurrentView('ADMIN');
-        return;
-      }
-      if (link === 'admin_networks') {
-        setOpenLeaveHistory(false);
-        setTargetScheduleId(null);
-        setTargetRequestId(null);
-        setTargetAdminSubtab('networks');
+        setSubTabs(prev => ({ ...prev, ADMIN: 'clients' }));
         setCurrentView('ADMIN');
         return;
       }
@@ -639,19 +661,36 @@ export default function App() {
         setOpenLeaveHistory(false);
         setTargetScheduleId(null);
         setTargetRequestId(null);
-        setTargetAdminSubtab('attendances');
+        setTargetAdminSubtab('internal');
+        setSubTabs(prev => ({ ...prev, ADMIN: 'internal' }));
         setCurrentView('ADMIN');
         return;
       }
     }
 
-    // 1. Leave notifications (사원 본인 휴가 신청 내역, 승인/반려 안내 -> 신청 내역 드로어 활성화)
+    // 1. Leave approval request notifications (결재 대기 -> 일정 관리 달력 상세 드로어에서 승인/반려)
+    if (type === 'LEAVE_REQUEST' || type === 'LEAVE_CANCEL_REQUEST' || link === 'admin_approvals') {
+      setOpenLeaveHistory(false);
+      setTargetLeaveId(null);
+      let resolvedScheduleId = tId;
+      if (!resolvedScheduleId) {
+        const matchedSch = schedules.find(s => s.leaveId === tId);
+        if (matchedSch) resolvedScheduleId = matchedSch.id;
+      }
+      setTargetRequestId(null);
+      setTargetScheduleId(resolvedScheduleId);
+      setCurrentView('CALENDAR_LEAVE');
+      return;
+    }
+
+    // 2. Leave notifications (사원 본인 휴가 신청 내역, 승인/반려 안내 -> 근태 관리 > 근태 내역 활성화)
     if (type.includes('LEAVE') || link === 'leave_history' || link === 'leaves') {
       setTargetScheduleId(null);
       setTargetRequestId(null);
       setTargetLeaveId(tId);
       setOpenLeaveHistory(true);
-      setCurrentView('CALENDAR_LEAVE');
+      setSubTabs(prev => ({ ...prev, COMMUTE: 'history' }));
+      setCurrentView('COMMUTE');
       return;
     }
 
@@ -822,6 +861,11 @@ export default function App() {
             setTheme(userTheme);
             document.documentElement.setAttribute('data-theme', userTheme);
             setUser(loggedInUser);
+            setSubTabs(prev => ({
+              ...prev,
+              CLIENT_REQUESTS: loggedInUser?.role === 'CLIENT' ? 'IN_PROGRESS' : 'REQUESTED',
+              ADMIN: loggedInUser?.role === 'ADMIN' ? 'accounts' : 'approvals'
+            }));
             setCurrentView('HUB');
           }} 
         />
@@ -904,19 +948,21 @@ export default function App() {
             }}
           />
 
-          {/* Main Content Area */}
+          {/* Main Content Area: Persistent Left Sidebar + Right Content Area */}
           <main className="main-content">
-            
-            {/* VIEW 1: HUB (Quick Menu Cards) */}
-            {currentView === 'HUB' && (
+            <div className="workspace-shell">
               <QuickMenuHub 
                 user={user}
                 attendance={todayAttendance}
                 onCheckIn={handleCheckIn}
                 onCheckOut={handleCheckOut}
+                currentView={currentView}
+                subTabs={{ ...subTabs, ADMIN: targetAdminSubtab || subTabs.ADMIN }}
+                onSelectSubTab={handleSelectSubTab}
                 onNavigate={(viewName) => {
                   if (viewName === 'ADMIN') {
-                    setTargetAdminSubtab(user?.role === 'ADMIN' ? 'accounts' : 'approvals');
+                    const defaultAdminSub = user?.role === 'ADMIN' ? (subTabs.ADMIN || 'accounts') : 'approvals';
+                    setTargetAdminSubtab(defaultAdminSub);
                   }
                   setCurrentView(viewName);
                 }}
@@ -931,7 +977,327 @@ export default function App() {
                 isAmHalfLeave={isAmHalfLeave}
                 isPmHalfLeave={isPmHalfLeave}
               />
-            )}
+
+              <div className="workspace-content">
+            {/* VIEW 1: HUB (홈 요약: 오늘 해야 할 업무·일정 및 최근 연락·알림) */}
+            {currentView === 'HUB' && (() => {
+              const myAssignedReqItems = user.role === 'CLIENT'
+                ? (clientRequests || []).filter(r => r.clientId === user.id && r.status !== 'DONE')
+                : (clientRequests || []).filter(r => {
+                    if (r.status === 'DONE' && r.clientConfirmed) return false;
+                    const hasMyTask = (r.assignedTasks || []).some(at => (at.assigneeId === user.id || at.staffId === user.id) && at.status !== 'COMPLETED');
+                    if (hasMyTask) return true;
+                    if ((user.role === 'ADMIN' || user.role === 'TEAM_LEADER') && r.status === 'REQUESTED') return true;
+                    return false;
+                  });
+
+              const myActiveTasks = user.role === 'CLIENT'
+                ? []
+                : (tasks || []).filter(t => (t.assigneeId === user.id || (!t.assigneeId && t.dept === user.dept)) && t.status !== 'DONE');
+
+              const todaySchedules = user.role === 'CLIENT'
+                ? []
+                : (schedules || []).filter(s => {
+                    const sStart = (s.startDate || '').slice(0, 10);
+                    const sEnd = (s.endDate || s.startDate || '').slice(0, 10);
+                    return todayStr >= sStart && todayStr <= sEnd;
+                  });
+
+              const combinedTodayWork = [
+                ...myAssignedReqItems.map(r => ({
+                  id: `req-${r.id}`,
+                  rawId: r.id,
+                  typeLabel: user.role === 'CLIENT' ? '요청사항' : '고객사 요청',
+                  title: r.title,
+                  subText: user.role === 'CLIENT'
+                    ? `${r.status === 'REQUESTED' ? '접수 대기' : (r.status === 'DONE' ? '확인 요청' : '진행 중')} · ${r.desiredDate || r.createdAt?.slice(0, 10) || ''}`
+                    : `${r.clientName || '고객사'} · ${r.status === 'REQUESTED' ? '담당 배정 대기' : '진행 중'}`,
+                  onClick: () => {
+                    setTargetRequestId(r.id);
+                    setCurrentView('CLIENT_REQUESTS');
+                  }
+                })),
+                ...myActiveTasks.map(t => ({
+                  id: `tsk-${t.id}`,
+                  rawId: t.id,
+                  typeLabel: '프로젝트 업무',
+                  title: t.title,
+                  subText: `${t.dept || '사내'} · 마감 ${t.dueDate || '-'}`,
+                  onClick: () => setCurrentView('PROJECTS')
+                })),
+                ...todaySchedules.map(s => ({
+                  id: `sch-${s.id}`,
+                  rawId: s.id,
+                  typeLabel: '오늘 일정',
+                  title: s.title,
+                  subText: `${s.dept || '전사'} · ${(s.startDate || '').slice(0, 10)}`,
+                  onClick: () => {
+                    setTargetScheduleId(s.id);
+                    setCurrentView('CALENDAR_LEAVE');
+                  }
+                }))
+              ];
+
+              const orderedTodayWork = [...combinedTodayWork].sort((a, b) => {
+                const idxA = hubCustomOrder.indexOf(a.id);
+                const idxB = hubCustomOrder.indexOf(b.id);
+                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                if (idxA !== -1) return -1;
+                if (idxB !== -1) return 1;
+                return 0;
+              });
+
+              const handleHubDragStart = (e, itemId) => {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', itemId);
+                setHubDraggedId(itemId);
+              };
+
+              const handleHubDragOver = (e, itemId) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (hubDraggedId && hubDraggedId !== itemId && hubDragOverId !== itemId) {
+                  setHubDragOverId(itemId);
+                }
+              };
+
+              const handleHubDragLeave = (itemId) => {
+                if (hubDragOverId === itemId) {
+                  setHubDragOverId(null);
+                }
+              };
+
+              const handleHubDrop = (e, targetId) => {
+                e.preventDefault();
+                if (!hubDraggedId || hubDraggedId === targetId) {
+                  setHubDraggedId(null);
+                  setHubDragOverId(null);
+                  return;
+                }
+                const currentIds = orderedTodayWork.map(it => it.id);
+                const fromIdx = currentIds.indexOf(hubDraggedId);
+                const toIdx = currentIds.indexOf(targetId);
+                if (fromIdx !== -1 && toIdx !== -1) {
+                  const nextOrder = [...currentIds];
+                  const [moved] = nextOrder.splice(fromIdx, 1);
+                  nextOrder.splice(toIdx, 0, moved);
+                  setHubCustomOrder(nextOrder);
+                  try {
+                    localStorage.setItem(`onedesk_hub_today_order_${user?.id || 'default'}`, JSON.stringify(nextOrder));
+                  } catch (err) {
+                    console.error(err);
+                  }
+                }
+                setHubDraggedId(null);
+                setHubDragOverId(null);
+              };
+
+              const handleHubDragEnd = () => {
+                setHubDraggedId(null);
+                setHubDragOverId(null);
+              };
+
+              const recentNotifs = (notifications || []).slice(0, 6);
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2.75rem' }}>
+                  {/* 상단 현황 요약 숫자 바 (프로젝트 / 고객사 요청 / 오늘 업무 / 새로운 알림) */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gap: '1.5rem',
+                    paddingBottom: '1.75rem',
+                    borderBottom: '1px solid var(--border-color)'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>프로젝트</div>
+                      <div style={{ fontSize: '26px', color: 'var(--text-primary)' }}>{myActiveTasks.length}건</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>고객사 요청</div>
+                      <div style={{ fontSize: '26px', color: 'var(--text-primary)' }}>{myAssignedReqItems.length}건</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>오늘 업무</div>
+                      <div style={{ fontSize: '26px', color: 'var(--text-primary)' }}>{orderedTodayWork.length}건</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>새로운 알림</div>
+                      <div style={{ fontSize: '26px', color: 'var(--text-primary)' }}>{unreadNotifsCount}건</div>
+                    </div>
+                  </div>
+
+                  {/* 섹션 1: Today (드래그하여 우선순위 변경 가능) */}
+                  <section style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingBottom: '0.9rem',
+                      borderBottom: '1px solid var(--text-primary)'
+                    }}>
+                      <h2 style={{ fontSize: '20px', color: 'var(--text-primary)', margin: 0 }}>
+                        Today
+                      </h2>
+                    </div>
+
+                    {orderedTodayWork.length === 0 ? (
+                      <div style={{
+                        padding: '2.25rem 0',
+                        color: 'var(--text-secondary)',
+                        fontSize: '16px',
+                        borderBottom: '1px solid var(--border-color)'
+                      }}>
+                        현재 배정된 대기 업무나 오늘 일정이 없습니다.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {orderedTodayWork.map(item => {
+                          const isDragging = hubDraggedId === item.id;
+                          const isOver = hubDragOverId === item.id;
+
+                          return (
+                            <div
+                              key={item.id}
+                              draggable={true}
+                              onDragStart={(e) => handleHubDragStart(e, item.id)}
+                              onDragOver={(e) => handleHubDragOver(e, item.id)}
+                              onDragLeave={() => handleHubDragLeave(item.id)}
+                              onDrop={(e) => handleHubDrop(e, item.id)}
+                              onDragEnd={handleHubDragEnd}
+                              onClick={item.onClick}
+                              style={{
+                                width: '100%',
+                                borderTop: isOver ? '2px solid var(--text-primary)' : 'none',
+                                borderBottom: '1px solid var(--border-color)',
+                                padding: '1.1rem 0.25rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '1rem',
+                                cursor: isDragging ? 'grabbing' : 'pointer',
+                                opacity: isDragging ? 0.35 : 1,
+                                transition: 'background-color 0.15s ease, opacity 0.15s ease',
+                                userSelect: 'none'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0 }}>
+                                <span
+                                  title="드래그하여 우선순위 변경"
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'var(--text-muted)',
+                                    cursor: 'grab',
+                                    flexShrink: 0,
+                                    opacity: 0.55
+                                  }}
+                                >
+                                  <GripVertical size={18} strokeWidth={1.8} />
+                                </span>
+                                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', flexShrink: 0 }}>
+                                  {item.typeLabel} ·
+                                </span>
+                                <span style={{
+                                  fontSize: '16px',
+                                  color: 'var(--text-primary)',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }}>
+                                  {item.title}
+                                </span>
+                              </div>
+                              <span style={{ fontSize: '15px', color: 'var(--text-secondary)', flexShrink: 0 }}>
+                                {item.subText}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </section>
+
+                  {/* 섹션 2: 알림 */}
+                  <section style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingBottom: '0.9rem',
+                      borderBottom: '1px solid var(--text-primary)'
+                    }}>
+                      <h2 style={{ fontSize: '20px', color: 'var(--text-primary)', margin: 0 }}>
+                        알림
+                      </h2>
+                    </div>
+
+                    {recentNotifs.length === 0 ? (
+                      <div style={{
+                        padding: '2.25rem 0',
+                        color: 'var(--text-secondary)',
+                        fontSize: '16px',
+                        borderBottom: '1px solid var(--border-color)'
+                      }}>
+                        새로 도착한 연락이나 알림이 없습니다.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {recentNotifs.map(notif => (
+                          <button
+                            key={notif.id}
+                            type="button"
+                            onClick={() => handleNavigateFromNotification(notif)}
+                            style={{
+                              width: '100%',
+                              background: 'none',
+                              border: 'none',
+                              borderBottom: '1px solid var(--border-color)',
+                              padding: '1.1rem 0.25rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: '1rem',
+                              cursor: 'pointer',
+                              textAlign: 'left'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0 }}>
+                              {!notif.isRead && (
+                                <span style={{
+                                  width: '7px',
+                                  height: '7px',
+                                  borderRadius: '50%',
+                                  backgroundColor: '#ef4444',
+                                  flexShrink: 0
+                                }} />
+                              )}
+                              <span style={{ fontSize: '15px', color: 'var(--text-secondary)', flexShrink: 0 }}>
+                                {notif.title} ·
+                              </span>
+                              <span style={{
+                                fontSize: '16px',
+                                color: notif.isRead ? 'var(--text-secondary)' : 'var(--text-primary)',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {notif.message}
+                              </span>
+                            </div>
+                            <span style={{ fontSize: '14px', color: 'var(--text-muted)', flexShrink: 0 }}>
+                              {(notif.createdAt || '').slice(5, 16)}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                </div>
+              );
+            })()}
 
             {/* VIEW 2: COMMUTE & ATTENDANCE */}
             {currentView === 'COMMUTE' && (
@@ -958,6 +1324,8 @@ export default function App() {
                 onShowToast={showToast}
                 onRefresh={() => loadAppData(user)}
                 initialTab="commute"
+                subTabs={subTabs}
+                onSelectSubTab={handleSelectSubTab}
                 onGoHome={() => setCurrentView('HUB')}
                 approvedWorkType={todayApprovedWorkType}
                 todayLeave={todayLeave}
@@ -982,6 +1350,7 @@ export default function App() {
                   onUpdateUser={(updatedUser) => setUser(updatedUser)}
                   targetRequestId={targetRequestId}
                   onClearTargetRequestId={() => setTargetRequestId(null)}
+                  activeSubTab={subTabs.CLIENT_REQUESTS}
                 />
               ) : (
                 <EmployeePortal
@@ -1007,6 +1376,8 @@ export default function App() {
                   onShowToast={showToast}
                   onRefresh={() => loadAppData(user)}
                   initialTab="client_requests"
+                  subTabs={subTabs}
+                  onSelectSubTab={handleSelectSubTab}
                   targetRequestId={targetRequestId}
                   onClearTargetRequestId={() => setTargetRequestId(null)}
                   initialClientRequests={clientRequests}
@@ -1050,6 +1421,8 @@ export default function App() {
                 onShowToast={showToast}
                 onRefresh={() => loadAppData(user)}
                 initialTab="tasks"
+                subTabs={subTabs}
+                onSelectSubTab={handleSelectSubTab}
                 onGoHome={() => setCurrentView('HUB')}
                 approvedWorkType={todayApprovedWorkType}
                 todayLeave={todayLeave}
@@ -1130,6 +1503,8 @@ export default function App() {
                 onShowToast={showToast}
                 onRefresh={() => loadAppData(user)}
                 initialTab="files"
+                subTabs={subTabs}
+                onSelectSubTab={handleSelectSubTab}
                 onGoHome={() => setCurrentView('HUB')}
                 approvedWorkType={todayApprovedWorkType}
                 todayLeave={todayLeave}
@@ -1274,8 +1649,67 @@ export default function App() {
             {currentView === 'ADMIN_CONTACT' && (
               <AdminContactView onGoHome={() => setCurrentView('HUB')} />
             )}
-
+              </div>
+            </div>
           </main>
+
+          {/* Bottom Rolling Announcement Bar (전 화면 공통 하단 티커) */}
+          {announcements && announcements.some(a => a.isActive) && (
+            <div style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '56px',
+              backgroundColor: 'var(--bg-card)',
+              borderTop: '1px solid var(--border-color)',
+              display: 'flex',
+              alignItems: 'center',
+              overflow: 'hidden',
+              zIndex: 100,
+              fontSize: '18px',
+              padding: '0 2rem',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '18px',
+                color: 'var(--text-primary)',
+                whiteSpace: 'nowrap',
+                paddingRight: '2rem',
+                marginRight: '2rem',
+                borderRight: '1px solid var(--border-color)',
+                background: 'var(--bg-card)',
+                zIndex: 2,
+                height: '100%'
+              }}>
+                사내 공지
+              </div>
+              <div style={{
+                flex: 1,
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                position: 'relative',
+                display: 'flex'
+              }}>
+                <div className="announcement-ticker-track">
+                  {(() => {
+                    const activeList = announcements.filter(a => a.isActive);
+                    const repeatList = activeList.length > 0
+                      ? [...activeList, ...activeList, ...activeList, ...activeList]
+                      : [];
+                    return repeatList.map((a, idx) => (
+                      <span key={idx} style={{ marginRight: '12rem', color: 'var(--text-secondary)', fontSize: '18px' }}>
+                        <span style={{ color: 'var(--text-primary)' }}>{a.title}</span>
+                        {a.content && <span style={{ marginLeft: '0.75rem' }}>· {a.content}</span>}
+                      </span>
+                    ));
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
 

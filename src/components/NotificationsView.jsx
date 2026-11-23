@@ -149,103 +149,69 @@ export default function NotificationsView({
   });
 
   return (
-    <div style={{ width: '100%', maxWidth: '860px', margin: '0 auto', paddingBottom: '3.5rem' }}>
+    <div style={{ width: '100%' }}>
       
-      {/* 1. Header: 타이틀(알림) + 텍스트형 액션 버튼(모두 읽음 · 전체 삭제 · 돌아가기) */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '2rem',
-        paddingBottom: '1rem',
-        borderBottom: '1px solid var(--border-color)'
-      }}>
-        {/* 타이틀 (미확인 건수 텍스트 없이 오직 "알림"만 표기) */}
-        <h2 style={{
-          fontSize: '24px',
-          fontWeight: 400,
-          margin: 0,
-          color: 'var(--text-primary)',
-          letterSpacing: '-0.01em'
+      {/* 1. Header: 텍스트형 액션 버튼(모두 읽음 · 전체 삭제) */}
+      {(unreadCount > 0 || notifications.length > 0) && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          marginBottom: '1.25rem',
+          paddingBottom: '0.75rem',
+          borderBottom: '1px solid var(--border-color)'
         }}>
-          알림
-        </h2>
-
-        {/* 텍스트 전용 버튼 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {unreadCount > 0 && onReadAllNotifications && (
-            <button
-              type="button"
-              onClick={onReadAllNotifications}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: '6px 8px',
-                fontSize: '15px',
-                fontWeight: 400,
-                color: 'var(--text-primary)',
-                cursor: 'pointer',
-                outline: 'none',
-                transition: 'opacity 0.15s ease'
-              }}
-              onMouseEnter={e => e.currentTarget.style.opacity = '0.6'}
-              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-            >
-              모두 읽음
-            </button>
-          )}
-
-          {notifications.length > 0 && onDeleteNotification && (
-            <>
-              {unreadCount > 0 && <span style={{ color: 'var(--border-color)', margin: '0 2px' }}>·</span>}
+          {/* 텍스트 전용 버튼 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {unreadCount > 0 && onReadAllNotifications && (
               <button
                 type="button"
-                onClick={handleDeleteAll}
+                onClick={onReadAllNotifications}
                 style={{
                   background: 'none',
                   border: 'none',
                   padding: '6px 8px',
                   fontSize: '15px',
                   fontWeight: 400,
-                  color: 'var(--text-secondary)',
+                  color: 'var(--text-primary)',
                   cursor: 'pointer',
                   outline: 'none',
-                  transition: 'color 0.15s ease'
+                  transition: 'opacity 0.15s ease'
                 }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+                onMouseEnter={e => e.currentTarget.style.opacity = '0.6'}
+                onMouseLeave={e => e.currentTarget.style.opacity = '1'}
               >
-                전체 삭제
+                모두 읽음
               </button>
-            </>
-          )}
+            )}
 
-          {onGoHome && (
-            <>
-              <span style={{ color: 'var(--border-color)', margin: '0 2px' }}>·</span>
-              <button
-                type="button"
-                onClick={onGoHome}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: '6px 8px',
-                  fontSize: '15px',
-                  fontWeight: 400,
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  outline: 'none',
-                  transition: 'color 0.15s ease'
-                }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-              >
-                돌아가기
-              </button>
-            </>
-          )}
+            {notifications.length > 0 && onDeleteNotification && (
+              <>
+                {unreadCount > 0 && <span style={{ color: 'var(--border-color)', margin: '0 2px' }}>·</span>}
+                <button
+                  type="button"
+                  onClick={handleDeleteAll}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '6px 8px',
+                    fontSize: '15px',
+                    fontWeight: 400,
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    transition: 'color 0.15s ease'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+                >
+                  전체 삭제
+                </button>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 2. Grouped Notifications Feed */}
       {notifications.length === 0 ? (
@@ -266,7 +232,7 @@ export default function NotificationsView({
             if (items.length === 0) return null;
 
             return (
-              <div key={groupName} style={{ marginBottom: '2.5rem' }}>
+              <div key={groupName}>
                 
                 {/* 기간 구분선 헤더 (크기 확대: 18px, 시원하고 선명한 타이틀) */}
                 <div style={{
@@ -300,7 +266,7 @@ export default function NotificationsView({
                         onClick={() => handleItemClick(notif)}
                         style={{
                           backgroundColor: isUnread ? 'var(--bg-card)' : 'transparent',
-                          border: isUnread ? '1px solid var(--border-color)' : '1px solid rgba(255, 255, 255, 0.06)',
+                          border: '1px solid var(--border-color)',
                           borderRadius: '8px',
                           padding: '1.4rem 1.75rem',
                           display: 'flex',

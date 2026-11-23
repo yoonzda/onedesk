@@ -37,6 +37,42 @@
       "annualSalary": 84000000,
       "accessLogs": [
         {
+          "id": "log-1795415937272-je4",
+          "sessionId": "sess-1795413447380-7ti5q",
+          "timestamp": "2026-11-23 15:38:57",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1795413447380-yr1",
+          "sessionId": "sess-1795413447380-7ti5q",
+          "timestamp": "2026-11-23 14:57:27",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
+          "id": "log-1795413304303-adu",
+          "sessionId": "sess-1795407618355-e9e51",
+          "timestamp": "2026-11-23 14:55:04",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1795407618355-56k",
+          "sessionId": "sess-1795407618355-e9e51",
+          "timestamp": "2026-11-23 13:20:18",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
+        {
           "id": "log-1794023090607-ymj",
           "sessionId": "sess-1794023090607-nkecn",
           "timestamp": "2026-11-07 12:44:50",
@@ -449,42 +485,6 @@
           "device": "웹 브라우저 (Chrome)",
           "ip": "::1",
           "note": "로그인"
-        },
-        {
-          "id": "log-1790573234093-6mv",
-          "sessionId": "sess-1790573205099-alcd6",
-          "timestamp": "2026-09-28 14:27:14",
-          "type": "LOGOUT",
-          "device": "웹 브라우저 (Chrome)",
-          "ip": "::1",
-          "note": "로그아웃"
-        },
-        {
-          "id": "log-1790573205099-uax",
-          "sessionId": "sess-1790573205099-alcd6",
-          "timestamp": "2026-09-28 14:26:45",
-          "type": "LOGIN",
-          "device": "웹 브라우저 (Chrome)",
-          "ip": "::1",
-          "note": "로그인"
-        },
-        {
-          "id": "log-1790573084832-6ti",
-          "sessionId": "sess-1790570706083-ht02c",
-          "timestamp": "2026-09-28 14:24:44",
-          "type": "LOGOUT",
-          "device": "웹 브라우저 (Chrome)",
-          "ip": "::1",
-          "note": "로그아웃"
-        },
-        {
-          "id": "log-1790570706083-105",
-          "sessionId": "sess-1790570706083-ht02c",
-          "timestamp": "2026-09-28 13:45:06",
-          "type": "LOGIN",
-          "device": "웹 브라우저 (Chrome)",
-          "ip": "::1",
-          "note": "로그인"
         }
       ],
       "createdAt": "2026-01-01"
@@ -505,13 +505,22 @@
       "usedLeave": 7,
       "preferences": {
         "toastPosition": "top-left",
-        "theme": "dark"
+        "theme": "light"
       },
       "annualSalary": 54000000,
       "bankName": "국민은행",
       "accountNumber": "",
       "createdAt": "2026-01-01",
       "accessLogs": [
+        {
+          "id": "log-1795415961377-4jk",
+          "sessionId": "sess-1795415961377-wa2ri",
+          "timestamp": "2026-11-23 15:39:21",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
         {
           "id": "log-1791244846398-898",
           "sessionId": "sess-1791244843845-kybav",
@@ -990,6 +999,24 @@
       },
       "annualSalary": 66000000,
       "accessLogs": [
+        {
+          "id": "log-1795407607546-08v",
+          "sessionId": "sess-1795407064598-c2vvv",
+          "timestamp": "2026-11-23 13:20:07",
+          "type": "LOGOUT",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그아웃"
+        },
+        {
+          "id": "log-1795407064598-e35",
+          "sessionId": "sess-1795407064598-c2vvv",
+          "timestamp": "2026-11-23 13:11:04",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
         {
           "id": "log-1790901325483-qhv",
           "sessionId": "sess-1790901316071-3sqlk",
@@ -2308,6 +2335,26 @@
     }
   ],
   "attendances": [
+    {
+      "id": "att-1795410213016",
+      "userId": "usr-admin",
+      "userName": "김관리",
+      "dept": "경영지원본부",
+      "date": "2026-11-23",
+      "checkIn": "14:03:33",
+      "checkOut": "14:40:09",
+      "workHours": 0.6,
+      "status": "COMPLETED",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": true,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0,
+      "isEarlyLeave": true
+    },
     {
       "id": "att-1791244868807",
       "userId": "usr-1790917302704",

@@ -10,10 +10,17 @@ export default function FileManager({
   onDeleteFile,
   onLinkFileToSchedule,
   onShowToast,
-  onNavigateToSchedule
+  onNavigateToSchedule,
+  activeSubTab = 'ALL'
 }) {
   // Main view tab: 'ALL' (전체) | 'SCHEDULE' (일정) | 'TYPE' (유형)
-  const [activeTab, setActiveTab] = useState('ALL');
+  const [activeTab, setActiveTab] = useState(activeSubTab || 'ALL');
+
+  useEffect(() => {
+    if (activeSubTab) {
+      setActiveTab(activeSubTab);
+    }
+  }, [activeSubTab]);
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -289,83 +296,52 @@ export default function FileManager({
   };
 
   return (
-    <div style={{ paddingTop: '2rem', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
-      {/* 1. Header: Title & Upload Button */}
+    <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
+      {/* Top Toolbar: View Filter Pills (Left) + Minimal Icon Toolbar (Right) */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '1rem',
-        marginBottom: '1.5rem'
-      }}>
-        <div>
-          <h2 style={{
-            fontSize: '28px',
-            fontWeight: 400,
-            margin: 0,
-            color: 'var(--text-primary)',
-            letterSpacing: '-0.02em',
-            lineHeight: 1
-          }}>
-            파일 보관함
-          </h2>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => setShowUploadDrawer(true)}
-            style={{
-              height: '42px',
-              padding: '0 1.25rem',
-              fontSize: '15px',
-              fontWeight: 400,
-              borderRadius: '4px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              cursor: 'pointer'
-            }}
-          >
-            <Plus size={18} strokeWidth={2} />
-            파일 등록
-          </button>
-        </div>
-      </div>
-
-      {/* 2. Top Navigation Tabs + Right Minimal Icon Toolbar */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '1rem',
+        paddingBottom: '0.85rem',
         borderBottom: '1px solid var(--border-color)',
         marginBottom: '0',
         position: 'relative',
         zIndex: 20
       }}>
-        {/* Left: Navigation Tabs: 전체 | 일정 | 유형 (사내 공통 tab-btn tab-btn-lg 표준 적용) */}
-        <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', marginBottom: '-1px' }}>
+        {/* Left: View Filter Pills (전체 | 일정 | 유형) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           {[
             { id: 'ALL', label: '전체' },
             { id: 'SCHEDULE', label: '일정' },
             { id: 'TYPE', label: '유형' }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              type="button"
-              className={`tab-btn tab-btn-lg ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
+          ].map(f => {
+            const isSelected = activeTab === f.id;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setActiveTab(f.id)}
+                style={{
+                  padding: '0.4rem 1.05rem',
+                  borderRadius: '9999px',
+                  border: isSelected ? '1px solid var(--text-muted)' : '1px solid var(--border-color)',
+                  backgroundColor: isSelected ? 'var(--primary-light)' : 'transparent',
+                  color: isSelected ? 'var(--text-primary)' : 'var(--text-muted)',
+                  fontSize: '15px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  outline: 'none'
+                }}
+              >
+                {f.label}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Right: Unified Minimal Icon Toolbar (Search Toggle + Only My Files + Sort Popover + Reset Icon) */}
+        {/* Right: Unified Minimal Icon Toolbar (Search Toggle + Only My Files + Sort Popover + Reset Icon + Plus) */}
         {(() => {
           const hasActiveFilter = Boolean(searchQuery || onlyMyFiles || sortBy !== 'NAME_ASC');
 
@@ -384,18 +360,18 @@ export default function FileManager({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: (isSearchOpen || searchQuery) ? 'var(--text-primary)' : 'var(--text-muted)',
-                  opacity: (isSearchOpen || searchQuery) ? 1 : 0.45,
+                  color: (isSearchOpen || searchQuery) ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  opacity: (isSearchOpen || searchQuery) ? 1 : 0.72,
                   outline: 'none',
                   transition: 'all 0.15s ease'
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.color = 'var(--text-primary)';
-                  e.currentTarget.style.opacity = '0.9';
+                  e.currentTarget.style.opacity = '1';
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.color = (isSearchOpen || searchQuery) ? 'var(--text-primary)' : 'var(--text-muted)';
-                  e.currentTarget.style.opacity = (isSearchOpen || searchQuery) ? 1 : 0.45;
+                  e.currentTarget.style.color = (isSearchOpen || searchQuery) ? 'var(--text-primary)' : 'var(--text-secondary)';
+                  e.currentTarget.style.opacity = (isSearchOpen || searchQuery) ? 1 : 0.72;
                 }}
               >
                 <Search size={22} strokeWidth={2} />
@@ -414,18 +390,18 @@ export default function FileManager({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: onlyMyFiles ? 'var(--text-primary)' : 'var(--text-muted)',
-                  opacity: onlyMyFiles ? 1 : 0.45,
+                  color: onlyMyFiles ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  opacity: onlyMyFiles ? 1 : 0.72,
                   outline: 'none',
                   transition: 'all 0.15s ease'
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.color = 'var(--text-primary)';
-                  e.currentTarget.style.opacity = '0.9';
+                  e.currentTarget.style.opacity = '1';
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.color = onlyMyFiles ? 'var(--text-primary)' : 'var(--text-muted)';
-                  e.currentTarget.style.opacity = onlyMyFiles ? 1 : 0.45;
+                  e.currentTarget.style.color = onlyMyFiles ? 'var(--text-primary)' : 'var(--text-secondary)';
+                  e.currentTarget.style.opacity = onlyMyFiles ? 1 : 0.72;
                 }}
               >
                 <User size={22} strokeWidth={2} />
@@ -451,18 +427,18 @@ export default function FileManager({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: (sortBy !== 'NAME_ASC' || isSortOpen) ? 'var(--text-primary)' : 'var(--text-muted)',
-                    opacity: (sortBy !== 'NAME_ASC' || isSortOpen) ? 1 : 0.45,
+                    color: (sortBy !== 'NAME_ASC' || isSortOpen) ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    opacity: (sortBy !== 'NAME_ASC' || isSortOpen) ? 1 : 0.72,
                     outline: 'none',
                     transition: 'all 0.15s ease'
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.color = 'var(--text-primary)';
-                    e.currentTarget.style.opacity = '0.9';
+                    e.currentTarget.style.opacity = '1';
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.color = (sortBy !== 'NAME_ASC' || isSortOpen) ? 'var(--text-primary)' : 'var(--text-muted)';
-                    e.currentTarget.style.opacity = (sortBy !== 'NAME_ASC' || isSortOpen) ? 1 : 0.45;
+                    e.currentTarget.style.color = (sortBy !== 'NAME_ASC' || isSortOpen) ? 'var(--text-primary)' : 'var(--text-secondary)';
+                    e.currentTarget.style.opacity = (sortBy !== 'NAME_ASC' || isSortOpen) ? 1 : 0.72;
                   }}
                 >
                   <ArrowUpDown size={22} strokeWidth={2} />
@@ -571,8 +547,8 @@ export default function FileManager({
                   border: 'none',
                   padding: '6px',
                   cursor: 'pointer',
-                  color: hasActiveFilter ? 'var(--text-primary)' : 'var(--text-muted)',
-                  opacity: hasActiveFilter ? 1 : 0.3,
+                  color: hasActiveFilter ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  opacity: hasActiveFilter ? 1 : 0.55,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -581,14 +557,36 @@ export default function FileManager({
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.color = 'var(--text-primary)';
-                  e.currentTarget.style.opacity = '0.9';
+                  e.currentTarget.style.opacity = '1';
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.color = hasActiveFilter ? 'var(--text-primary)' : 'var(--text-muted)';
-                  e.currentTarget.style.opacity = hasActiveFilter ? 1 : 0.3;
+                  e.currentTarget.style.color = hasActiveFilter ? 'var(--text-primary)' : 'var(--text-secondary)';
+                  e.currentTarget.style.opacity = hasActiveFilter ? 1 : 0.55;
                 }}
               >
                 <RotateCcw size={22} strokeWidth={2} />
+              </button>
+
+              {/* 5. 신규 파일 등록 (+) 아이콘 버튼 */}
+              <button
+                type="button"
+                onClick={() => setShowUploadDrawer(true)}
+                title="파일 등록"
+                aria-label="파일 등록"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '6px',
+                  cursor: 'pointer',
+                  color: 'var(--text-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  outline: 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Plus size={22} strokeWidth={2} />
               </button>
             </div>
           );
@@ -729,7 +727,9 @@ export default function FileManager({
               </div>
 
               {/* Rows */}
-              {processedFiles.map(file => (
+              {processedFiles.map(file => {
+                const isMyFile = Boolean(user && (file.uploaderId === user.id || file.uploaderName === user.name));
+                return (
                 <div
                   key={file.id}
                   style={{
@@ -737,11 +737,12 @@ export default function FileManager({
                     alignItems: 'center',
                     padding: '1.2rem 1.5rem',
                     borderBottom: '1px solid var(--border-color)',
+                    backgroundColor: isMyFile ? 'var(--bg-my-row)' : 'transparent',
+                    outline: isMyFile ? '1px solid var(--border-my-row)' : 'none',
+                    outlineOffset: '-1px',
                     fontSize: '16px',
                     transition: 'background-color 0.15s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
                   {/* File Name (Download Link) */}
                   <div style={{ flex: 1, minWidth: '220px', wordBreak: 'break-all', paddingRight: '1rem' }}>
@@ -841,7 +842,8 @@ export default function FileManager({
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -1173,8 +1175,7 @@ export default function FileManager({
             gridTemplateColumns: 'repeat(4, minmax(280px, 1fr))',
             gap: '1.25rem',
             alignItems: 'start',
-            overflowX: 'auto',
-            paddingBottom: '2rem'
+            overflowX: 'auto'
           }}>
             {categories.map(cat => {
               const catFiles = grouped[cat] || [];

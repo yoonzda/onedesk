@@ -122,19 +122,19 @@ export default function CustomDatePicker({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: (isOpen || value) ? 'var(--text-primary)' : 'var(--text-muted)',
-            opacity: (isOpen || value) ? 1 : 0.45,
+            color: (isOpen || value) ? 'var(--text-primary)' : 'var(--text-secondary)',
+            opacity: (isOpen || value) ? 1 : 0.72,
             outline: 'none',
             userSelect: 'none',
             transition: 'all 0.15s ease'
           }}
           onMouseEnter={e => {
             e.currentTarget.style.color = 'var(--text-primary)';
-            e.currentTarget.style.opacity = '0.9';
+            e.currentTarget.style.opacity = '1';
           }}
           onMouseLeave={e => {
-            e.currentTarget.style.color = (isOpen || value) ? 'var(--text-primary)' : 'var(--text-muted)';
-            e.currentTarget.style.opacity = (isOpen || value) ? '1' : '0.45';
+            e.currentTarget.style.color = (isOpen || value) ? 'var(--text-primary)' : 'var(--text-secondary)';
+            e.currentTarget.style.opacity = (isOpen || value) ? '1' : '0.72';
           }}
         >
           <Calendar size={22} strokeWidth={2} />

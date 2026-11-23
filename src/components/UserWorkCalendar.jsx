@@ -562,7 +562,7 @@ export default function UserWorkCalendar({ user, attendance, onShowToast }) {
   const weekHeaders = ['일', '월', '화', '수', '목', '금', '토'];
 
   return (
-    <div style={{ marginTop: '1.5rem', width: '100%' }}>
+    <div style={{ marginTop: 0, width: '100%' }}>
       {/* Calendar Header: Left (Year/Month Navigator) + Right ([O월 급여 명세서] Button) */}
       <div style={{
         display: 'flex',
@@ -886,9 +886,9 @@ export default function UserWorkCalendar({ user, attendance, onShowToast }) {
                 style={{
                   padding: '0.75rem',
                   borderRight: (idx + 1) % 7 === 0 ? 'none' : '1px solid var(--border-color)',
-                  borderBottom: '1px solid var(--border-color)',
+                  borderBottom: idx >= calendarDays.length - 7 ? 'none' : '1px solid var(--border-color)',
                   backgroundColor: day.isToday 
-                    ? 'rgba(255, 255, 255, 0.05)' 
+                    ? 'var(--bg-input)' 
                     : (!day.isCurrentMonth ? 'rgba(0,0,0,0.015)' : 'transparent'),
                   // 오늘 날짜 칸(그 날짜)에 2px 고대비 모노크롬 테두리 적용
                   outline: day.isToday ? '2px solid var(--text-primary, #ffffff)' : 'none',

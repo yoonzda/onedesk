@@ -1,23 +1,21 @@
 import React from 'react';
-import { Mail, ClipboardList, Sun, Moon, LogOut } from 'lucide-react';
+import { Sun, Moon, LogOut } from 'lucide-react';
 
 export default function Navbar({ 
   user, 
   onLogout, 
   theme, 
   onToggleTheme, 
-  onGoHome, 
-  currentView,
-  unreadNotifsCount = 0,
-  onOpenNotifications,
-  onOpenTasksList,
-  activeTasksCount = 0
+  onGoHome
 }) {
 
   if (!user) return null;
 
   return (
     <header className="navbar" style={{
+      position: 'sticky',
+      top: 0,
+      zIndex: 90,
       borderBottom: '1px solid var(--border-color)',
       backgroundColor: 'var(--bg-header)',
       padding: '0.85rem 0'
@@ -32,7 +30,7 @@ export default function Navbar({
         justifyContent: 'space-between'
       }}>
         
-        {/* Left: Pure Logo Icon Only (No Text) */}
+        {/* Left: Pure Logo Icon Only (Click to go to Home tab) */}
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <div
             onClick={onGoHome}
@@ -51,73 +49,8 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* Right: Mail Notification, Theme Toggle, Logout Icons (Borderless) */}
+        {/* Right: Only Theme Toggle & Logout Icons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-          
-          {/* Mail Notification Button (알림/메시지) - Borderless */}
-          {user.role !== 'CLIENT' && onOpenNotifications && (
-            <button
-              type="button"
-              onClick={onOpenNotifications}
-              title={unreadNotifsCount > 0 ? `알림 (${unreadNotifsCount}건 미확인)` : '알림'}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: '6px',
-                cursor: 'pointer',
-                color: currentView === 'NOTIFICATIONS' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                outline: 'none',
-                transition: 'color 0.15s ease'
-              }}
-            >
-              <Mail size={22} strokeWidth={2} />
-              {unreadNotifsCount > 0 && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: '3px',
-                    right: '3px',
-                    width: '7px',
-                    height: '7px',
-                    backgroundColor: '#ef4444',
-                    borderRadius: '50%',
-                    display: 'block'
-                  }}
-                />
-              )}
-            </button>
-          )}
-
-          {/* Tasks List Button (업무 목록) - Borderless */}
-          {user.role !== 'CLIENT' && onOpenTasksList && (
-            <button
-              type="button"
-              onClick={onOpenTasksList}
-              title="업무 목록"
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: '6px',
-                cursor: 'pointer',
-                color: currentView === 'TASKS_LIST' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                outline: 'none',
-                transition: 'color 0.15s ease'
-              }}
-            >
-              <ClipboardList size={22} strokeWidth={2} />
-            </button>
-          )}
-
-
-
           {/* Theme Toggle Icon (Sun / Moon) - Borderless */}
           <button
             type="button"
@@ -161,7 +94,6 @@ export default function Navbar({
           >
             <LogOut size={22} strokeWidth={2} />
           </button>
-
         </div>
 
       </div>

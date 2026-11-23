@@ -1424,6 +1424,8 @@ export default function CompanyCalendar({
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '1.25rem',
+        paddingBottom: '0.85rem',
+        borderBottom: '1px solid var(--border-color)',
         marginBottom: '1.5rem'
       }}>
         {/* Left: ‹ 2026년 9월 › with Roller Popover */}
@@ -1796,7 +1798,7 @@ export default function CompanyCalendar({
                         style={{
                           borderRight: colIdx === 6 ? 'none' : '1px solid var(--border-color)',
                           backgroundColor: isToday
-                            ? 'rgba(255, 255, 255, 0.05)'
+                            ? 'var(--bg-input)'
                             : (!item.isCurrentMonth ? 'rgba(0,0,0,0.015)' : 'transparent'),
                           outline: isToday ? '2px solid var(--text-primary, #ffffff)' : 'none',
                           outlineOffset: '-2px',
@@ -2269,8 +2271,7 @@ export default function CompanyCalendar({
                           padding: '8px 10px',
                           fontSize: '15px',
                           borderRadius: '6px',
-                          outline: 'none',
-                          colorScheme: 'dark'
+                          outline: 'none'
                         }}
                       />
                     </div>
@@ -2295,10 +2296,9 @@ export default function CompanyCalendar({
                           color: 'var(--text-primary)',
                           padding: '8px 10px',
                           fontSize: '15px',
-                            borderRadius: '6px',
-                            outline: 'none',
-                            colorScheme: 'dark'
-                          }}
+                          borderRadius: '6px',
+                          outline: 'none'
+                        }}
                         />
                       </div>
                   </div>

@@ -33,9 +33,10 @@ export default function ClientPortal({
   onGoHome,
   onUpdateUser,
   targetRequestId = null,
-  onClearTargetRequestId = null
+  onClearTargetRequestId = null,
+  activeSubTab = 'ALL'
 }) {
-  const [activeTab, setActiveTab] = useState('IN_PROGRESS'); // IN_PROGRESS (진행 중), REVIEW (확인 요청), DONE (작업 완료)
+  const [activeTab, setActiveTab] = useState('ALL'); // ALL (전체), IN_PROGRESS (진행 중), REVIEW (확인 요청), DONE (작업 완료)
   const [requests, setRequests] = useState([]);
   const [selectedReq, setSelectedReq] = useState(null);
   const [isDrawerClosing, setIsDrawerClosing] = useState(false);
@@ -532,16 +533,18 @@ export default function ClientPortal({
     });
   };
 
+  const filteredAll = filterList([...requests].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
   const filteredInProgress = filterList(rawInProgress);
   const filteredReview = filterList(rawReview);
   const filteredDone = filterList(rawDone);
 
   const getCurrentList = () => {
     switch (activeTab) {
+      case 'ALL': return filteredAll;
       case 'IN_PROGRESS': return filteredInProgress;
       case 'REVIEW': return filteredReview;
       case 'DONE': return filteredDone;
-      default: return filteredInProgress;
+      default: return filteredAll;
     }
   };
 
@@ -550,7 +553,8 @@ export default function ClientPortal({
   const hasMore = currentList.length > visibleCount;
 
   // Collect dates that have requests in current tab (완료 탭: 완료일 기준, 그 외 탭: 등록일 기준)
-  const currentRawList = activeTab === 'IN_PROGRESS' ? rawInProgress
+  const currentRawList = activeTab === 'ALL' ? requests
+    : activeTab === 'IN_PROGRESS' ? rawInProgress
     : activeTab === 'REVIEW' ? rawReview
     : rawDone;
 
@@ -613,59 +617,49 @@ export default function ClientPortal({
         </div>
       </div>
 
-      {/* Tab Navigation + Search & Date Filter */}
+      {/* Search & Date Filter Toolbar */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '1rem',
+        paddingBottom: '0.85rem',
         borderBottom: '1px solid var(--border-color)',
         marginBottom: '0',
         position: 'relative',
         zIndex: 20
       }}>
-        {/* Left: 3 Tabs (진행 중 | 확인 요청 🔴 | 작업 완료) - 전환 시 검색조건 자동 초기화 */}
-        <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '-1px' }}>
-          <button 
-            type="button"
-            className={`tab-btn tab-btn-lg ${activeTab === 'IN_PROGRESS' ? 'active' : ''}`}
-            onClick={() => handleTabChange('IN_PROGRESS')}
-          >
-            진행 중
-          </button>
-
-          <button 
-            type="button"
-            className={`tab-btn tab-btn-lg ${activeTab === 'REVIEW' ? 'active' : ''}`}
-            style={{ position: 'relative' }}
-            onClick={() => handleTabChange('REVIEW')}
-          >
-            <span>확인 요청</span>
-            {unconfirmedReviewCount > 0 && (
-              <span
-                title={`${unconfirmedReviewCount}건의 확인 대기 작업이 있습니다`}
+        {/* Left: Status Filter Pills (전체 | 진행 중 | 확인 요청 | 작업 완료) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {[
+            { id: 'ALL', label: '전체' },
+            { id: 'IN_PROGRESS', label: '진행 중' },
+            { id: 'REVIEW', label: '확인 요청' },
+            { id: 'DONE', label: '작업 완료' }
+          ].map(f => {
+            const isSelected = activeTab === f.id;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => handleTabChange(f.id)}
                 style={{
-                  position: 'absolute',
-                  top: '6px',
-                  right: '4px',
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  backgroundColor: '#ef4444',
-                  display: 'inline-block'
+                  padding: '0.4rem 1.05rem',
+                  borderRadius: '9999px',
+                  border: isSelected ? '1px solid var(--text-muted)' : '1px solid var(--border-color)',
+                  backgroundColor: isSelected ? 'var(--primary-light)' : 'transparent',
+                  color: isSelected ? 'var(--text-primary)' : 'var(--text-muted)',
+                  fontSize: '15px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  outline: 'none'
                 }}
-              />
-            )}
-          </button>
-
-          <button 
-            type="button"
-            className={`tab-btn tab-btn-lg ${activeTab === 'DONE' ? 'active' : ''}`}
-            onClick={() => handleTabChange('DONE')}
-          >
-            작업 완료
-          </button>
+              >
+                {f.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Right: Unified Minimal Icon Toolbar (Search Toggle + Date Picker + Reset Icon) */}
@@ -683,18 +677,18 @@ export default function ClientPortal({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: (isSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-muted)',
-              opacity: (isSearchOpen || searchTerm) ? 1 : 0.45,
+              color: (isSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-secondary)',
+              opacity: (isSearchOpen || searchTerm) ? 1 : 0.72,
               outline: 'none',
               transition: 'all 0.15s ease'
             }}
             onMouseEnter={e => {
               e.currentTarget.style.color = 'var(--text-primary)';
-              e.currentTarget.style.opacity = '0.9';
+              e.currentTarget.style.opacity = '1';
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.color = (isSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-muted)';
-              e.currentTarget.style.opacity = (isSearchOpen || searchTerm) ? 1 : 0.45;
+              e.currentTarget.style.color = (isSearchOpen || searchTerm) ? 'var(--text-primary)' : 'var(--text-secondary)';
+              e.currentTarget.style.opacity = (isSearchOpen || searchTerm) ? 1 : 0.72;
             }}
           >
             <Search size={22} strokeWidth={2} />
@@ -724,8 +718,8 @@ export default function ClientPortal({
               border: 'none',
               padding: '6px',
               cursor: 'pointer',
-              color: (searchTerm || selectedDate) ? 'var(--text-primary)' : 'var(--text-muted)',
-              opacity: (searchTerm || selectedDate) ? 1 : 0.3,
+              color: (searchTerm || selectedDate) ? 'var(--text-primary)' : 'var(--text-secondary)',
+              opacity: (searchTerm || selectedDate) ? 1 : 0.55,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -734,11 +728,11 @@ export default function ClientPortal({
             }}
             onMouseEnter={e => {
               e.currentTarget.style.color = 'var(--text-primary)';
-              e.currentTarget.style.opacity = '0.9';
+              e.currentTarget.style.opacity = '1';
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.color = (searchTerm || selectedDate) ? 'var(--text-primary)' : 'var(--text-muted)';
-              e.currentTarget.style.opacity = (searchTerm || selectedDate) ? '1' : '0.3';
+              e.currentTarget.style.color = (searchTerm || selectedDate) ? 'var(--text-primary)' : 'var(--text-secondary)';
+              e.currentTarget.style.opacity = (searchTerm || selectedDate) ? '1' : '0.55';
             }}
           >
             <RotateCcw size={22} strokeWidth={2} />
@@ -1066,7 +1060,7 @@ export default function ClientPortal({
                   <h2 style={{
                     fontSize: '22px',
                     fontWeight: 400,
-                    color: '#ffffff',
+                    color: 'var(--text-primary)',
                     lineHeight: 1.4,
                     wordBreak: 'keep-all',
                     margin: 0,
@@ -1113,7 +1107,7 @@ export default function ClientPortal({
                         transition: 'color 0.15s ease'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.color = '#ffffff';
+                        e.currentTarget.style.color = 'var(--text-primary)';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.color = 'var(--text-primary)';
@@ -1206,14 +1200,12 @@ export default function ClientPortal({
                       <button
                         type="submit"
                         disabled={savingEdit}
+                        className="btn btn-primary"
                         style={{
                           borderRadius: 0,
                           padding: '0.6rem 1.75rem',
                           fontSize: '15px',
                           fontWeight: 400,
-                          background: '#27272a',
-                          color: '#f4f4f5',
-                          border: '1px solid #3f3f46',
                           cursor: 'pointer'
                         }}
                       >
@@ -1305,7 +1297,7 @@ export default function ClientPortal({
               {/* 2. 요청 내용 (수정 모드가 아닐 때 노출) */}
               {!isEditingReq && (
                 <div>
-                  <h3 style={{ fontSize: '17px', fontWeight: 400, color: '#ffffff', marginBottom: '0.85rem' }}>
+                  <h3 style={{ fontSize: '17px', fontWeight: 400, color: 'var(--text-primary)', marginBottom: '0.85rem' }}>
                     요청 내용
                   </h3>
                   <div
@@ -1314,9 +1306,9 @@ export default function ClientPortal({
                       fontSize: '16px',
                       lineHeight: 1.75,
                       wordBreak: 'break-word',
-                      color: '#f4f4f5',
-                      background: '#18181c',
-                      border: '1px solid #2a2a30',
+                      color: 'var(--text-primary)',
+                      background: 'var(--bg-input)',
+                      border: '1px solid var(--border-color)',
                       borderRadius: '6px',
                       padding: '1.25rem 1.5rem',
                       letterSpacing: '-0.01em'
@@ -1336,7 +1328,7 @@ export default function ClientPortal({
                     paddingBottom: '0.5rem',
                     borderBottom: '1px solid var(--border-color)'
                   }}>
-                    <h3 style={{ fontSize: '17px', fontWeight: 400, color: '#ffffff', margin: 0 }}>
+                    <h3 style={{ fontSize: '17px', fontWeight: 400, color: 'var(--text-primary)', margin: 0 }}>
                       댓글 {comments.length > 0 && <span style={{ fontSize: '15px', color: 'var(--text-muted)' }}>· {comments.length}</span>}
                     </h3>
                   </div>
@@ -1375,23 +1367,23 @@ export default function ClientPortal({
                             key={comm.id}
                             style={{
                               padding: '1rem 1.25rem',
-                              backgroundColor: '#18181c',
-                              border: '1px solid #2a2a30',
+                              backgroundColor: 'var(--bg-input)',
+                              border: '1px solid var(--border-color)',
                               borderRadius: '6px',
                               display: 'flex',
                               flexDirection: 'column',
                               gap: '0.75rem'
                             }}
                           >
-                            {/* 작성자 이름 단독 표시: 소프트 블루 색상 + 하단 헤어라인 구분선으로 발화 주체 명확화 */}
+                            {/* 작성자 이름 단독 표시: 하단 헤어라인 구분선으로 발화 주체 명확화 */}
                             <div style={{
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'space-between',
                               paddingBottom: '0.55rem',
-                              borderBottom: '1px solid #26262b'
+                              borderBottom: '1px solid var(--border-color)'
                             }}>
-                              <span style={{ fontSize: '15px', color: '#93c5fd', fontWeight: 400 }}>
+                              <span style={{ fontSize: '15px', color: 'var(--text-primary)', fontWeight: 400 }}>
                                 {cleanAuthor}
                               </span>
                             </div>
@@ -1399,7 +1391,7 @@ export default function ClientPortal({
                             {/* 댓글 내용: 선명하고 시원한 16px 본문 */}
                             <div style={{
                               fontSize: '16px',
-                              color: '#f4f4f5',
+                              color: 'var(--text-primary)',
                               lineHeight: 1.7,
                               whiteSpace: 'pre-wrap',
                               wordBreak: 'break-word',
@@ -1411,14 +1403,14 @@ export default function ClientPortal({
 
                             {/* 첨부파일 (클립 이모지 없이 깔끔한 텍스트 링크) */}
                             {comm.attachments && comm.attachments.length > 0 && (
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', paddingTop: '0.35rem', borderTop: '1px solid #26262b' }}>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', paddingTop: '0.35rem', borderTop: '1px solid var(--border-color)' }}>
                                 {comm.attachments.map(att => (
                                   <a
                                     key={att.id || att.url}
                                     href={att.url}
                                     target="_blank"
                                     rel="noreferrer"
-                                    style={{ fontSize: '14px', color: '#60a5fa', textDecoration: 'none' }}
+                                    style={{ fontSize: '14px', color: '#3b82f6', textDecoration: 'none' }}
                                   >
                                     첨부: {formatFileName(att.name)}
                                   </a>
@@ -1445,8 +1437,8 @@ export default function ClientPortal({
                       rows={3}
                       style={{
                         width: '100%',
-                        backgroundColor: '#18181b',
-                        border: '1px solid #3f3f46',
+                        backgroundColor: 'var(--bg-input)',
+                        border: '1px solid var(--border-color)',
                         borderRadius: '6px',
                         color: 'var(--text-primary)',
                         padding: '0.85rem',
@@ -1466,8 +1458,8 @@ export default function ClientPortal({
                           display: 'inline-flex',
                           alignItems: 'center',
                           padding: '0.4rem 0.8rem',
-                          backgroundColor: '#1f1f24',
-                          border: '1px solid #333339',
+                          backgroundColor: 'var(--bg-input)',
+                          border: '1px solid var(--border-color)',
                           borderRadius: '4px'
                         }}
                       >
@@ -1490,9 +1482,9 @@ export default function ClientPortal({
                             padding: '0.55rem 1.4rem',
                             fontSize: '15px',
                             fontWeight: 400,
-                            backgroundColor: '#27272a',
-                            color: '#f4f4f5',
-                            border: '1px solid #3f3f46',
+                            backgroundColor: 'var(--primary-light)',
+                            color: 'var(--text-primary)',
+                            border: '1px solid var(--border-color)',
                             borderRadius: '4px',
                             cursor: 'pointer'
                           }}
@@ -1508,12 +1500,12 @@ export default function ClientPortal({
               {/* 4. 조치 내용 (작업 완료일, 조치 내용 본문만 단정하게 표시 - 댓글 아래 배치) */}
               {!isEditingReq && (selectedReq.completionSummary || selectedReq.completedAt || selectedReq.status === 'DONE') && (
                 <div>
-                  <h3 style={{ fontSize: '17px', fontWeight: 400, color: '#ffffff', marginBottom: '0.85rem' }}>
+                  <h3 style={{ fontSize: '17px', fontWeight: 400, color: 'var(--text-primary)', marginBottom: '0.85rem' }}>
                     조치 내용
                   </h3>
                   <div style={{
-                    background: '#18181c',
-                    border: '1px solid #2a2a30',
+                    background: 'var(--bg-input)',
+                    border: '1px solid var(--border-color)',
                     borderRadius: '6px',
                     padding: '1.25rem 1.5rem',
                     display: 'flex',
@@ -1526,7 +1518,7 @@ export default function ClientPortal({
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       paddingBottom: '0.65rem',
-                      borderBottom: '1px solid #26262b',
+                      borderBottom: '1px solid var(--border-color)',
                       fontSize: '14px'
                     }}>
                       <span style={{ color: 'var(--text-primary)', fontWeight: 400 }}>조치 완료</span>
@@ -1540,7 +1532,7 @@ export default function ClientPortal({
                     {/* 조치 내용 본문 */}
                     <div style={{
                       fontSize: '16px',
-                      color: '#f4f4f5',
+                      color: 'var(--text-primary)',
                       lineHeight: 1.75,
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
@@ -1593,9 +1585,9 @@ export default function ClientPortal({
                       fontWeight: 400,
                       borderRadius: '6px',
                       cursor: 'pointer',
-                      backgroundColor: '#1c1c20',
+                      backgroundColor: 'var(--bg-input)',
                       color: 'var(--text-primary)',
-                      border: '1px solid #333339',
+                      border: '1px solid var(--border-color)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center'
