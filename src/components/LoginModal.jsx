@@ -97,7 +97,7 @@ export default function LoginModal({ onLoginSuccess }) {
         }}>
           {/* Logo 04 Image */}
           <img 
-            src="/logo_mono.png" 
+            src={`${import.meta.env.BASE_URL}logo_mono.png`} 
             alt="OneDesk Monochrome Logo"
             style={{
               width: '140px',

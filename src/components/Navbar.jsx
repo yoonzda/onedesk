@@ -44,7 +44,7 @@ export default function Navbar({
             }}
           >
             <img 
-              src="/logo_mono.png" 
+              src={`${import.meta.env.BASE_URL}logo_mono.png`} 
               alt="Logo" 
               style={{ width: '32px', height: '32px', objectFit: 'contain', display: 'block' }}
             />
