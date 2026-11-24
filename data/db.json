@@ -32,10 +32,19 @@
       "usedLeave": 5.5,
       "preferences": {
         "toastPosition": "bottom-left",
-        "theme": "dark"
+        "theme": "light"
       },
       "annualSalary": 84000000,
       "accessLogs": [
+        {
+          "id": "log-1795501389884-rb3",
+          "sessionId": "sess-1795501389884-v2dw9",
+          "timestamp": "2026-11-24 15:23:09",
+          "type": "LOGIN",
+          "device": "웹 브라우저 (Chrome)",
+          "ip": "::1",
+          "note": "로그인"
+        },
         {
           "id": "log-1795415937272-je4",
           "sessionId": "sess-1795413447380-7ti5q",
@@ -476,15 +485,6 @@
           "device": "웹 브라우저 (Chrome)",
           "ip": "::1",
           "note": "로그아웃"
-        },
-        {
-          "id": "log-1790575096836-n4m",
-          "sessionId": "sess-1790575096836-3k37m",
-          "timestamp": "2026-09-28 14:58:16",
-          "type": "LOGIN",
-          "device": "웹 브라우저 (Chrome)",
-          "ip": "::1",
-          "note": "로그인"
         }
       ],
       "createdAt": "2026-01-01"
@@ -2335,6 +2335,25 @@
     }
   ],
   "attendances": [
+    {
+      "id": "att-1795501397283",
+      "userId": "usr-admin",
+      "userName": "김관리",
+      "dept": "경영지원본부",
+      "date": "2026-11-24",
+      "checkIn": "15:23:17",
+      "checkOut": null,
+      "workHours": 0,
+      "status": "WORKING",
+      "workType": "OFFICE",
+      "ipAddress": "::1",
+      "isCompanyNetwork": true,
+      "reason": "",
+      "isLate": true,
+      "isHalfDay": false,
+      "halfDaySlot": null,
+      "overtimeHours": 0
+    },
     {
       "id": "att-1795410213016",
       "userId": "usr-admin",
@@ -4356,6 +4375,50 @@
   ],
   "leaves": [
     {
+      "id": "lv-nov-7",
+      "batchId": "grp-nov-7",
+      "userId": "usr-emp2",
+      "userName": "박지현",
+      "dept": "경영지원본부",
+      "leaveType": "HALF",
+      "startDate": "2026-11-27",
+      "endDate": "2026-11-27",
+      "timeSlot": "PM",
+      "daysCount": 0.5,
+      "workStartTime": "09:00",
+      "workEndTime": "14:00",
+      "workHours": 4,
+      "reason": "개인 은행 업무 및 병원 진료",
+      "status": "APPROVED",
+      "approverId": "usr-admin",
+      "approverName": "김관리",
+      "approvers": null,
+      "createdAt": "2026-11-20 10:15:00",
+      "processedAt": "2026-11-20 11:00:00"
+    },
+    {
+      "id": "lv-dec-12",
+      "batchId": "grp-dec-12",
+      "userId": "usr-emp1",
+      "userName": "이민수",
+      "dept": "경영지원본부",
+      "leaveType": "ANNUAL",
+      "startDate": "2026-12-18",
+      "endDate": "2026-12-18",
+      "timeSlot": "ALL",
+      "daysCount": 1,
+      "workStartTime": null,
+      "workEndTime": null,
+      "workHours": null,
+      "reason": "연말 잔여 연차 사용 (가족 여행)",
+      "status": "APPROVED",
+      "approverId": "usr-admin",
+      "approverName": "김관리",
+      "approvers": null,
+      "createdAt": "2026-11-23 09:30:00",
+      "processedAt": "2026-11-23 10:10:00"
+    },
+    {
       "id": "lv-1789698171173-2-639",
       "batchId": "grp-1789698171172-449",
       "userId": "usr-admin",
@@ -6148,9 +6211,993 @@
           "dept": "인사총무팀"
         }
       ]
+    },
+    {
+      "id": "sch-nov-1",
+      "title": "11월 전사 월례 경영 회의",
+      "category": "INTERNAL_MEETING",
+      "startDate": "2026-11-02T10:00",
+      "endDate": "2026-11-02T11:30",
+      "allDay": false,
+      "dept": "전사",
+      "authorId": "usr-admin",
+      "authorName": "김관리",
+      "isClientShared": false,
+      "clientId": null,
+      "location": "본사 대회의실",
+      "description": "11월 본부별 핵심 추진 과제 점검 및 연말 프로젝트 일정 조율",
+      "fileIds": [],
+      "approvalStatus": "APPROVED",
+      "status": "APPROVED",
+      "attendeeIds": [
+        "usr-admin",
+        "usr-emp1",
+        "usr-team11",
+        "usr-team21",
+        "usr-team31",
+        "usr-insa"
+      ],
+      "attendees": [
+        {
+          "id": "usr-admin",
+          "name": "김관리",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-emp1",
+          "name": "이민수",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-team11",
+          "name": "강동원",
+          "dept": "개발1팀"
+        },
+        {
+          "id": "usr-team21",
+          "name": "윤성호",
+          "dept": "개발2팀"
+        },
+        {
+          "id": "usr-team31",
+          "name": "오세훈",
+          "dept": "디자인기획팀"
+        },
+        {
+          "id": "usr-insa",
+          "name": "김인사",
+          "dept": "인사총무팀"
+        }
+      ]
+    },
+    {
+      "id": "sch-nov-2",
+      "title": "(주)알파솔루션 4분기 정기 유지보수 점검 미팅",
+      "category": "EXTERNAL_MEETING",
+      "startDate": "2026-11-11T14:00",
+      "endDate": "2026-11-11T15:30",
+      "allDay": false,
+      "dept": "개발1팀",
+      "authorId": "usr-team11",
+      "authorName": "강동원",
+      "isClientShared": true,
+      "clientId": "cli-001",
+      "location": "온라인 화상회의 (Google Meet)",
+      "description": "4분기 서버 안정성 지표 공유 및 연말 정산 기능 개선 일정 협의",
+      "fileIds": [],
+      "approvalStatus": "APPROVED",
+      "status": "APPROVED",
+      "attendeeIds": [
+        "usr-team11",
+        "usr-emp1",
+        "usr-team12"
+      ],
+      "attendees": [
+        {
+          "id": "usr-team11",
+          "name": "강동원",
+          "dept": "개발1팀"
+        },
+        {
+          "id": "usr-emp1",
+          "name": "이민수",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-team12",
+          "name": "정수빈",
+          "dept": "개발1팀"
+        }
+      ]
+    },
+    {
+      "id": "sch-nov-3",
+      "title": "2026 하반기 개인정보보호 및 정보보안 필수 교육",
+      "category": "INTERNAL_MEETING",
+      "startDate": "2026-11-19T15:00",
+      "endDate": "2026-11-19T17:00",
+      "allDay": false,
+      "dept": "인사총무팀",
+      "authorId": "usr-insa",
+      "authorName": "김인사",
+      "isClientShared": false,
+      "clientId": null,
+      "location": "전사 온라인 교육장",
+      "description": "전 임직원 대상 하반기 법정 의무 정보보안 및 개인정보 취급 수칙 교육",
+      "fileIds": [],
+      "approvalStatus": "APPROVED",
+      "status": "APPROVED",
+      "attendeeIds": [
+        "usr-admin",
+        "usr-emp1",
+        "usr-emp2",
+        "usr-emp3",
+        "usr-team11",
+        "usr-team21",
+        "usr-team31",
+        "usr-insa"
+      ],
+      "attendees": [
+        {
+          "id": "usr-admin",
+          "name": "김관리",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-emp1",
+          "name": "이민수",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-emp2",
+          "name": "박지현",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-emp3",
+          "name": "최동욱",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-team11",
+          "name": "강동원",
+          "dept": "개발1팀"
+        },
+        {
+          "id": "usr-team21",
+          "name": "윤성호",
+          "dept": "개발2팀"
+        },
+        {
+          "id": "usr-team31",
+          "name": "오세훈",
+          "dept": "디자인기획팀"
+        },
+        {
+          "id": "usr-insa",
+          "name": "김인사",
+          "dept": "인사총무팀"
+        }
+      ]
+    },
+    {
+      "id": "sch-nov-4",
+      "title": "경영지원본부·개발팀 연말 정산 모듈 합동 코드 리뷰",
+      "category": "INTERNAL_MEETING",
+      "startDate": "2026-11-24T14:00",
+      "endDate": "2026-11-24T15:30",
+      "allDay": false,
+      "dept": "경영지원본부",
+      "authorId": "usr-emp1",
+      "authorName": "이민수",
+      "isClientShared": false,
+      "clientId": null,
+      "location": "3층 회의실 A",
+      "description": "급여 명세서 PDF 암호화 모듈 및 거래원장 복합 필터 쿼리 성능 합동 점검",
+      "fileIds": [],
+      "approvalStatus": "APPROVED",
+      "status": "APPROVED",
+      "attendeeIds": [
+        "usr-emp1",
+        "usr-admin",
+        "usr-team11",
+        "usr-team12"
+      ],
+      "attendees": [
+        {
+          "id": "usr-emp1",
+          "name": "이민수",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-admin",
+          "name": "김관리",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-team11",
+          "name": "강동원",
+          "dept": "개발1팀"
+        },
+        {
+          "id": "usr-team12",
+          "name": "정수빈",
+          "dept": "개발1팀"
+        }
+      ]
+    },
+    {
+      "id": "sch-nov-5",
+      "title": "차세대 모노크롬 디자인 시스템 전사 적용 시연회",
+      "category": "INTERNAL_MEETING",
+      "startDate": "2026-11-26T11:00",
+      "endDate": "2026-11-26T12:00",
+      "allDay": false,
+      "dept": "디자인기획팀",
+      "authorId": "usr-team31",
+      "authorName": "오세훈",
+      "isClientShared": false,
+      "clientId": null,
+      "location": "본사 대회의실",
+      "description": "다크·라이트 모드 통합 컬러 토큰 및 테이블·슬라이드 드로어 컴포넌트 시연",
+      "fileIds": [],
+      "approvalStatus": "APPROVED",
+      "status": "APPROVED",
+      "attendeeIds": [
+        "usr-team31",
+        "usr-team32",
+        "usr-team33",
+        "usr-emp1",
+        "usr-admin"
+      ],
+      "attendees": [
+        {
+          "id": "usr-team31",
+          "name": "오세훈",
+          "dept": "디자인기획팀"
+        },
+        {
+          "id": "usr-team32",
+          "name": "임서우",
+          "dept": "디자인기획팀"
+        },
+        {
+          "id": "usr-team33",
+          "name": "안지호",
+          "dept": "디자인기획팀"
+        },
+        {
+          "id": "usr-emp1",
+          "name": "이민수",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-admin",
+          "name": "김관리",
+          "dept": "경영지원본부"
+        }
+      ]
+    },
+    {
+      "id": "sch-nov-6",
+      "title": "(주)알파솔루션 연말 결산 리포트 기능 중간 시연",
+      "category": "EXTERNAL_MEETING",
+      "startDate": "2026-11-27T15:00",
+      "endDate": "2026-11-27T16:30",
+      "allDay": false,
+      "dept": "경영지원본부",
+      "authorId": "usr-emp1",
+      "authorName": "이민수",
+      "isClientShared": true,
+      "clientId": "cli-001",
+      "location": "강남 고객사 회의실",
+      "description": "알파솔루션 재무팀 대상 거래원장 PDF 출력 및 2027 신규 단가표 업로드 시연",
+      "fileIds": [],
+      "approvalStatus": "APPROVED",
+      "status": "APPROVED",
+      "attendeeIds": [
+        "usr-emp1",
+        "usr-team31",
+        "usr-team32"
+      ],
+      "attendees": [
+        {
+          "id": "usr-emp1",
+          "name": "이민수",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-team31",
+          "name": "오세훈",
+          "dept": "디자인기획팀"
+        },
+        {
+          "id": "usr-team32",
+          "name": "임서우",
+          "dept": "디자인기획팀"
+        }
+      ]
+    },
+    {
+      "id": "sch-nov-7",
+      "title": "박지현 (오후반차)",
+      "category": "LEAVE",
+      "startDate": "2026-11-27T14:00",
+      "endDate": "2026-11-27T18:00",
+      "allDay": false,
+      "dept": "경영지원본부",
+      "authorId": "usr-emp2",
+      "authorName": "박지현",
+      "isClientShared": false,
+      "clientId": null,
+      "description": "개인 은행 업무 및 병원 진료",
+      "fileIds": [],
+      "leaveId": "lv-nov-7",
+      "leaveType": "HALF",
+      "timeSlot": "PM",
+      "typeLabel": "오후반차",
+      "daysCount": 0.5,
+      "approvalStatus": "APPROVED",
+      "status": "APPROVED",
+      "approverId": "usr-admin",
+      "approverName": "김관리"
+    },
+    {
+      "id": "sch-dec-8",
+      "title": "12월 전사 타운홀 미팅 및 4분기 성과 공유회",
+      "category": "INTERNAL_MEETING",
+      "startDate": "2026-12-01T10:00",
+      "endDate": "2026-12-01T12:00",
+      "allDay": false,
+      "dept": "전사",
+      "authorId": "usr-admin",
+      "authorName": "김관리",
+      "isClientShared": false,
+      "clientId": null,
+      "location": "본사 대회의실",
+      "description": "2026년 4분기 주요 프로젝트 성과 돌아보기 및 12월 연말 운영 계획 안내",
+      "fileIds": [],
+      "approvalStatus": "APPROVED",
+      "status": "APPROVED",
+      "attendeeIds": [
+        "usr-admin",
+        "usr-emp1",
+        "usr-emp2",
+        "usr-emp3",
+        "usr-team11",
+        "usr-team21",
+        "usr-team31",
+        "usr-insa"
+      ],
+      "attendees": [
+        {
+          "id": "usr-admin",
+          "name": "김관리",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-emp1",
+          "name": "이민수",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-emp2",
+          "name": "박지현",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-emp3",
+          "name": "최동욱",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-team11",
+          "name": "강동원",
+          "dept": "개발1팀"
+        },
+        {
+          "id": "usr-team21",
+          "name": "윤성호",
+          "dept": "개발2팀"
+        },
+        {
+          "id": "usr-team31",
+          "name": "오세훈",
+          "dept": "디자인기획팀"
+        },
+        {
+          "id": "usr-insa",
+          "name": "김인사",
+          "dept": "인사총무팀"
+        }
+      ]
+    },
+    {
+      "id": "sch-dec-9",
+      "title": "개발1팀·개발2팀 12월 통합 스프린트 플래닝",
+      "category": "INTERNAL_MEETING",
+      "startDate": "2026-12-03T14:00",
+      "endDate": "2026-12-03T16:00",
+      "allDay": false,
+      "dept": "개발1팀",
+      "authorId": "usr-team11",
+      "authorName": "강동원",
+      "isClientShared": false,
+      "clientId": null,
+      "location": "3층 대회의실 A",
+      "description": "연말 코드 프리즈 일정 확정 및 SLA 성과 대시보드·DB 아카이빙 역할 분담",
+      "fileIds": [],
+      "approvalStatus": "APPROVED",
+      "status": "APPROVED",
+      "attendeeIds": [
+        "usr-team11",
+        "usr-team12",
+        "usr-team13",
+        "usr-team21",
+        "usr-team22",
+        "usr-team23"
+      ],
+      "attendees": [
+        {
+          "id": "usr-team11",
+          "name": "강동원",
+          "dept": "개발1팀"
+        },
+        {
+          "id": "usr-team12",
+          "name": "정수빈",
+          "dept": "개발1팀"
+        },
+        {
+          "id": "usr-team13",
+          "name": "송하은",
+          "dept": "개발1팀"
+        },
+        {
+          "id": "usr-team21",
+          "name": "윤성호",
+          "dept": "개발2팀"
+        },
+        {
+          "id": "usr-team22",
+          "name": "한예진",
+          "dept": "개발2팀"
+        },
+        {
+          "id": "usr-team23",
+          "name": "배준형",
+          "dept": "개발2팀"
+        }
+      ]
+    },
+    {
+      "id": "sch-dec-10",
+      "title": "(주)알파솔루션 2027년도 연간 유지보수 재계약 협의",
+      "category": "EXTERNAL_MEETING",
+      "startDate": "2026-12-09T14:00",
+      "endDate": "2026-12-09T15:30",
+      "allDay": false,
+      "dept": "경영지원본부",
+      "authorId": "usr-admin",
+      "authorName": "김관리",
+      "isClientShared": true,
+      "clientId": "cli-001",
+      "location": "본사 임원 회의실",
+      "description": "2027년도 연간 SLA 약정 공수 및 신규 기능 개발 범위 협약 미팅",
+      "fileIds": [],
+      "approvalStatus": "APPROVED",
+      "status": "APPROVED",
+      "attendeeIds": [
+        "usr-admin",
+        "usr-emp1",
+        "usr-team11"
+      ],
+      "attendees": [
+        {
+          "id": "usr-admin",
+          "name": "김관리",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-emp1",
+          "name": "이민수",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-team11",
+          "name": "강동원",
+          "dept": "개발1팀"
+        }
+      ]
+    },
+    {
+      "id": "sch-dec-11",
+      "title": "연말 클라우드 인프라 보안 점검 및 DB 백업 리허설",
+      "category": "INTERNAL_MEETING",
+      "startDate": "2026-12-15T19:00",
+      "endDate": "2026-12-15T21:00",
+      "allDay": false,
+      "dept": "개발2팀",
+      "authorId": "usr-team21",
+      "authorName": "윤성호",
+      "isClientShared": false,
+      "clientId": null,
+      "location": "서버 관제실",
+      "description": "연말 트래픽 대비 오토스케일링 점검 및 데이터베이스 스냅샷 복구 훈련",
+      "fileIds": [],
+      "approvalStatus": "APPROVED",
+      "status": "APPROVED",
+      "attendeeIds": [
+        "usr-team21",
+        "usr-team22",
+        "usr-team23",
+        "usr-emp1"
+      ],
+      "attendees": [
+        {
+          "id": "usr-team21",
+          "name": "윤성호",
+          "dept": "개발2팀"
+        },
+        {
+          "id": "usr-team22",
+          "name": "한예진",
+          "dept": "개발2팀"
+        },
+        {
+          "id": "usr-team23",
+          "name": "배준형",
+          "dept": "개발2팀"
+        },
+        {
+          "id": "usr-emp1",
+          "name": "이민수",
+          "dept": "경영지원본부"
+        }
+      ]
+    },
+    {
+      "id": "sch-dec-12",
+      "title": "이민수 (연차)",
+      "category": "LEAVE",
+      "startDate": "2026-12-18T09:00",
+      "endDate": "2026-12-18T18:00",
+      "allDay": true,
+      "dept": "경영지원본부",
+      "authorId": "usr-emp1",
+      "authorName": "이민수",
+      "isClientShared": false,
+      "clientId": null,
+      "description": "연말 잔여 연차 사용 (가족 여행)",
+      "fileIds": [],
+      "leaveId": "lv-dec-12",
+      "leaveType": "ANNUAL",
+      "timeSlot": "ALL",
+      "typeLabel": "연차",
+      "daysCount": 1,
+      "approvalStatus": "APPROVED",
+      "status": "APPROVED",
+      "approverId": "usr-admin",
+      "approverName": "김관리"
+    },
+    {
+      "id": "sch-dec-13",
+      "title": "2027년도 사업계획 및 부서별 목표 최종 발표회",
+      "category": "INTERNAL_MEETING",
+      "startDate": "2026-12-22T14:00",
+      "endDate": "2026-12-22T17:00",
+      "allDay": false,
+      "dept": "전사",
+      "authorId": "usr-admin",
+      "authorName": "김관리",
+      "isClientShared": false,
+      "clientId": null,
+      "location": "본사 대회의실",
+      "description": "본부 및 각 팀별 2027년 상반기 KPI 및 신규 솔루션 로드맵 발표",
+      "fileIds": [],
+      "approvalStatus": "APPROVED",
+      "status": "APPROVED",
+      "attendeeIds": [
+        "usr-admin",
+        "usr-emp1",
+        "usr-team11",
+        "usr-team21",
+        "usr-team31",
+        "usr-insa"
+      ],
+      "attendees": [
+        {
+          "id": "usr-admin",
+          "name": "김관리",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-emp1",
+          "name": "이민수",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-team11",
+          "name": "강동원",
+          "dept": "개발1팀"
+        },
+        {
+          "id": "usr-team21",
+          "name": "윤성호",
+          "dept": "개발2팀"
+        },
+        {
+          "id": "usr-team31",
+          "name": "오세훈",
+          "dept": "디자인기획팀"
+        },
+        {
+          "id": "usr-insa",
+          "name": "김인사",
+          "dept": "인사총무팀"
+        }
+      ]
+    },
+    {
+      "id": "sch-dec-14",
+      "title": "2026년 연말 종무식 및 단축 근무",
+      "category": "INTERNAL_MEETING",
+      "startDate": "2026-12-31T15:00",
+      "endDate": "2026-12-31T17:00",
+      "allDay": false,
+      "dept": "인사총무팀",
+      "authorId": "usr-insa",
+      "authorName": "김인사",
+      "isClientShared": false,
+      "clientId": null,
+      "location": "본사 라운지",
+      "description": "2026년 우수 사원 시상 및 연말 종무식 진행 후 17시 조기 퇴근",
+      "fileIds": [],
+      "approvalStatus": "APPROVED",
+      "status": "APPROVED",
+      "attendeeIds": [
+        "usr-admin",
+        "usr-emp1",
+        "usr-emp2",
+        "usr-emp3",
+        "usr-team11",
+        "usr-team21",
+        "usr-team31",
+        "usr-insa"
+      ],
+      "attendees": [
+        {
+          "id": "usr-admin",
+          "name": "김관리",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-emp1",
+          "name": "이민수",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-emp2",
+          "name": "박지현",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-emp3",
+          "name": "최동욱",
+          "dept": "경영지원본부"
+        },
+        {
+          "id": "usr-team11",
+          "name": "강동원",
+          "dept": "개발1팀"
+        },
+        {
+          "id": "usr-team21",
+          "name": "윤성호",
+          "dept": "개발2팀"
+        },
+        {
+          "id": "usr-team31",
+          "name": "오세훈",
+          "dept": "디자인기획팀"
+        },
+        {
+          "id": "usr-insa",
+          "name": "김인사",
+          "dept": "인사총무팀"
+        }
+      ]
     }
   ],
   "tasks": [
+    {
+      "id": "tsk-oct-1",
+      "title": "사내 포털 통합 인증(SSO) 세션 안정화 패치",
+      "description": "다중 탭 동시 접속 시 토큰 만료 오탐지 방지 및 12시간 슬라이딩 세션 갱신 안정화",
+      "assigneeId": "usr-team12",
+      "assigneeName": "정수빈",
+      "authorId": "usr-team11",
+      "authorName": "강동원",
+      "dept": "개발1팀",
+      "priority": "HIGH",
+      "status": "DONE",
+      "isDirectTask": false,
+      "startDate": "2026-10-12",
+      "dueDate": "2026-10-23",
+      "createdAt": "2026-10-12"
+    },
+    {
+      "id": "tsk-oct-2",
+      "title": "3분기 고객사 유지보수 처리 내역 정산 리포트 자동화",
+      "description": "분야별(디자인·퍼블·개발·기타) 투입 공수 집계 및 월별 정산 엑셀 시트 자동 생성 파이프라인 구축",
+      "assigneeId": "usr-emp1",
+      "assigneeName": "이민수",
+      "authorId": "usr-admin",
+      "authorName": "김관리",
+      "dept": "경영지원본부",
+      "priority": "NORMAL",
+      "status": "DONE",
+      "isDirectTask": false,
+      "startDate": "2026-10-19",
+      "dueDate": "2026-10-30",
+      "createdAt": "2026-10-19"
+    },
+    {
+      "id": "tsk-nov-3",
+      "title": "모바일 웹 뷰포트 대응 컴포넌트 가이드라인 수립",
+      "description": "태블릿 및 모바일 해상도 기준 브레이크포인트 정의 및 테이블 반응형 레이아웃 규격화",
+      "assigneeId": "usr-team32",
+      "assigneeName": "임서우",
+      "authorId": "usr-team31",
+      "authorName": "오세훈",
+      "dept": "디자인기획팀",
+      "priority": "NORMAL",
+      "status": "DONE",
+      "isDirectTask": false,
+      "startDate": "2026-11-02",
+      "dueDate": "2026-11-13",
+      "createdAt": "2026-11-02"
+    },
+    {
+      "id": "tsk-nov-4",
+      "title": "클라우드 스토리지 대용량 첨부파일 멀티파트 업로드 전환",
+      "description": "50MB 이상 도면 및 압축 파일 업로드 시 청크 분할 전송 및 재시도 처리 적용",
+      "assigneeId": "usr-team22",
+      "assigneeName": "한예진",
+      "authorId": "usr-team21",
+      "authorName": "윤성호",
+      "dept": "개발2팀",
+      "priority": "HIGH",
+      "status": "DONE",
+      "isDirectTask": false,
+      "startDate": "2026-11-05",
+      "dueDate": "2026-11-18",
+      "createdAt": "2026-11-05"
+    },
+    {
+      "id": "tsk-nov-5",
+      "title": "2026 연말 정산 및 급여 명세서 PDF 암호화 모듈 구축",
+      "description": "임직원 개별 급여 명세서 및 원천징수 영수증 다운로드 시 생년월일 기반 PDF 암호화 적용",
+      "assigneeId": "usr-emp1",
+      "assigneeName": "이민수",
+      "authorId": "usr-admin",
+      "authorName": "김관리",
+      "dept": "경영지원본부",
+      "priority": "URGENT",
+      "status": "IN_PROGRESS",
+      "isDirectTask": false,
+      "startDate": "2026-11-16",
+      "dueDate": "2026-11-30",
+      "createdAt": "2026-11-16"
+    },
+    {
+      "id": "tsk-nov-6",
+      "title": "실시간 웹소켓 알림 서버 부하 분산 및 재연결 로직 개선",
+      "description": "네트워크 순단 시 지수 백오프 기반 자동 재연결 및 미수신 알림 큐 동기화 처리",
+      "assigneeId": "usr-team11",
+      "assigneeName": "강동원",
+      "authorId": "usr-team11",
+      "authorName": "강동원",
+      "dept": "개발1팀",
+      "priority": "HIGH",
+      "status": "IN_PROGRESS",
+      "isDirectTask": false,
+      "startDate": "2026-11-18",
+      "dueDate": "2026-12-04",
+      "createdAt": "2026-11-18"
+    },
+    {
+      "id": "tsk-nov-7",
+      "title": "전사 캘린더 다중 일정 드래그 이동 및 반복 일정 고도화",
+      "description": "주간·월간 정기 회의 반복 등록 기능 및 일정 변경 이력 타임라인 연동 고도화",
+      "assigneeId": "usr-team21",
+      "assigneeName": "윤성호",
+      "authorId": "usr-team21",
+      "authorName": "윤성호",
+      "dept": "개발2팀",
+      "priority": "NORMAL",
+      "status": "IN_PROGRESS",
+      "isDirectTask": false,
+      "startDate": "2026-11-20",
+      "dueDate": "2026-12-09",
+      "createdAt": "2026-11-20"
+    },
+    {
+      "id": "tsk-nov-8",
+      "title": "차세대 엔터프라이즈 모노크롬 UI 디자인 토큰 표준화",
+      "description": "다크·라이트 모드 명도 대비 최적화 및 전사 공통 타이포그래피·입력폼 규격 통일",
+      "assigneeId": "usr-team31",
+      "assigneeName": "오세훈",
+      "authorId": "usr-emp1",
+      "authorName": "이민수",
+      "dept": "디자인기획팀",
+      "priority": "HIGH",
+      "status": "IN_PROGRESS",
+      "isDirectTask": false,
+      "startDate": "2026-11-23",
+      "dueDate": "2026-12-11",
+      "createdAt": "2026-11-23"
+    },
+    {
+      "id": "tsk-nov-9",
+      "title": "2026 하반기 전사 정보보안 감사 로그 무결성 검증",
+      "description": "사내 공인 IP 접근 기록, 계정 권한 변경 이력 및 고객사 문서 접근 로그 전수 점검",
+      "assigneeId": "usr-admin",
+      "assigneeName": "김관리",
+      "authorId": "usr-admin",
+      "authorName": "김관리",
+      "dept": "경영지원본부",
+      "priority": "URGENT",
+      "status": "IN_PROGRESS",
+      "isDirectTask": false,
+      "startDate": "2026-11-23",
+      "dueDate": "2026-12-02",
+      "createdAt": "2026-11-23"
+    },
+    {
+      "id": "tsk-dec-10",
+      "title": "2027년 신규 입사자 온보딩 포털 프로세스 개편",
+      "description": "입사 첫날 계정 발급, 보안 서약, 필수 교육 일정 및 부서 오리엔테이션 자동 체크리스트 구성",
+      "assigneeId": "usr-insa",
+      "assigneeName": "김인사",
+      "authorId": "usr-admin",
+      "authorName": "김관리",
+      "dept": "인사총무팀",
+      "priority": "NORMAL",
+      "status": "TODO",
+      "isDirectTask": false,
+      "startDate": "2026-12-01",
+      "dueDate": "2026-12-16",
+      "createdAt": "2026-11-24"
+    },
+    {
+      "id": "tsk-dec-11",
+      "title": "고객사 연간 SLA 성과 지표 대시보드 시각화 개발",
+      "description": "2026년 연간 요청 접수 건수, 평균 초동 응답 시간, 분야별 누적 공수 통계 리포트 화면 구축",
+      "assigneeId": "usr-team13",
+      "assigneeName": "송하은",
+      "authorId": "usr-emp1",
+      "authorName": "이민수",
+      "dept": "개발1팀",
+      "priority": "HIGH",
+      "status": "TODO",
+      "isDirectTask": false,
+      "startDate": "2026-12-07",
+      "dueDate": "2026-12-22",
+      "createdAt": "2026-11-24"
+    },
+    {
+      "id": "tsk-dec-12",
+      "title": "연말 데이터베이스 정기 아카이빙 및 백업 스토리지 이관",
+      "description": "2026년도 완료 요청 첨부파일 및 근태·급여 원장 스냅샷 콜드 스토리지 이중 백업",
+      "assigneeId": "usr-team23",
+      "assigneeName": "배준형",
+      "authorId": "usr-team21",
+      "authorName": "윤성호",
+      "dept": "개발2팀",
+      "priority": "HIGH",
+      "status": "TODO",
+      "isDirectTask": false,
+      "startDate": "2026-12-14",
+      "dueDate": "2026-12-29",
+      "createdAt": "2026-11-24"
+    },
+    {
+      "id": "tsk-dir-1",
+      "title": "11월 4주차 경영지원본부 주간 업무 보고서 취합",
+      "description": "각 팀 주간 진행 현황 및 12월 중점 추진 과제 요약본 작성",
+      "assigneeId": "usr-emp1",
+      "assigneeName": "이민수",
+      "authorId": "usr-emp1",
+      "authorName": "이민수",
+      "dept": "경영지원본부",
+      "priority": "HIGH",
+      "status": "IN_PROGRESS",
+      "isDirectTask": true,
+      "startDate": "2026-11-23",
+      "dueDate": "2026-11-26",
+      "createdAt": "2026-11-23"
+    },
+    {
+      "id": "tsk-dir-2",
+      "title": "알파솔루션 대용량 엑셀 다운로드 메모리 프로파일링 점검",
+      "description": "5만 건 이상 스트리밍 다운로드 시 Node.js 힙 메모리 사용량 측정 및 최적화 확인",
+      "assigneeId": "usr-emp1",
+      "assigneeName": "이민수",
+      "authorId": "usr-emp1",
+      "authorName": "이민수",
+      "dept": "경영지원본부",
+      "priority": "URGENT",
+      "status": "IN_PROGRESS",
+      "isDirectTask": true,
+      "startDate": "2026-11-24",
+      "dueDate": "2026-11-25",
+      "createdAt": "2026-11-24"
+    },
+    {
+      "id": "tsk-dir-3",
+      "title": "12월 연말정산 사전 안내 공지문 초안 검토",
+      "description": "인사총무팀 배포용 소득공제 증빙 서류 제출 안내문 문구 및 일정 검수",
+      "assigneeId": "usr-emp1",
+      "assigneeName": "이민수",
+      "authorId": "usr-emp1",
+      "authorName": "이민수",
+      "dept": "경영지원본부",
+      "priority": "NORMAL",
+      "status": "IN_PROGRESS",
+      "isDirectTask": true,
+      "startDate": "2026-11-24",
+      "dueDate": "2026-12-03",
+      "createdAt": "2026-11-24"
+    },
+    {
+      "id": "tsk-dir-4",
+      "title": "10월 서버 인프라 클라우드 비용 명세서 대조 검수",
+      "description": "스토리지 트래픽 및 DB 인스턴스 월간 청구 내역 이상 유무 확인 완료",
+      "assigneeId": "usr-emp1",
+      "assigneeName": "이민수",
+      "authorId": "usr-emp1",
+      "authorName": "이민수",
+      "dept": "경영지원본부",
+      "priority": "NORMAL",
+      "status": "DONE",
+      "isDirectTask": true,
+      "startDate": "2026-11-10",
+      "dueDate": "2026-11-13",
+      "createdAt": "2026-11-10"
+    },
+    {
+      "id": "tsk-dir-5",
+      "title": "2027년도 본부별 예산안 편성 기준표 최종 승인",
+      "description": "개발1·2팀, 디자인기획팀, 인사총무팀 2027 상반기 인력 및 설비 예산안 검토",
+      "assigneeId": "usr-admin",
+      "assigneeName": "김관리",
+      "authorId": "usr-admin",
+      "authorName": "김관리",
+      "dept": "경영지원본부",
+      "priority": "URGENT",
+      "status": "IN_PROGRESS",
+      "isDirectTask": true,
+      "startDate": "2026-11-23",
+      "dueDate": "2026-11-28",
+      "createdAt": "2026-11-23"
+    },
+    {
+      "id": "tsk-dir-6",
+      "title": "12월 동계 휴가 기간 비상 연락망 및 당직 체계 점검",
+      "description": "연말 휴가 집중 기간 고객사 긴급 장애 대응 핫라인 및 당직표 확정",
+      "assigneeId": "usr-admin",
+      "assigneeName": "김관리",
+      "authorId": "usr-admin",
+      "authorName": "김관리",
+      "dept": "경영지원본부",
+      "priority": "HIGH",
+      "status": "IN_PROGRESS",
+      "isDirectTask": true,
+      "startDate": "2026-11-24",
+      "dueDate": "2026-12-05",
+      "createdAt": "2026-11-24"
+    },
     {
       "id": "tsk-1",
       "title": "REST API 사내 IP 검증 모듈 최적화",
@@ -6192,6 +7239,423 @@
     }
   ],
   "clientRequests": [
+    {
+      "id": "req-nov-6",
+      "clientId": "cli-001",
+      "clientName": "(주)알파솔루션",
+      "title": "임직원 권한 그룹별 메뉴 접근 제어 세분화 설정 요청",
+      "content": "사내 감사 기준 강화에 따라 지점장, 일반 매니저, 열람 전용 계정별로 정산 메뉴와 고객 원장 다운로드 버튼의 노출 권한을 분리해 주시기 바랍니다.",
+      "priority": "NORMAL",
+      "desiredDate": "2026-12-10",
+      "status": "REQUESTED",
+      "assigneeId": null,
+      "assigneeName": null,
+      "assignedTasks": [],
+      "approverId": null,
+      "approverName": null,
+      "history": [
+        {
+          "id": "hist-nov-6-1",
+          "timestamp": "2026-11-24 09:40:00",
+          "actorName": "(주)알파솔루션",
+          "action": "요청 등록",
+          "detail": "신규 유지보수 요청이 등록되었습니다."
+        }
+      ],
+      "attachments": [],
+      "spentHours": 0,
+      "completedAt": null,
+      "completionSummary": "",
+      "createdAt": "2026-11-24 09:40:00",
+      "startedAt": null,
+      "spentHoursBreakdown": {
+        "design": 0,
+        "publish": 0,
+        "dev": 0,
+        "etc": 0
+      },
+      "clientConfirmed": false
+    },
+    {
+      "id": "req-nov-5",
+      "clientId": "cli-001",
+      "clientName": "(주)알파솔루션",
+      "title": "2027년도 신규 단가표 일괄 업로드 엑셀 템플릿 양식 변경",
+      "content": "2027년 1월 적용 예정인 신규 공급 단가표에 맞춰 품목 코드 체계(10자리)와 부가세 별도/포함 구분 컬럼을 엑셀 일괄 업로드 양식에 반영 요청드립니다.",
+      "priority": "HIGH",
+      "desiredDate": "2026-12-04",
+      "status": "IN_PROGRESS",
+      "assigneeId": "usr-emp1",
+      "assigneeName": "이민수(개발) · 오세훈(퍼블)",
+      "assignedTasks": [
+        {
+          "id": "at-nov-5-1",
+          "category": "DEV",
+          "categoryLabel": "개발",
+          "assigneeId": "usr-emp1",
+          "assigneeName": "이민수",
+          "status": "IN_PROGRESS",
+          "spentHours": 0,
+          "note": "10자리 품목 코드 파서 및 유효성 검증 로직 수정 중",
+          "startedAt": "2026-11-23 14:20:00",
+          "completedAt": null
+        },
+        {
+          "id": "at-nov-5-2",
+          "category": "PUBLISH",
+          "categoryLabel": "퍼블",
+          "assigneeId": "usr-team31",
+          "assigneeName": "오세훈",
+          "status": "IN_PROGRESS",
+          "spentHours": 0,
+          "note": "업로드 미리보기 테이블 컬럼 레이아웃 조정",
+          "startedAt": "2026-11-23 15:00:00",
+          "completedAt": null
+        }
+      ],
+      "approverId": "usr-admin",
+      "approverName": "김관리",
+      "history": [
+        {
+          "id": "hist-nov-5-1",
+          "timestamp": "2026-11-23 11:15:00",
+          "actorName": "(주)알파솔루션",
+          "action": "요청 등록",
+          "detail": "신규 유지보수 요청이 등록되었습니다."
+        },
+        {
+          "id": "hist-nov-5-2",
+          "timestamp": "2026-11-23 13:50:00",
+          "actorName": "김관리",
+          "action": "업무 배정",
+          "detail": "이민수 (개발) · 오세훈 (퍼블)"
+        },
+        {
+          "id": "hist-nov-5-3",
+          "timestamp": "2026-11-23 14:20:00",
+          "actorName": "이민수",
+          "action": "작업 착수",
+          "detail": "이민수 (개발)"
+        }
+      ],
+      "attachments": [],
+      "spentHours": 0,
+      "completedAt": null,
+      "completionSummary": "",
+      "createdAt": "2026-11-23 11:15:00",
+      "startedAt": "2026-11-23 14:20:00",
+      "spentHoursBreakdown": {
+        "design": 0,
+        "publish": 0,
+        "dev": 0,
+        "etc": 0
+      },
+      "clientConfirmed": false
+    },
+    {
+      "id": "req-nov-4",
+      "clientId": "cli-001",
+      "clientName": "(주)알파솔루션",
+      "title": "모바일 관리자 페이지 푸시 알림 클릭 시 상세 화면 딥링크 연동",
+      "content": "모바일 환경에서 신규 발주 알림을 탭했을 때 메인 홈이 아닌 해당 발주서의 상세 승인 화면으로 바로 이동하도록 라우팅 수정을 요청드립니다.",
+      "priority": "NORMAL",
+      "desiredDate": "2026-12-03",
+      "status": "IN_PROGRESS",
+      "assigneeId": "usr-team21",
+      "assigneeName": "윤성호(개발) · 한예진(개발)",
+      "assignedTasks": [
+        {
+          "id": "at-nov-4-1",
+          "category": "DEV",
+          "categoryLabel": "개발",
+          "assigneeId": "usr-team21",
+          "assigneeName": "윤성호",
+          "status": "IN_PROGRESS",
+          "spentHours": 0,
+          "note": "푸시 페이로드 URL 파라미터 파싱 처리",
+          "startedAt": "2026-11-20 16:00:00",
+          "completedAt": null
+        },
+        {
+          "id": "at-nov-4-2",
+          "category": "DEV",
+          "categoryLabel": "개발",
+          "assigneeId": "usr-team22",
+          "assigneeName": "한예진",
+          "status": "COMPLETED",
+          "spentHours": 2.5,
+          "note": "미인증 상태 딥링크 진입 시 로그인 후 리다이렉트 처리 완료",
+          "startedAt": "2026-11-20 16:10:00",
+          "completedAt": "2026-11-23 17:10:00"
+        }
+      ],
+      "approverId": "usr-team21",
+      "approverName": "윤성호",
+      "history": [
+        {
+          "id": "hist-nov-4-1",
+          "timestamp": "2026-11-20 10:30:00",
+          "actorName": "(주)알파솔루션",
+          "action": "요청 등록",
+          "detail": "신규 유지보수 요청이 등록되었습니다."
+        },
+        {
+          "id": "hist-nov-4-2",
+          "timestamp": "2026-11-20 15:40:00",
+          "actorName": "윤성호",
+          "action": "업무 배정",
+          "detail": "윤성호 (개발) · 한예진 (개발)"
+        },
+        {
+          "id": "hist-nov-4-3",
+          "timestamp": "2026-11-23 17:10:00",
+          "actorName": "한예진",
+          "action": "작업 완료",
+          "detail": "한예진 (2.5h)"
+        }
+      ],
+      "attachments": [],
+      "spentHours": 2.5,
+      "completedAt": null,
+      "completionSummary": "",
+      "createdAt": "2026-11-20 10:30:00",
+      "startedAt": "2026-11-20 16:00:00",
+      "spentHoursBreakdown": {
+        "design": 0,
+        "publish": 0,
+        "dev": 2.5,
+        "etc": 0
+      },
+      "clientConfirmed": false
+    },
+    {
+      "id": "req-nov-3",
+      "clientId": "cli-001",
+      "clientName": "(주)알파솔루션",
+      "title": "연말 결산용 거래원장 다중 조건 필터 및 PDF 출력 레이아웃 개선",
+      "content": "연말 회계 감사 제출용 거래원장 조회 시 사업장별·과세유형별 복합 필터를 추가하고, A4 가로 방향 PDF 인쇄 시 표 테두리와 합계 행이 잘리지 않도록 조정을 요청드립니다.",
+      "priority": "HIGH",
+      "desiredDate": "2026-11-27",
+      "status": "DONE",
+      "assigneeId": "usr-emp1",
+      "assigneeName": "이민수(개발) · 임서우(디자인)",
+      "assignedTasks": [
+        {
+          "id": "at-nov-3-1",
+          "category": "DEV",
+          "categoryLabel": "개발",
+          "assigneeId": "usr-emp1",
+          "assigneeName": "이민수",
+          "status": "COMPLETED",
+          "spentHours": 4.5,
+          "note": "사업장·과세유형 다중 쿼리 필터 및 합계 행 집계 API 반영 완료",
+          "startedAt": "2026-11-18 14:00:00",
+          "completedAt": "2026-11-23 16:20:00"
+        },
+        {
+          "id": "at-nov-3-2",
+          "category": "DESIGN",
+          "categoryLabel": "디자인",
+          "assigneeId": "usr-team32",
+          "assigneeName": "임서우",
+          "status": "COMPLETED",
+          "spentHours": 2,
+          "note": "A4 가로 인쇄 전용 페이지네이션 및 헤더 반복 스타일 적용 완료",
+          "startedAt": "2026-11-19 10:00:00",
+          "completedAt": "2026-11-22 15:40:00"
+        }
+      ],
+      "approverId": "usr-admin",
+      "approverName": "김관리",
+      "history": [
+        {
+          "id": "hist-nov-3-1",
+          "timestamp": "2026-11-18 09:50:00",
+          "actorName": "(주)알파솔루션",
+          "action": "요청 등록",
+          "detail": "신규 유지보수 요청이 등록되었습니다."
+        },
+        {
+          "id": "hist-nov-3-2",
+          "timestamp": "2026-11-18 13:30:00",
+          "actorName": "김관리",
+          "action": "업무 배정",
+          "detail": "이민수 (개발) · 임서우 (디자인)"
+        },
+        {
+          "id": "hist-nov-3-3",
+          "timestamp": "2026-11-23 16:20:00",
+          "actorName": "시스템",
+          "action": "최종 완료",
+          "detail": "작업 완료 (고객사 확인 대기)"
+        }
+      ],
+      "attachments": [],
+      "spentHours": 6.5,
+      "completedAt": "2026-11-23 16:20:00",
+      "completionSummary": "거래원장 복합 조건 필터(사업장/과세유형) 추가 및 A4 가로 인쇄 전용 PDF 스타일시트 적용을 완료했습니다. 스테이징 및 운영 환경에서 확인 부탁드립니다.",
+      "createdAt": "2026-11-18 09:50:00",
+      "startedAt": "2026-11-18 14:00:00",
+      "spentHoursBreakdown": {
+        "design": 2,
+        "publish": 0,
+        "dev": 4.5,
+        "etc": 0
+      },
+      "clientConfirmed": false
+    },
+    {
+      "id": "req-nov-2",
+      "clientId": "cli-001",
+      "clientName": "(주)알파솔루션",
+      "title": "거래처 세금계산서 일괄 발행 시 이메일 발송 내역 로그 추가",
+      "content": "세금계산서 일괄 발행 후 담당자 이메일 수신 여부와 재발송 이력을 관리자 화면에서 바로 조회할 수 있도록 로그 테이블 추가를 요청드립니다.",
+      "priority": "HIGH",
+      "desiredDate": "2026-11-17",
+      "status": "DONE",
+      "assigneeId": "usr-emp1",
+      "assigneeName": "이민수(개발) · 안지호(기획)",
+      "assignedTasks": [
+        {
+          "id": "at-nov-2-1",
+          "category": "ETC",
+          "categoryLabel": "기타",
+          "assigneeId": "usr-team33",
+          "assigneeName": "안지호",
+          "status": "COMPLETED",
+          "spentHours": 1.5,
+          "note": "발송 상태 코드 정의 및 재발송 정책 설계",
+          "startedAt": "2026-11-10 09:30:00",
+          "completedAt": "2026-11-11 14:00:00"
+        },
+        {
+          "id": "at-nov-2-2",
+          "category": "DEV",
+          "categoryLabel": "개발",
+          "assigneeId": "usr-emp1",
+          "assigneeName": "이민수",
+          "status": "COMPLETED",
+          "spentHours": 4,
+          "note": "SMTP 발송 결과 웹훅 연동 및 이력 조회 모달 구현 완료",
+          "startedAt": "2026-11-11 15:00:00",
+          "completedAt": "2026-11-16 17:30:00"
+        }
+      ],
+      "approverId": "usr-admin",
+      "approverName": "김관리",
+      "history": [
+        {
+          "id": "hist-nov-2-1",
+          "timestamp": "2026-11-09 14:10:00",
+          "actorName": "(주)알파솔루션",
+          "action": "요청 등록",
+          "detail": "신규 유지보수 요청이 등록되었습니다."
+        },
+        {
+          "id": "hist-nov-2-2",
+          "timestamp": "2026-11-16 17:30:00",
+          "actorName": "시스템",
+          "action": "최종 완료",
+          "detail": "작업 완료"
+        },
+        {
+          "id": "hist-nov-2-3",
+          "timestamp": "2026-11-17 10:20:00",
+          "actorName": "(주)알파솔루션",
+          "action": "고객사 확인 완료",
+          "detail": "고객사 최종 확인 완료"
+        }
+      ],
+      "attachments": [],
+      "spentHours": 5.5,
+      "completedAt": "2026-11-16 17:30:00",
+      "completionSummary": "세금계산서 이메일 발송 상태(성공/대기/실패) 로그 조회 및 단건 재발송 기능을 반영 완료하였습니다.",
+      "createdAt": "2026-11-09 14:10:00",
+      "startedAt": "2026-11-10 09:30:00",
+      "spentHoursBreakdown": {
+        "design": 0,
+        "publish": 0,
+        "dev": 4,
+        "etc": 1.5
+      },
+      "clientConfirmed": true
+    },
+    {
+      "id": "req-oct-1",
+      "clientId": "cli-001",
+      "clientName": "(주)알파솔루션",
+      "title": "10월 정기 보안 패치 적용 결과서 및 취약점 점검표 요청",
+      "content": "사내 정보보호 위원회 정기 보고를 위해 10월 웹 방화벽 정책 업데이트 내역과 오픈소스 라이브러리 보안 패치 결과서를 요청드립니다.",
+      "priority": "NORMAL",
+      "desiredDate": "2026-10-30",
+      "status": "DONE",
+      "assigneeId": "usr-team11",
+      "assigneeName": "강동원(개발) · 정수빈(개발)",
+      "assignedTasks": [
+        {
+          "id": "at-oct-1-1",
+          "category": "DEV",
+          "categoryLabel": "개발",
+          "assigneeId": "usr-team11",
+          "assigneeName": "강동원",
+          "status": "COMPLETED",
+          "spentHours": 2,
+          "note": "OWASP 주요 항목 점검 및 보안 패치 적용",
+          "startedAt": "2026-10-27 10:00:00",
+          "completedAt": "2026-10-29 15:00:00"
+        },
+        {
+          "id": "at-oct-1-2",
+          "category": "DEV",
+          "categoryLabel": "개발",
+          "assigneeId": "usr-team12",
+          "assigneeName": "정수빈",
+          "status": "COMPLETED",
+          "spentHours": 1.5,
+          "note": "취약점 스캔 결과 리포트 작성 및 전달",
+          "startedAt": "2026-10-28 11:00:00",
+          "completedAt": "2026-10-29 16:30:00"
+        }
+      ],
+      "approverId": "usr-team11",
+      "approverName": "강동원",
+      "history": [
+        {
+          "id": "hist-oct-1-1",
+          "timestamp": "2026-10-26 11:00:00",
+          "actorName": "(주)알파솔루션",
+          "action": "요청 등록",
+          "detail": "신규 유지보수 요청이 등록되었습니다."
+        },
+        {
+          "id": "hist-oct-1-2",
+          "timestamp": "2026-10-29 16:30:00",
+          "actorName": "시스템",
+          "action": "최종 완료",
+          "detail": "작업 완료"
+        },
+        {
+          "id": "hist-oct-1-3",
+          "timestamp": "2026-10-30 09:45:00",
+          "actorName": "(주)알파솔루션",
+          "action": "고객사 확인 완료",
+          "detail": "고객사 최종 확인 완료"
+        }
+      ],
+      "attachments": [],
+      "spentHours": 3.5,
+      "completedAt": "2026-10-29 16:30:00",
+      "completionSummary": "10월 정기 보안 패치 적용 및 취약점 점검 결과 보고서를 반영 완료했습니다.",
+      "createdAt": "2026-10-26 11:00:00",
+      "startedAt": "2026-10-27 10:00:00",
+      "spentHoursBreakdown": {
+        "design": 0,
+        "publish": 0,
+        "dev": 3.5,
+        "etc": 0
+      },
+      "clientConfirmed": true
+    },
     {
       "id": "req-1790574862915",
       "clientId": "cli-001",
@@ -7971,18 +9435,138 @@
       "content": "그리고 다음 주 까지 완료 되는지 확인 부탁드려요",
       "attachments": [],
       "createdAt": "2026-09-28 05:54:56"
+    },
+    {
+      "id": "comm-nov-5-1",
+      "requestId": "req-nov-5",
+      "authorId": "cli-001",
+      "authorName": "정우성 부장",
+      "authorRole": "CLIENT",
+      "content": "신규 10자리 품목 코드 샘플 엑셀 데이터는 기존 테스트 서버의 코드 체계와 동일합니다. 금주 금요일까지 스테이징 반영 가능할지 확인 부탁드립니다.",
+      "attachments": [],
+      "createdAt": "2026-11-23 14:05:00"
+    },
+    {
+      "id": "comm-nov-5-2",
+      "requestId": "req-nov-5",
+      "authorId": "usr-emp1",
+      "authorName": "이민수 책임연구원",
+      "authorRole": "EMPLOYEE",
+      "content": "네, 품목 코드 파서 수정 완료 후 11월 27일(금) 오전 중 스테이징 서버에 먼저 반영하여 안내드리겠습니다.",
+      "attachments": [],
+      "createdAt": "2026-11-23 15:12:00"
+    },
+    {
+      "id": "comm-nov-3-1",
+      "requestId": "req-nov-3",
+      "authorId": "usr-emp1",
+      "authorName": "이민수 책임연구원",
+      "authorRole": "EMPLOYEE",
+      "content": "사업장·과세유형 다중 필터와 A4 가로 인쇄 레이아웃 조정을 모두 반영하였습니다. 출력 미리보기 확인 후 이상 없으시면 확인 완료 처리 부탁드립니다.",
+      "attachments": [],
+      "createdAt": "2026-11-23 16:25:00"
     }
   ],
   "announcements": [
     {
-      "id": "anno-1",
-      "title": "9월 15일 사내 네트워크 보안 점검 및 서버 업그레이드 안내",
-      "content": "9월 15일(화) 20:00 ~ 22:00까지 사내 망 방화벽 및 무선 Wi-Fi AP 펌웨어 업그레이드가 진행됩니다.",
+      "id": "anno-nov-1",
+      "title": "11월 27일 사내 클라우드 스토리지 및 방화벽 정기 점검 안내",
+      "content": "11월 27일(금) 20:00 ~ 22:00까지 사내 클라우드 스토리지 및 보안 방화벽 정기 점검이 진행됩니다.",
       "isActive": true,
-      "createdAt": "2026-09-01"
+      "createdAt": "2026-11-20"
+    },
+    {
+      "id": "anno-dec-1",
+      "title": "2026년 연말 잔여 연차 사용 권장 및 12월 동계 휴가 일정 신청 안내",
+      "content": "원활한 연말 프로젝트 일정 조율을 위해 12월 동계 휴가 신청서를 12월 4일(금)까지 등록해 주시기 바랍니다.",
+      "isActive": true,
+      "createdAt": "2026-11-23"
     }
   ],
-  "notifications": [],
+  "notifications": [
+    {
+      "id": "notif-nov-1",
+      "targetRole": "ALL_STAFF",
+      "targetUserId": null,
+      "title": "신규 고객사 요청이 접수되었습니다: 임직원 권한 그룹별 메뉴 접근 제어 세분화 설정 요청",
+      "message": "[(주)알파솔루션] 임직원 권한 그룹별 메뉴 접근 제어 세분화 설정 요청이 등록되었습니다.",
+      "actorName": "(주)알파솔루션",
+      "type": "CLIENT_REQUEST",
+      "requestId": "req-nov-6",
+      "targetId": "req-nov-6",
+      "link": "client_requests",
+      "isRead": false,
+      "createdAt": "2026-11-24 09:40:00"
+    },
+    {
+      "id": "notif-nov-2",
+      "targetRole": "STAFF",
+      "targetUserId": "usr-emp1",
+      "title": "오늘 14:00 경영지원본부·개발팀 연말 정산 모듈 합동 코드 리뷰 일정이 있습니다",
+      "message": "3층 회의실 A에서 연말 정산 모듈 합동 코드 리뷰 회의가 진행됩니다.",
+      "actorName": "일정 관리 · 3층 회의실 A",
+      "type": "SCHEDULE_REMINDER",
+      "targetId": "sch-nov-4",
+      "link": "calendar",
+      "isRead": false,
+      "createdAt": "2026-11-24 09:00:00"
+    },
+    {
+      "id": "notif-nov-3",
+      "targetRole": "STAFF",
+      "targetUserId": "usr-emp1",
+      "title": "2027년도 신규 단가표 일괄 업로드 엑셀 템플릿 양식 변경 요청에 새 댓글이 등록되었습니다",
+      "message": "[정우성 부장] 신규 10자리 품목 코드 샘플 엑셀 데이터는 기존 테스트 서버의 코드 체계와 동일합니다.",
+      "actorName": "(주)알파솔루션 · 정우성 부장",
+      "type": "CLIENT_COMMENT",
+      "requestId": "req-nov-5",
+      "targetId": "req-nov-5",
+      "link": "client_requests",
+      "isRead": false,
+      "createdAt": "2026-11-23 14:05:00"
+    },
+    {
+      "id": "notif-nov-4",
+      "targetRole": "STAFF",
+      "targetUserId": "usr-emp1",
+      "title": "2027년도 신규 단가표 일괄 업로드 엑셀 템플릿 양식 변경 요청의 개발 담당자로 배정되었습니다",
+      "message": "[김관리]님이 2027년도 신규 단가표 일괄 업로드 엑셀 템플릿 양식 변경 요청의 개발 담당자로 배정하였습니다.",
+      "actorName": "김관리",
+      "type": "TASK_ASSIGNED",
+      "requestId": "req-nov-5",
+      "targetId": "req-nov-5",
+      "link": "client_requests",
+      "isRead": false,
+      "createdAt": "2026-11-23 13:50:00"
+    },
+    {
+      "id": "notif-nov-5",
+      "targetRole": "STAFF",
+      "targetUserId": "usr-emp1",
+      "title": "12월 18일 연차 휴가 신청이 최종 승인되었습니다",
+      "message": "김관리님이 2026-12-18 연차 신청 건을 승인하였습니다.",
+      "actorName": "김관리 · 근태 결재",
+      "type": "LEAVE_APPROVED",
+      "targetId": "lv-dec-12",
+      "link": "commute",
+      "isRead": true,
+      "createdAt": "2026-11-23 10:10:00"
+    },
+    {
+      "id": "notif-nov-6",
+      "targetRole": "ADMIN",
+      "targetUserId": "usr-admin",
+      "title": "연말 결산용 거래원장 다중 조건 필터 및 PDF 출력 레이아웃 개선 작업이 완료되어 확인 요청 상태로 전환되었습니다",
+      "message": "이민수, 임서우 담당자의 모든 하위 작업이 완료되어 고객사 확인 요청 상태로 전환되었습니다.",
+      "actorName": "이민수 · 임서우",
+      "type": "CLIENT_REQUEST",
+      "requestId": "req-nov-3",
+      "targetId": "req-nov-3",
+      "link": "client_requests",
+      "isRead": false,
+      "createdAt": "2026-11-23 16:20:00"
+    }
+  ],
   "payrolls": [
     {
       "id": "pay-2026-08-usr-admin",
@@ -8966,9 +10550,9 @@
       "lateCount": 1,
       "lateDeduction": 30000,
       "monthlyLeaveUsed": 0,
-      "totalLeave": 15,
+      "totalLeave": 17,
       "usedLeave": 5.5,
-      "remainingLeave": 9.5,
+      "remainingLeave": 11.5,
       "nationalPension": 277650,
       "healthInsurance": 239990,
       "careInsurance": 31070,
@@ -8977,7 +10561,7 @@
       "localIncomeTax": 50770,
       "totalDeduction": 1198150,
       "netPay": 5801850,
-      "status": "PENDING_REVIEW",
+      "status": "PAID",
       "paymentDate": "2026-10-25",
       "bankName": "국민은행",
       "accountNumber": "***-****-1000-01",

@@ -1003,15 +1003,100 @@ export default function App() {
                     return todayStr >= sStart && todayStr <= sEnd;
                   });
 
+              const formatShortHubDate = (dateStr) => {
+                if (!dateStr) return '';
+                const s = String(dateStr).slice(0, 10);
+                const parts = s.split('-');
+                if (parts.length === 3) return `${parts[1]}.${parts[2]}`;
+                return s;
+              };
+
+              const formatScheduleHubTime = (s) => {
+                if (!s) return '';
+                if (s.allDay) return '종일';
+                const startT = (s.startDate || '').includes('T') ? s.startDate.split('T')[1]?.slice(0, 5) : '';
+                const endT = (s.endDate || '').includes('T') ? s.endDate.split('T')[1]?.slice(0, 5) : '';
+                if (startT && endT) return `${startT} ~ ${endT}`;
+                if (startT) return startT;
+                return formatShortHubDate(s.startDate);
+              };
+
+              const getHubNotifTypeLabel = (notif) => {
+                const type = (notif.type || '').toUpperCase();
+                const title = notif.title || '';
+                const link = (notif.link || '').toLowerCase();
+                if (type === 'CLIENT_COMMENT' || title.includes('댓글')) return '새 댓글';
+                if (type === 'TASK_ASSIGNED' || title.includes('배정')) return '담당 배정';
+                if (type === 'APPROVAL_REQUEST' || title.includes('승인자')) return '승인 요청';
+                if (type === 'CLIENT_REQUEST' || link === 'client_requests') {
+                  if (title.includes('완료') || title.includes('확인 요청')) return '확인 요청';
+                  return '신규 요청';
+                }
+                if (type.includes('SCHEDULE') || type.includes('MEETING') || link === 'calendar') return '회의 일정';
+                if (type.includes('LEAVE') || type.includes('ATTEND') || link === 'commute' || link === 'admin_attendance') return '근태 결재';
+                if (type.includes('ANNOUNCE') || link === 'settings') return '사내 공지';
+                return '업무 알림';
+              };
+
+              const getHubNotifSubject = (notif) => {
+                const reqId = notif.requestId || notif.targetId;
+                if (reqId) {
+                  const matchedReq = (clientRequests || []).find(r => r.id === reqId);
+                  if (matchedReq && matchedReq.title) return matchedReq.title;
+                  const matchedSch = (schedules || []).find(s => s.id === reqId);
+                  if (matchedSch && matchedSch.title) return matchedSch.title;
+                }
+                let text = (notif.title || notif.message || '').trim();
+                text = text
+                  .replace(/^신규 고객사 요청이 접수되었습니다:\s*/, '')
+                  .replace(/^오늘\s+\d{1,2}:\d{2}\s+/, '')
+                  .replace(/\s*요청에 새 댓글이 등록되었습니다\.?$/, '')
+                  .replace(/\s*요청의 .*담당자로 배정되었습니다\.?$/, '')
+                  .replace(/\s*작업이 완료되어 확인 요청 상태로 전환되었습니다\.?$/, '')
+                  .replace(/\s*일정이 있습니다\.?$/, '');
+                return text || notif.title || notif.message || '';
+              };
+
+              const formatKakaoNotifTime = (dateStr) => {
+                if (!dateStr) return { text: '', isRecent: false };
+                const normalized = String(dateStr).replace(' ', 'T');
+                const d = new Date(normalized);
+                if (isNaN(d.getTime())) return { text: String(dateStr).slice(5, 16), isRecent: false };
+
+                const now = new Date();
+                const diffMs = now.getTime() - d.getTime();
+                const diffMin = Math.floor(diffMs / 60000);
+
+                if (diffMs >= 0 && diffMin < 1) {
+                  return { text: '방금 전', isRecent: true };
+                }
+                if (diffMin >= 1 && diffMin < 60) {
+                  return { text: `${diffMin}분 전`, isRecent: true };
+                }
+
+                const hh = String(d.getHours()).padStart(2, '0');
+                const min = String(d.getMinutes()).padStart(2, '0');
+                const isSameDay =
+                  d.getFullYear() === now.getFullYear() &&
+                  d.getMonth() === now.getMonth() &&
+                  d.getDate() === now.getDate();
+
+                if (isSameDay) {
+                  return { text: `${hh}:${min}`, isRecent: false };
+                }
+
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                return { text: `${mm}.${dd} ${hh}:${min}`, isRecent: false };
+              };
+
               const combinedTodayWork = [
                 ...myAssignedReqItems.map(r => ({
                   id: `req-${r.id}`,
                   rawId: r.id,
                   typeLabel: user.role === 'CLIENT' ? '요청사항' : '고객사 요청',
                   title: r.title,
-                  subText: user.role === 'CLIENT'
-                    ? `${r.status === 'REQUESTED' ? '접수 대기' : (r.status === 'DONE' ? '확인 요청' : '진행 중')} · ${r.desiredDate || r.createdAt?.slice(0, 10) || ''}`
-                    : `${r.clientName || '고객사'} · ${r.status === 'REQUESTED' ? '담당 배정 대기' : '진행 중'}`,
+                  timeLabel: formatShortHubDate(r.desiredDate || (r.createdAt || '').slice(0, 10)),
                   onClick: () => {
                     setTargetRequestId(r.id);
                     setCurrentView('CLIENT_REQUESTS');
@@ -1020,17 +1105,17 @@ export default function App() {
                 ...myActiveTasks.map(t => ({
                   id: `tsk-${t.id}`,
                   rawId: t.id,
-                  typeLabel: '프로젝트 업무',
+                  typeLabel: t.isDirectTask ? '내 업무' : '프로젝트',
                   title: t.title,
-                  subText: `${t.dept || '사내'} · 마감 ${t.dueDate || '-'}`,
-                  onClick: () => setCurrentView('PROJECTS')
+                  timeLabel: formatShortHubDate(t.dueDate || t.startDate || ''),
+                  onClick: () => setCurrentView(t.isDirectTask ? 'TASKS_LIST' : 'PROJECTS')
                 })),
                 ...todaySchedules.map(s => ({
                   id: `sch-${s.id}`,
                   rawId: s.id,
-                  typeLabel: '오늘 일정',
+                  typeLabel: s.category === 'LEAVE' ? '휴가' : '회의',
                   title: s.title,
-                  subText: `${s.dept || '전사'} · ${(s.startDate || '').slice(0, 10)}`,
+                  timeLabel: formatScheduleHubTime(s),
                   onClick: () => {
                     setTargetScheduleId(s.id);
                     setCurrentView('CALENDAR_LEAVE');
@@ -1127,7 +1212,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* 섹션 1: Today (드래그하여 우선순위 변경 가능) */}
+                  {/* 섹션 1: Today (드래그하여 우선순위 변경 가능 - C-2 3열 1줄 구조) */}
                   <section style={{ display: 'flex', flexDirection: 'column' }}>
                     <div style={{
                       display: 'flex',
@@ -1136,7 +1221,7 @@ export default function App() {
                       paddingBottom: '0.9rem',
                       borderBottom: '1px solid var(--text-primary)'
                     }}>
-                      <h2 style={{ fontSize: '20px', color: 'var(--text-primary)', margin: 0 }}>
+                      <h2 style={{ fontSize: '22px', color: 'var(--text-primary)', margin: 0 }}>
                         Today
                       </h2>
                     </div>
@@ -1145,7 +1230,7 @@ export default function App() {
                       <div style={{
                         padding: '2.25rem 0',
                         color: 'var(--text-secondary)',
-                        fontSize: '16px',
+                        fontSize: '17px',
                         borderBottom: '1px solid var(--border-color)'
                       }}>
                         현재 배정된 대기 업무나 오늘 일정이 없습니다.
@@ -1170,48 +1255,36 @@ export default function App() {
                                 width: '100%',
                                 borderTop: isOver ? '2px solid var(--text-primary)' : 'none',
                                 borderBottom: '1px solid var(--border-color)',
-                                padding: '1.1rem 0.25rem',
-                                display: 'flex',
+                                padding: '1.25rem 0.25rem',
+                                display: 'grid',
+                                gridTemplateColumns: '175px minmax(0, 1fr) 125px',
                                 alignItems: 'center',
-                                justifyContent: 'space-between',
-                                gap: '1rem',
+                                gap: '1.5rem',
                                 cursor: isDragging ? 'grabbing' : 'pointer',
                                 opacity: isDragging ? 0.35 : 1,
                                 transition: 'background-color 0.15s ease, opacity 0.15s ease',
                                 userSelect: 'none'
                               }}
                             >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0 }}>
-                                <span
-                                  title="드래그하여 우선순위 변경"
-                                  onClick={(e) => e.stopPropagation()}
-                                  style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: 'var(--text-muted)',
-                                    cursor: 'grab',
-                                    flexShrink: 0,
-                                    opacity: 0.55
-                                  }}
-                                >
-                                  <GripVertical size={18} strokeWidth={1.8} />
-                                </span>
-                                <span style={{ fontSize: '15px', color: 'var(--text-secondary)', flexShrink: 0 }}>
-                                  {item.typeLabel} ·
-                                </span>
-                                <span style={{
-                                  fontSize: '16px',
-                                  color: 'var(--text-primary)',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap'
-                                }}>
-                                  {item.title}
-                                </span>
-                              </div>
-                              <span style={{ fontSize: '15px', color: 'var(--text-secondary)', flexShrink: 0 }}>
-                                {item.subText}
+                              <span style={{ fontSize: '17px', color: 'var(--text-secondary)' }}>
+                                {item.typeLabel}
+                              </span>
+                              <span style={{
+                                fontSize: '17px',
+                                color: 'var(--text-primary)',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {item.title}
+                              </span>
+                              <span style={{
+                                fontSize: '16px',
+                                color: 'var(--text-muted)',
+                                textAlign: 'right',
+                                fontVariantNumeric: 'tabular-nums'
+                              }}>
+                                {item.timeLabel}
                               </span>
                             </div>
                           );
@@ -1220,7 +1293,7 @@ export default function App() {
                     )}
                   </section>
 
-                  {/* 섹션 2: 알림 */}
+                  {/* 섹션 2: 알림 (C-2 3열 1줄 구조 + 카톡형 도착 시간) */}
                   <section style={{ display: 'flex', flexDirection: 'column' }}>
                     <div style={{
                       display: 'flex',
@@ -1229,7 +1302,7 @@ export default function App() {
                       paddingBottom: '0.9rem',
                       borderBottom: '1px solid var(--text-primary)'
                     }}>
-                      <h2 style={{ fontSize: '20px', color: 'var(--text-primary)', margin: 0 }}>
+                      <h2 style={{ fontSize: '22px', color: 'var(--text-primary)', margin: 0 }}>
                         알림
                       </h2>
                     </div>
@@ -1238,60 +1311,60 @@ export default function App() {
                       <div style={{
                         padding: '2.25rem 0',
                         color: 'var(--text-secondary)',
-                        fontSize: '16px',
+                        fontSize: '17px',
                         borderBottom: '1px solid var(--border-color)'
                       }}>
-                        새로 도착한 연락이나 알림이 없습니다.
+                        새로 도착한 알림이 없습니다.
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {recentNotifs.map(notif => (
-                          <button
-                            key={notif.id}
-                            type="button"
-                            onClick={() => handleNavigateFromNotification(notif)}
-                            style={{
-                              width: '100%',
-                              background: 'none',
-                              border: 'none',
-                              borderBottom: '1px solid var(--border-color)',
-                              padding: '1.1rem 0.25rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              gap: '1rem',
-                              cursor: 'pointer',
-                              textAlign: 'left'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0 }}>
-                              {!notif.isRead && (
-                                <span style={{
-                                  width: '7px',
-                                  height: '7px',
-                                  borderRadius: '50%',
-                                  backgroundColor: '#ef4444',
-                                  flexShrink: 0
-                                }} />
-                              )}
-                              <span style={{ fontSize: '15px', color: 'var(--text-secondary)', flexShrink: 0 }}>
-                                {notif.title} ·
+                        {recentNotifs.map(notif => {
+                          const typeLabel = getHubNotifTypeLabel(notif);
+                          const subjectText = getHubNotifSubject(notif);
+                          const timeInfo = formatKakaoNotifTime(notif.createdAt);
+
+                          return (
+                            <button
+                              key={notif.id}
+                              type="button"
+                              onClick={() => handleNavigateFromNotification(notif)}
+                              style={{
+                                width: '100%',
+                                background: 'none',
+                                border: 'none',
+                                borderBottom: '1px solid var(--border-color)',
+                                padding: '1.25rem 0.25rem',
+                                display: 'grid',
+                                gridTemplateColumns: '175px minmax(0, 1fr) 125px',
+                                alignItems: 'center',
+                                gap: '1.5rem',
+                                cursor: 'pointer',
+                                textAlign: 'left'
+                              }}
+                            >
+                              <span style={{ fontSize: '17px', color: 'var(--text-secondary)' }}>
+                                {typeLabel}
                               </span>
                               <span style={{
-                                fontSize: '16px',
-                                color: notif.isRead ? 'var(--text-secondary)' : 'var(--text-primary)',
+                                fontSize: '17px',
+                                color: notif.isRead ? 'var(--text-muted)' : 'var(--text-primary)',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap'
                               }}>
-                                {notif.message}
+                                {subjectText}
                               </span>
-                            </div>
-                            <span style={{ fontSize: '14px', color: 'var(--text-muted)', flexShrink: 0 }}>
-                              {(notif.createdAt || '').slice(5, 16)}
-                            </span>
-                          </button>
-                        ))}
+                              <span style={{
+                                fontSize: '16px',
+                                color: timeInfo.isRecent ? 'var(--text-primary)' : 'var(--text-muted)',
+                                textAlign: 'right',
+                                fontVariantNumeric: 'tabular-nums'
+                              }}>
+                                {timeInfo.text}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </section>
